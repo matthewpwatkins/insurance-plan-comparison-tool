@@ -1,7 +1,7 @@
 export enum CoverageScope {
   SINGLE = 'Single',
   TWO_PARTY = 'Two Party',
-  FAMILY = 'Family'
+  FAMILY = 'Family',
 }
 
 const coverageScopesByName: Record<string, CoverageScope> = Object.values(CoverageScope).reduce((acc, scope) => {

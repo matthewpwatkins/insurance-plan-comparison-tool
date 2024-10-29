@@ -56,7 +56,9 @@ export class PlanExecution {
     let remainingCost = cost;
 
     // Apply any copays
-    const applicableCopay = Math.min(rate.copay || 0, remainingCost, this.deductibleRemaining(), this.oopRemaining());
+    const rateCopay = rate.copay || 0;
+    const deductibleApplicableForCopay = this.deductibleRemaining() > 0 ? this.deductibleRemaining() : Number.POSITIVE_INFINITY;
+    const applicableCopay = Math.min(rateCopay, remainingCost, deductibleApplicableForCopay, this.oopRemaining());
     this._payments.outOfPocket += applicableCopay;
     remainingCost -= applicableCopay;
 
@@ -77,7 +79,7 @@ export class PlanExecution {
   }
 
   private deductibleRemaining(): number {
-    return this._planDefinition.deductibles[this._coverageScope] - this._payments.outOfPocket;
+    return Math.max(0, this._planDefinition.deductibles[this._coverageScope] - this._payments.outOfPocket);
   }
 }
 

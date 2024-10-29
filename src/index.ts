@@ -65,17 +65,6 @@ function calculate() {
 
   const tableBody = document.querySelector<HTMLTableSectionElement>('#planTable tbody')!;
   tableBody.innerHTML = '';
-
-  /*
-          <th>Plan</th>
-          <th>Account contribution</th>
-          <th>Employer contribution</th>
-          <th>Tax savings</th>
-          <th>Premiums</th>
-          <th>Out of pocket</th>
-          <th>Total</th>
-          */
-
   for (const planExecution of planExecutions) {
     const newRow = document.createElement('tr');
     newRow.innerHTML = `

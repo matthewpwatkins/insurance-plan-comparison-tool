@@ -1,10 +1,14 @@
 {
   "scripts": {
     "build": "rm -fr dist && webpack",
-    "start": "node dist/script.js"
+    "start": "node dist/script.js",
+    "test": "jest"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.8.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
