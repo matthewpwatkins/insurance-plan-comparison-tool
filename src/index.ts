@@ -102,5 +102,16 @@ function loadTable() {
 document.addEventListener('DOMContentLoaded', () => {
   populateCoverageScopeDropdown();
   loadTable();
-  document.getElementById('btn-calculate')!.addEventListener('click', calculate);
+  document.querySelectorAll('.auto-calculate').forEach(element => {
+    if (element.tagName === 'TBODY') {
+      element.addEventListener('input', (event) => {
+        if ((event.target as HTMLElement).tagName === 'TD') {
+          calculate();
+        }
+      })
+    } else {
+      element.addEventListener('input', calculate);
+      element.addEventListener('change', calculate);
+    }
+  });
 });

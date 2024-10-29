@@ -10,11 +10,11 @@
     <h2>Inputs</h2>
     <div class="mb-3">
       <label for="coverageScope" class="form-label">Coverage Scope:</label>
-      <select class="form-select" id="coverageScope" name="coverageScope"></select>
+      <select class="form-select auto-calculate" id="coverageScope" name="coverageScope"></select>
     </div>
     <div class="mb-3">
       <label for="taxRate" class="form-label">Marginal Tax Rate:</label>
-      <input type="number" class="form-control" id="taxRate" name="taxRate" step="0.01" min="0" max="100" value="15">
+      <input type="number" class="form-control auto-calculate" id="taxRate" name="taxRate" step="0.01" min="0" max="100" value="15">
     </div>
 
     <h2>Medical Expenses</h2>
@@ -26,7 +26,7 @@
           <th width="25%">Negotiated Price</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody class="auto-calculate"></tbody>
       <tfoot>
         <tr>
           <td colspan="2">Total</td>
@@ -34,10 +34,6 @@
         </tr>
       </tfoot>
     </table>
-
-    <div class="mb-5">
-      <button id="btn-calculate" class="btn btn-primary float-end">Calculate</button>
-    </div>
     
     <h2>Estimated plan costs</h2>
     <table id="planTable" class="table table-bordered">
