@@ -2,6 +2,7 @@ import { PLAN_DEFINITIONS } from "./models/plans";
 import { parseService, Service } from "./models/services";
 import { CoverageScope, parseCoverageScope } from "./models/coverage-scope";
 import { PlanExecution } from "./models/plan-execution";
+import { UserSelections } from "./models/user-selections";
 
 const USD_FORMATTER = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -33,20 +34,33 @@ function parseDollars(input: string): number {
 }
 
 function calculate() {
-  const taxRate = parseFloat((document.getElementById('taxRate') as HTMLInputElement).value) / 100;
-  const coverageScope = parseCoverageScope((document.getElementById('coverageScope') as HTMLSelectElement).value);
+  // Create an instance of UserSelections
+  const userSelections: UserSelections = {
+    taxRate: parseFloat((document.getElementById('taxRate') as HTMLInputElement).value) / 100,
+    coverageScope: parseCoverageScope((document.getElementById('coverageScope') as HTMLSelectElement).value),
+    expenses: []
+  };
+
+  // Populate the expenses array
+  for (const row of Array.from(document.querySelectorAll<HTMLTableRowElement>('#costTable tbody tr'))) {
+    userSelections.expenses.push({
+      service: parseService(row.children[0].textContent!),
+      quantity: parseInt(row.children[1].textContent!),
+      cost: parseDollars(row.children[2].textContent!.substring(1))
+    });
+  }
+
+  // Use the userSelections object in the calculation logic
   const planExecutions = PLAN_DEFINITIONS.map(plan => {
-    const participantHsaContribution = plan.employerHsaContributions ? THIS_YEAR_HSA_MAX_CONTRIBUTION_LIMIT - plan.employerHsaContributions[coverageScope] : 0;
-    return new PlanExecution(plan, coverageScope, participantHsaContribution, taxRate);
+    const participantHsaContribution = plan.employerHsaContributions
+      ? THIS_YEAR_HSA_MAX_CONTRIBUTION_LIMIT - plan.employerHsaContributions[userSelections.coverageScope]: 0;
+    return new PlanExecution(plan, userSelections.coverageScope, participantHsaContribution, userSelections.taxRate);
   });
 
-  for (const row of Array.from(document.querySelectorAll<HTMLTableRowElement>('#costTable tbody tr'))) {
-    const service = parseService(row.children[0].textContent!);
-    const quantity = parseInt(row.children[1].textContent!);
-    const cost = parseDollars(row.children[2].textContent!.substring(1));
+  for (const expense of userSelections.expenses) {
     for (const planExecution of planExecutions) {
-      for (let i = 0; i < quantity; i++) {
-        planExecution.recordExpense(service, cost);
+      for (let i = 0; i < expense.quantity; i++) {
+        planExecution.recordExpense(expense.service, expense.cost);
       }
     }
   }
