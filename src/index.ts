@@ -66,10 +66,27 @@ function calculate() {
   const tableBody = document.querySelector<HTMLTableSectionElement>('#planTable tbody')!;
   tableBody.innerHTML = '';
 
+  /*
+          <th>Plan</th>
+          <th>Account contribution</th>
+          <th>Employer contribution</th>
+          <th>Tax savings</th>
+          <th>Premiums</th>
+          <th>Out of pocket</th>
+          <th>Total</th>
+          */
+
   for (const planExecution of planExecutions) {
     const newRow = document.createElement('tr');
-    const netCost = Math.round(planExecution.netCost());
-    newRow.innerHTML = `<td>${planExecution.planDefinition.name}</td><td>${USD_FORMATTER.format(netCost)}</td>`;
+    newRow.innerHTML = `
+      <td>${planExecution.planDefinition.name}</td>
+      <td>${USD_FORMATTER.format(planExecution.participantHealthAccountContribution)}</td>
+      <td>${USD_FORMATTER.format(planExecution.gains.employerHealthAccountContribution)}</td>
+      <td>${USD_FORMATTER.format(planExecution.gains.taxSavings)}</td>
+      <td>${USD_FORMATTER.format(planExecution.payments.premiums)}</td>
+      <td>${USD_FORMATTER.format(planExecution.payments.outOfPocket)}</td>
+      <td><b>${USD_FORMATTER.format(planExecution.netCost())}</b></td>
+    `;
     tableBody.appendChild(newRow);
   }
 
