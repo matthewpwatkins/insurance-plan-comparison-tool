@@ -10,11 +10,6 @@ const USD_FORMATTER = new Intl.NumberFormat('en-US', {
 });
 const THIS_YEAR_HSA_MAX_CONTRIBUTION_LIMIT = 8550;
 
-const DEFAULT_QTY_PRICES = Object.values(Service).reduce((acc, serviceName) => {
-  acc[serviceName] = { qty: 0, price: 0 };
-  return acc;
-}, {} as Record<string, { qty: number, price: number }>);
-
 function populateCoverageScopeDropdown() {
   const coverageScopeSelect = document.getElementById('coverageScope') as HTMLSelectElement;
   for (const coverageScopeName of Object.values(CoverageScope)) {
@@ -49,6 +44,9 @@ function calculate() {
       cost: parseDollars(row.children[2].textContent!.substring(1))
     });
   }
+
+  // Save userSelections to localStorage
+  localStorage.setItem('userSelections', JSON.stringify(userSelections));
 
   // Use the userSelections object in the calculation logic
   const planExecutions = PLAN_DEFINITIONS.map(plan => {
@@ -92,9 +90,16 @@ function addRow(serviceName: string, qty: number, cost: number) {
 }
 
 function loadTable() {
+  const userSelectionsJson = localStorage.getItem('userSelections');
+  const userSelections: UserSelections | undefined = userSelectionsJson ? JSON.parse(userSelectionsJson) : undefined;
+  (document.getElementById('taxRate') as HTMLInputElement).value = ((userSelections?.taxRate || 0.24) * 100).toFixed(2);
+  (document.getElementById('coverageScope') as HTMLSelectElement).value = userSelections?.coverageScope || CoverageScope.FAMILY;
+
   for (const serviceName of Object.values(Service)) {
-    addRow(serviceName, DEFAULT_QTY_PRICES[serviceName].qty, DEFAULT_QTY_PRICES[serviceName].price);
+    const selection = userSelections?.expenses.find(expense => expense.service === serviceName);
+    addRow(serviceName, selection?.quantity || 0, selection?.cost || 0);
   }
+
   calculate();
 }
 
