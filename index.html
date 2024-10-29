@@ -18,11 +18,12 @@
       <select class="form-select auto-calculate" id="coverageScope" name="coverageScope"></select>
     </div>
     <div class="mb-3">
-      <label for="taxRate" class="form-label">My marginal tax rate*</label>
+      <label for="taxRate" class="form-label">My marginal tax rate</label>
       <div class="input-group">
         <input type="number" class="form-control auto-calculate" id="taxRate" name="taxRate" step="0.01" min="0" max="100" value="15">
         <span class="input-group-text">%</span>
       </div>
+      <div class="form-text">See the FAQ for why this information is helpful</div>
     </div>
 
     <h2>Estimated 2025 medical expenses</h2>
@@ -59,8 +60,40 @@
 
     <h4>Why do you need to know my marginal tax rate?</h4>
     <p>
-      HSA contributions are tax-deductible, meaning that you can subtract them from your taxable income. For example, if you have a 25%
+      FSA and HSA contributions are tax-deductible, meaning that you can subtract them from your taxable income. For example, if you have a 25%
       tax rate and contribute $5,000 of your money to an HSA, you'll pay $1,250 less in taxes this year. Win!
+    </p>
+
+    <h4>How much does this assume I'm contributing to my HSA/FSA?</h4>
+    <p>
+      This tool assumes you are maximizing your tax exemptions by contributing the max amount to your HSA/FSA, taking into account
+      legal limits for the upcoming year and any employer contributions. I could add a field for you to input your own contribution amount,
+      but it would be complicated to add, and may not have a sizable impact on the results. If you plan to contribute less than the max,
+      you can subtract your contribution amounts and tax savings from the the total cost of each plan.
+    </p>
+
+    <h4>This tool doesn't show the hundreds of thousands of dollars an HSA can save me over the years!</h4>
+    <p>
+      Good for you, you understand the power of compound interest! Yes, <a target="_blank" href="https://www.youtube.com/watch?v=xn6FtTZYeWE">HSAs have
+      several superpowers</a> that aren't accounted for in this tool:
+    </p>
+    <p>
+      <b>First superpower: You keep the money and you use it whenever you want.</b> <i>FSAs</i> (the kind you get with the PPO plan)
+      are "use it or lose it" -- if you don't spend the money by the end of the year, you've just made a generous contribution to the FSA plan administrator.
+      But HSAs are truly yours forever, and you can use them for any medical expenses, past, present, or future, even when you're no longer on DMBA's plans.
+    </p>
+    <p>
+      <b>Second superpower: Investment.</b> FSAs sit in a cash account and earn no interest. So technically, the money you put in an FSA is slowly evaporating
+      to inflation over the course of the year. But HSAs usually live in a brokerage account, where cash by itself can often earn enough interest to outpace inflation.
+    </p>
+    <p>
+      But even better, you can invest your HSA in index funds, where it can grow 8-10% on average. This is <i>incredibly</i>
+      powerful. If you're in your early 20s, you can expect each $1,000 you invest in your HSA today to grow to <i>$88,000</i> by the time you retire.
+      That's not a typo-- that's the power of compound interest!
+    </p>
+    <p>
+      <b>Third superpower: Triple tax advantage!</b> Like FSAs, HSAs are tax-deductible on the front-end. But they also grow tax-free, and are tax-free
+      on withdrawal for medical expenses. HSA is the best parts of an FSA plus the best parts of a Roth IRA combined!
     </p>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
