@@ -2,6 +2,13 @@ import { Service } from "./services";
 import { PlanDefinition } from "./plan-definition";
 import { CoverageScope } from "./coverage-scope";
 
+const FSA_MAX_CONTRIBUTION = 3_300;
+const HSA_MAX_CONTRIBUTIONS_BY_SCOPE: Record<CoverageScope, number> = {
+  [CoverageScope.SINGLE]: 4_300,
+  [CoverageScope.TWO_PARTY]: 8_550,
+  [CoverageScope.FAMILY]: 8_550
+};
+
 const COMMON_SERVICE_RATES = {
   [Service.PREVENTIVE_ROUTINE_WELL_EXAM]: { isFree: true },
   [Service.PREVENTIVE_COLORECTAL_SCREENING]: { isFree: true },
@@ -13,8 +20,20 @@ const COMMON_SERVICE_RATES = {
   [Service.PREVENTIVE_OTHER]: { isFree: true },
 };
 
+const FSA_MAX_CONTRIBUTIONS_BY_SCOPE: Record<CoverageScope, number> = Object.values(CoverageScope).reduce((acc, coverageScope) => {
+  acc[coverageScope] = FSA_MAX_CONTRIBUTION;
+  return acc;
+}, {} as Record<CoverageScope, number>);
+
+const ZERO_EMPLOYER_CONTRIBUTIONS_BY_SCOPE: Record<CoverageScope, number> = Object.values(CoverageScope).reduce((acc, coverageScope) => {
+  acc[coverageScope] = 0;
+  return acc;
+}, {} as Record<CoverageScope, number>);
+
 export const PPO_90: PlanDefinition = {
   name: 'PPO 90',
+  healthAccountLimits: FSA_MAX_CONTRIBUTIONS_BY_SCOPE,
+  employerHealthAccountContributions: ZERO_EMPLOYER_CONTRIBUTIONS_BY_SCOPE,
   premiums: {
     [CoverageScope.SINGLE]: 245.30,
     [CoverageScope.TWO_PARTY]: 499.70,
@@ -74,6 +93,8 @@ export const PPO_90: PlanDefinition = {
 
 export const PPO_70: PlanDefinition = {
   name: 'PPO 70',
+  healthAccountLimits: FSA_MAX_CONTRIBUTIONS_BY_SCOPE,
+  employerHealthAccountContributions: ZERO_EMPLOYER_CONTRIBUTIONS_BY_SCOPE,
   premiums: {
     [CoverageScope.SINGLE]: 101.20,
     [CoverageScope.TWO_PARTY]: 205.70,
@@ -133,6 +154,12 @@ export const PPO_70: PlanDefinition = {
 
 export const HSA_80: PlanDefinition = {
   name: 'HSA 80',
+  healthAccountLimits: HSA_MAX_CONTRIBUTIONS_BY_SCOPE,
+  employerHealthAccountContributions: {
+    [CoverageScope.SINGLE]: 825,
+    [CoverageScope.TWO_PARTY]: 1650,
+    [CoverageScope.FAMILY]: 1650
+  },
   premiums: {
     [CoverageScope.SINGLE]: 97.40,
     [CoverageScope.TWO_PARTY]: 199.40,
@@ -151,11 +178,6 @@ export const HSA_80: PlanDefinition = {
   defaultServiceRate: {
     coinsurance: 0.2
   },
-  employerHsaContributions: {
-    [CoverageScope.SINGLE]: 825,
-    [CoverageScope.TWO_PARTY]: 1650,
-    [CoverageScope.FAMILY]: 1650
-  },
   serviceRates: {
     ...COMMON_SERVICE_RATES,
     [Service.PRESCRIPTIONS_TIER_1_30_DAY]: { copay: 5 },
@@ -172,6 +194,12 @@ export const HSA_80: PlanDefinition = {
 
 export const HSA_60: PlanDefinition = {
   name: 'HSA 60',
+  healthAccountLimits: HSA_MAX_CONTRIBUTIONS_BY_SCOPE,
+  employerHealthAccountContributions: {
+    [CoverageScope.SINGLE]: 1500,
+    [CoverageScope.TWO_PARTY]: 3000,
+    [CoverageScope.FAMILY]: 3000
+  },
   premiums: {
     [CoverageScope.SINGLE]: 55.70,
     [CoverageScope.TWO_PARTY]: 91.90,
@@ -189,11 +217,6 @@ export const HSA_60: PlanDefinition = {
   },
   defaultServiceRate: {
     coinsurance: 0.4
-  },
-  employerHsaContributions: {
-    [CoverageScope.SINGLE]: 1500,
-    [CoverageScope.TWO_PARTY]: 3000,
-    [CoverageScope.FAMILY]: 3000
   },
   serviceRates: {
     ...COMMON_SERVICE_RATES,

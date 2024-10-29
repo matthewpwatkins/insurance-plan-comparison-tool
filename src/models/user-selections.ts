@@ -11,4 +11,4 @@ export type ExpenseEstimate = {
   service: Service,
   quantity: number,
   cost: number
-}
+};

@@ -8,12 +8,14 @@ export class PlanExecution {
   private payments: Payments = new Payments();
   private gains: Gains = new Gains();
 
-  constructor(plan: PlanDefinition, coverageScope: CoverageScope, participantHsaContribution: number, participantTaxRate: number) {
+  constructor(plan: PlanDefinition, coverageScope: CoverageScope, participantTaxRate: number) {
     this._planDefinition = plan;
     this.coverageScope = coverageScope;
 
     this.payments.premiums = plan.premiums[coverageScope] * 12;
-    this.gains.employerContribution = plan.employerHsaContributions ? plan.employerHsaContributions[coverageScope] : 0;
+    this.gains.employerContribution = plan.employerHealthAccountContributions[coverageScope];
+    // TODO: Allow participants to specify their own contribution
+    const participantHsaContribution = plan.healthAccountLimits[coverageScope] - this.gains.employerContribution;
     this.gains.taxSavings = participantHsaContribution * participantTaxRate;
   }
 

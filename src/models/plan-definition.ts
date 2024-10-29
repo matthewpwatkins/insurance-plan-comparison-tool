@@ -6,7 +6,8 @@ export type PlanDefinition = {
   premiums: Record<CoverageScope, number>;
   deductibles: Record<CoverageScope, number>;
   outOfPocketMaximums: Record<CoverageScope, number>;
-  employerHsaContributions?: Record<CoverageScope, number>;
+  employerHealthAccountContributions: Record<CoverageScope, number>;
+  healthAccountLimits: Record<CoverageScope, number>;
   defaultServiceRate: ServiceRate;
   serviceRates: Partial<Record<Service, ServiceRate>>;
 };

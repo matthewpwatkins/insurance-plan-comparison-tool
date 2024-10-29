@@ -8,7 +8,6 @@ const USD_FORMATTER = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 });
-const THIS_YEAR_HSA_MAX_CONTRIBUTION_LIMIT = 8550;
 
 function populateCoverageScopeDropdown() {
   const coverageScopeSelect = document.getElementById('coverageScope') as HTMLSelectElement;
@@ -50,9 +49,7 @@ function calculate() {
 
   // Use the userSelections object in the calculation logic
   const planExecutions = PLAN_DEFINITIONS.map(plan => {
-    const participantHsaContribution = plan.employerHsaContributions
-      ? THIS_YEAR_HSA_MAX_CONTRIBUTION_LIMIT - plan.employerHsaContributions[userSelections.coverageScope]: 0;
-    return new PlanExecution(plan, userSelections.coverageScope, participantHsaContribution, userSelections.taxRate);
+    return new PlanExecution(plan, userSelections.coverageScope, userSelections.taxRate);
   });
 
   for (const expense of userSelections.expenses) {
