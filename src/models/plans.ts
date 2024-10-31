@@ -2,6 +2,7 @@ import { Service } from "./services";
 import { PlanDefinition } from "./plan-definition";
 import { CoverageScope } from "./coverage-scope";
 
+export const YEAR = 2025;
 const FSA_MAX_CONTRIBUTION = 3_300;
 const HSA_MAX_CONTRIBUTIONS_BY_SCOPE: Record<CoverageScope, number> = {
   [CoverageScope.SINGLE]: 4_300,
