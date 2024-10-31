@@ -7,6 +7,18 @@ export type UserSelections = {
   expenses: ExpenseEstimate[];
 };
 
+export const DefaultUserSelections: UserSelections = {
+  taxRate: .24,
+  coverageScope: CoverageScope.FAMILY,
+  expenses: [
+  //   {
+  //   service: Service.TELEMEDICINE_PCP,
+  //   quantity: 6,
+  //   cost: 70
+  // }
+  ]
+};
+
 export type ExpenseEstimate = {
   service: Service,
   quantity: number,
