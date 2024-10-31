@@ -89,7 +89,7 @@ const App: React.FC = () => {
       <div className="mt-3">
         <label htmlFor="tax-rate">My marginal tax rate</label>
         <InputGroup>
-          <input type="number" id="tax-rate" className="form-control" step="0.01" min={0} max={100} value={(userSelections.taxRate * 100).toFixed(2)} onChange={handleTaxRateChange} />
+          <input type="number" id="tax-rate" className="form-control" step={0.01} min={0} max={100} value={parseFloat((userSelections.taxRate * 100).toFixed(2))} onChange={handleTaxRateChange} />
           <InputGroup.Text>%</InputGroup.Text>
         </InputGroup>
         <div className="form-text">See the FAQ for why this information is helpful.</div>
