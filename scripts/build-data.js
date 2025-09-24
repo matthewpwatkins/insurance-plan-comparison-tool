@@ -4,102 +4,82 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-const DATA_DIR = path.join(__dirname, '../src/data');
-const OUTPUT_DIR = path.join(DATA_DIR, 'generated');
+const DATA_DIR = path.join(__dirname, '../data');
+const PLAN_YEARS_DIR = path.join(DATA_DIR, 'plan_years');
+const OUTPUT_DIR = path.join(__dirname, '../src/generated');
 
 // Ensure output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
-// Find all year directories
-const yearDirs = fs.readdirSync(DATA_DIR)
-  .filter(item => {
-    const fullPath = path.join(DATA_DIR, item);
-    return fs.statSync(fullPath).isDirectory() && /^\d{4}$/.test(item);
+console.log('Building data from YAML files...');
+
+// Find all year files in plan_years directory
+const yearFiles = fs.readdirSync(PLAN_YEARS_DIR)
+  .filter(file => file.endsWith('.yml'))
+  .map(file => {
+    const year = parseInt(file.replace('.yml', ''));
+    return { year, file };
   })
-  .sort();
+  .filter(item => !isNaN(item.year))
+  .sort((a, b) => a.year - b.year);
 
-console.log('Found year directories:', yearDirs);
+console.log('Found year files:', yearFiles.map(item => item.file));
 
-// Convert each year's YAML to TypeScript
-const yearImports = [];
-const yearData = [];
+// Load all plan data by year
+const planDataByYear = {};
 
-for (const year of yearDirs) {
-  const yamlPath = path.join(DATA_DIR, year, 'plan-data.yml');
+for (const { year, file } of yearFiles) {
+  const yamlPath = path.join(PLAN_YEARS_DIR, file);
+  const yamlContent = fs.readFileSync(yamlPath, 'utf8');
+  const parsedData = yaml.load(yamlContent);
 
-  if (fs.existsSync(yamlPath)) {
-    const yamlContent = fs.readFileSync(yamlPath, 'utf8');
-    const parsedData = yaml.load(yamlContent);
-
-    // Generate TypeScript file for this year
-    const tsContent = `import { PlanData } from '../../types';
-
-export const planData${year}: PlanData = ${JSON.stringify(parsedData, null, 2)};
-`;
-
-    const outputFile = path.join(OUTPUT_DIR, `plan-data-${year}.ts`);
-    fs.writeFileSync(outputFile, tsContent);
-
-    yearImports.push(`import { planData${year} } from './generated/plan-data-${year}';`);
-    yearData.push(`  ${year}: planData${year},`);
-
-    console.log(`Generated ${outputFile}`);
-  } else {
-    console.warn(`Warning: ${yamlPath} not found`);
-  }
+  planDataByYear[year] = parsedData;
+  console.log(`Loaded ${file} for year ${year}`);
 }
 
-// Convert categories YAML to TypeScript
+// Load categories if it exists
+let categoriesData = {};
 const categoriesPath = path.join(DATA_DIR, 'categories.yml');
-let categoriesImport = '';
-let categoriesData = 'const parsedCategories: CategoriesData = {};';
-
 if (fs.existsSync(categoriesPath)) {
   const categoriesContent = fs.readFileSync(categoriesPath, 'utf8');
-  const parsedCategories = yaml.load(categoriesContent);
-
-  const categoriesTsContent = `import { CategoriesData } from '../../types';
-
-export const categoriesData: CategoriesData = ${JSON.stringify(parsedCategories, null, 2)};
-`;
-
-  const categoriesOutputFile = path.join(OUTPUT_DIR, 'categories.ts');
-  fs.writeFileSync(categoriesOutputFile, categoriesTsContent);
-
-  categoriesImport = "import { categoriesData } from './generated/categories';";
-  categoriesData = 'const parsedCategories: CategoriesData = categoriesData;';
-
-  console.log(`Generated ${categoriesOutputFile}`);
+  categoriesData = yaml.load(categoriesContent);
+  console.log('Loaded categories.yml');
 }
 
-// Generate the main index.ts file
-const indexContent = `import { PlanData, CategoriesData } from '../types';
+// Generate JSON files
+const planDataFile = path.join(OUTPUT_DIR, 'planDataByYear.json');
+const categoriesFile = path.join(OUTPUT_DIR, 'categoriesData.json');
+const helpersFile = path.join(OUTPUT_DIR, 'dataHelpers.ts');
 
-// Auto-generated imports from YAML files
-${yearImports.join('\n')}
-${categoriesImport}
+// Write JSON files
+fs.writeFileSync(planDataFile, JSON.stringify(planDataByYear, null, 2));
+console.log(`Generated ${planDataFile}`);
 
-// Data lookup at compile time
-const parsedPlanData: Record<number, PlanData> = {
-${yearData.join('\n')}
-};
+fs.writeFileSync(categoriesFile, JSON.stringify(categoriesData, null, 2));
+console.log(`Generated ${categoriesFile}`);
 
-${categoriesData}
+// Generate TypeScript helper functions
+const helpersContent = `// Auto-generated from YAML files - DO NOT EDIT MANUALLY
+// Run 'npm run build-data' to regenerate
+
+import { PlanData, CategoriesData } from '../types';
+import planDataByYear from './planDataByYear.json';
+import categoriesData from './categoriesData.json';
 
 /**
- * Get all available years (dynamically discovered from imported data)
+ * Get all available years (dynamically discovered from data)
  */
 export const getAvailableYears = (): number[] => {
-  return Object.keys(parsedPlanData).map(year => parseInt(year)).sort((a, b) => b - a);
+  return Object.keys(planDataByYear).map(year => parseInt(year)).sort((a, b) => b - a);
 };
 
 /**
- * Get plan data for a specific year (synchronous, compile-time loaded)
+ * Get plan data for a specific year
  */
 export const getPlanData = (year: number): PlanData => {
-  const data = parsedPlanData[year];
+  const data = (planDataByYear as Record<number, PlanData>)[year];
   if (!data) {
     throw new Error(\`Plan data not available for year \${year}. Available years: \${getAvailableYears().join(', ')}\`);
   }
@@ -107,10 +87,10 @@ export const getPlanData = (year: number): PlanData => {
 };
 
 /**
- * Get categories data (synchronous, compile-time loaded)
+ * Get categories data
  */
 export const getCategoriesData = (): CategoriesData => {
-  return parsedCategories;
+  return categoriesData as CategoriesData;
 };
 
 /**
@@ -120,10 +100,11 @@ export const getLatestYear = (): number => {
   const years = getAvailableYears();
   return years[0]; // Already sorted descending
 };
+
+// Re-export the data
+export { planDataByYear, categoriesData };
 `;
 
-const indexPath = path.join(DATA_DIR, 'index.ts');
-fs.writeFileSync(indexPath, indexContent);
-
-console.log(`Generated ${indexPath}`);
-console.log('Build complete! Available years:', yearDirs);
+fs.writeFileSync(helpersFile, helpersContent);
+console.log(`Generated ${helpersFile}`);
+console.log('Build complete! Available years:', yearFiles.map(item => item.year));

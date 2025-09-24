@@ -1,4 +1,4 @@
-import { getPlanData, getAvailableYears, getLatestYear } from '../data';
+import { getPlanData, getAvailableYears, getLatestYear } from '../generated/dataHelpers';
 import { PlanData, HealthPlan } from '../types';
 
 /**

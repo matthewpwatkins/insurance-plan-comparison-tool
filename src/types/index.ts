@@ -24,20 +24,15 @@ export interface PlanOutOfPocket {
   out_of_network: NetworkOutOfPocket;
 }
 
-export interface Coverage {
+export interface CostStructure {
   copay?: number;
   coinsurance?: number;
   max_coinsurance?: number;
 }
 
-export interface CategoryCoverage {
-  in_network_coverage?: Coverage;
-  out_of_network_coverage?: Coverage;
-}
-
-export interface DefaultCoverage {
-  in_network_coverage: Coverage;
-  out_of_network_coverage: Coverage;
+export interface NetworkBenefits {
+  in_network_coverage?: CostStructure;
+  out_of_network_coverage?: CostStructure;
 }
 
 export interface Category {
@@ -50,8 +45,8 @@ export interface HealthPlan {
   monthly_premiums: PlanPremiums;
   annual_deductible: PlanDeductible;
   out_of_pocket_maximum: PlanOutOfPocket;
-  default: DefaultCoverage;
-  categories: Record<string, CategoryCoverage>;
+  default: NetworkBenefits;
+  categories: Record<string, NetworkBenefits>;
   employer_hsa_contribution?: PlanPremiums;
 }
 
