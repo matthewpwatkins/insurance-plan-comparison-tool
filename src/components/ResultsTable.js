@@ -13,7 +13,7 @@ const ResultsTable = ({ results }) => {
   const PlanCard = ({ result, isLowestCost }) => (
     <Card className={`mb-3 ${isLowestCost ? 'border-success border-2' : ''}`}>
       <Card.Header className={`d-flex justify-content-between align-items-center ${isLowestCost ? 'bg-success-subtle' : ''}`}>
-        <div>
+        <div className="d-flex align-items-center">
           <strong className="fs-5">{result.planName}</strong>
           {isLowestCost && (
             <Badge bg="success" className="ms-2">
@@ -36,28 +36,24 @@ const ResultsTable = ({ results }) => {
             <div className="fw-semibold fs-6">{formatCurrency(result.outOfPocketCosts)}</div>
           </Col>
           <Col xs={6} md={4} lg={3}>
-            <small className="text-muted d-block">Your Contribution</small>
+            <small className="text-muted d-block">
+              Your {result.planType === 'HSA' ? 'HSA' : 'FSA'} Contribution
+            </small>
             <div className="fw-semibold text-success fs-6">
               {result.userContribution > 0 ? (
-                <>
-                  {formatCurrency(result.userContribution)}
-                  <small className="d-block text-muted fw-normal">
-                    ({result.planType === 'HSA' ? 'HSA' : 'FSA'})
-                  </small>
-                </>
+                formatCurrency(result.userContribution)
               ) : (
                 <span className="text-muted">$0</span>
               )}
             </div>
           </Col>
           <Col xs={6} md={4} lg={3}>
-            <small className="text-muted d-block">Employer Contribution</small>
+            <small className="text-muted d-block">
+              {result.employerContribution > 0 ? 'Employer HSA Contribution' : 'Employer Contribution'}
+            </small>
             <div className="fw-semibold text-success fs-6">
               {result.employerContribution > 0 ? (
-                <>
-                  {formatCurrency(result.employerContribution)}
-                  <small className="d-block text-muted fw-normal">HSA</small>
-                </>
+                formatCurrency(result.employerContribution)
               ) : (
                 <span className="text-muted">$0</span>
               )}
@@ -70,7 +66,7 @@ const ResultsTable = ({ results }) => {
             </div>
           </Col>
           <Col xs={6} md={4} lg={3}>
-            <small className="text-muted d-block">Total Annual Cost</small>
+            <small className="text-muted d-block">Your Total Cost</small>
             <div className={`fs-4 fw-bold ${isLowestCost ? 'text-success' : 'text-primary'}`}>
               {formatCurrency(result.totalCost)}
             </div>

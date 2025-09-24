@@ -47,7 +47,7 @@ export const calculatePlanCost = (plan, planData, userInputs) => {
     totalContributions: userContribution + employerContribution,
     taxSavings,
     outOfPocketCosts,
-    totalCost: Math.max(0, totalCost), // Ensure non-negative
+    totalCost: totalCost, // Can be negative if tax savings exceed costs
     breakdown: {
       premiums: annualPremiums,
       taxSavings: -taxSavings, // Negative because it reduces total cost
