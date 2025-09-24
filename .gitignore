@@ -40,3 +40,6 @@ pids
 
 # OS generated files
 Thumbs.db
+
+# Auto-generated data files from YAML
+/src/data/generated/

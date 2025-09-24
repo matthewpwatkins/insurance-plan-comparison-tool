@@ -1,18 +1,12 @@
-import yaml from 'js-yaml';
+import { getPlanData, getAvailableYears, getLatestYear } from '../data';
 import { PlanData, HealthPlan } from '../types';
 
 /**
- * Load and parse plan data for a given year
+ * Load and parse plan data for a given year (synchronous, compile-time loaded)
  */
-export const loadPlanData = async (year: number): Promise<PlanData> => {
+export const loadPlanData = (year: number): PlanData => {
   try {
-    const response = await fetch(`/${year}.yml`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch plan data for ${year}: ${response.statusText}`);
-    }
-
-    const yamlText = await response.text();
-    const planData = yaml.load(yamlText) as PlanData;
+    const planData = getPlanData(year);
 
     // Validate the structure
     if (!planData || !planData.plans || !Array.isArray(planData.plans)) {
@@ -24,6 +18,20 @@ export const loadPlanData = async (year: number): Promise<PlanData> => {
     console.error('Error loading plan data:', error);
     throw error;
   }
+};
+
+/**
+ * Get all available years
+ */
+export const getAvailableDataYears = (): number[] => {
+  return getAvailableYears();
+};
+
+/**
+ * Get the most recent year available
+ */
+export const getDefaultYear = (): number => {
+  return getLatestYear();
 };
 
 /**

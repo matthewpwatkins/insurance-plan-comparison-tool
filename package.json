@@ -4,8 +4,9 @@
   "description": "A React web app to compare health insurance plans and calculate costs",
   "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "npm run build-data && react-scripts start",
+    "build": "npm run build-data && react-scripts build",
+    "build-data": "node scripts/build-data.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

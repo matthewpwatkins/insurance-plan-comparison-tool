@@ -24,72 +24,24 @@ export interface PlanOutOfPocket {
   out_of_network: NetworkOutOfPocket;
 }
 
-export interface OfficeVisitCosts {
-  pcp: number | string;
-  specialist: number | string;
+export interface Coverage {
+  copay?: number;
+  coinsurance?: number;
+  max_coinsurance?: number;
 }
 
-export interface NetworkCosts {
-  in_network: OfficeVisitCosts;
-  out_of_network: OfficeVisitCosts;
+export interface CategoryCoverage {
+  in_network_coverage?: Coverage;
+  out_of_network_coverage?: Coverage;
 }
 
-export interface PharmacyTier {
-  retail_30: number | string;
-  retail_90: number | string;
-  mail_90: number | string;
+export interface DefaultCoverage {
+  in_network_coverage: Coverage;
+  out_of_network_coverage: Coverage;
 }
 
-export interface PharmacyCosts {
-  tier_1: PharmacyTier;
-  tier_2: PharmacyTier;
-  tier_3: PharmacyTier;
-  specialty: {
-    tier_1: number;
-    tier_2: number;
-  };
-}
-
-export interface ImagingCosts {
-  facility: string;
-  professional: string;
-}
-
-export interface NetworkImaging {
-  in_network: ImagingCosts;
-  out_of_network: ImagingCosts;
-}
-
-export interface TherapyCosts {
-  outpatient: number | string;
-  inpatient?: string;
-  inpatient_eval?: string;
-}
-
-export interface NetworkTherapy {
-  in_network: TherapyCosts;
-  out_of_network: TherapyCosts;
-}
-
-export interface TelemedicineCosts extends OfficeVisitCosts {
-  urgent_care?: number | string;
-}
-
-export interface NetworkTelemedicine {
-  in_network: TelemedicineCosts;
-  out_of_network: TelemedicineCosts;
-}
-
-export interface WellnessExamCosts {
-  adult?: number;
-  child?: number;
-  pcp?: number | string;
-  specialist?: number | string;
-}
-
-export interface NetworkWellness {
-  in_network: WellnessExamCosts;
-  out_of_network?: WellnessExamCosts;
+export interface Category {
+  name: string;
 }
 
 export interface HealthPlan {
@@ -97,29 +49,9 @@ export interface HealthPlan {
   type: 'PPO' | 'HSA';
   monthly_premiums: PlanPremiums;
   annual_deductible: PlanDeductible;
-  office_visit: NetworkCosts;
-  preventive?: NetworkWellness;
-  wellness_exam?: NetworkWellness;
-  telemedicine: NetworkTelemedicine;
-  eye_exams: NetworkCosts;
-  behavioral_mental_health_outpatient: NetworkCosts;
-  laboratory_outpatient: number | string;
-  emergency_room: string;
-  pharmacy: PharmacyCosts;
-  imaging_diagnostic: NetworkImaging;
-  hospital_inpatient: NetworkCosts;
-  maternity_inpatient: NetworkCosts;
-  behavioral_mental_health_inpatient: NetworkCosts;
-  imaging_advanced: NetworkImaging;
-  surgery: NetworkCosts;
-  maternity_physician: NetworkCosts;
-  aba_therapy: NetworkCosts;
-  physical_therapy: NetworkTherapy;
-  occupational_therapy: NetworkTherapy;
-  chiropractic_therapy: NetworkCosts;
-  speech_therapy: NetworkTherapy;
-  durable_medical_equipment: NetworkCosts;
   out_of_pocket_maximum: PlanOutOfPocket;
+  default: DefaultCoverage;
+  categories: Record<string, CategoryCoverage>;
   employer_hsa_contribution?: PlanPremiums;
 }
 
@@ -131,6 +63,10 @@ export interface HSAContributionLimits {
 
 export interface FSAContributionLimits {
   healthcare_fsa: number;
+}
+
+export interface CategoriesData {
+  [categoryId: string]: Category;
 }
 
 export interface PlanData {

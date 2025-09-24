@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
-import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
+import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution, getAvailableDataYears } from '../services/planDataService';
 import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
 import { UserInputs, PlanData } from '../types';
@@ -104,8 +104,9 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
                   value={inputs.year}
                   onChange={(e) => handleChange('year', parseInt(e.target.value))}
                 >
-                  <option value={2025}>2025</option>
-                  <option value={2026}>2026</option>
+                  {getAvailableDataYears().map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
                 </Form.Select>
               </Form.Group>
             </Col>

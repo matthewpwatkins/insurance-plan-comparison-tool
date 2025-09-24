@@ -5,7 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
 import ShareButton from './components/ShareButton';
-import { loadPlanData } from './services/planDataService';
+import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL } from './utils/urlParams';
 import { PlanData, UserInputs, PartialUserInputs, PlanResult } from './types';
@@ -13,7 +13,7 @@ import { PlanData, UserInputs, PartialUserInputs, PlanResult } from './types';
 function App() {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [userInputs, setUserInputs] = useState<UserInputs>({
-    year: 2026,
+    year: getDefaultYear(),
     coverage: 'family',
     ageGroup: 'under_55',
     taxRate: 24,
@@ -64,16 +64,13 @@ function App() {
 
   // Load plan data on component mount and when year changes
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setError(null);
-        const data = await loadPlanData(userInputs.year);
-        setPlanData(data);
-      } catch (err) {
-        setError(`Failed to load plan data: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      }
-    };
-    loadData();
+    try {
+      setError(null);
+      const data = loadPlanData(userInputs.year);
+      setPlanData(data);
+    } catch (err) {
+      setError(`Failed to load plan data: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   }, [userInputs.year]);
 
   // Recalculate results when inputs or plan data change
