@@ -5,6 +5,9 @@ hsa_contribution_limits:
   family_coverage: 8750
   catch_up_age_55_plus: 1000
 
+fsa_contribution_limits:
+  healthcare_fsa: 3400
+
 plans:
   - name: "DMBA PPO 90 Plan"
     type: "PPO"
