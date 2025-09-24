@@ -1,12 +1,10 @@
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
+import { PlanData, HealthPlan, UserInputs, PlanResult, UserCosts } from '../types';
 
 /**
  * Calculate costs for all plans given user inputs and plan data
- * @param {Object} planData - Loaded plan data for the year
- * @param {Object} userInputs - User's inputs (age, coverage, costs, etc.)
- * @returns {Array} Array of plan results sorted by total cost
  */
-export const calculateAllPlans = (planData, userInputs) => {
+export const calculateAllPlans = (planData: PlanData, userInputs: UserInputs): PlanResult[] => {
   const results = planData.plans.map(plan => calculatePlanCost(plan, planData, userInputs));
 
   // Sort by total cost (lowest first)
@@ -15,12 +13,8 @@ export const calculateAllPlans = (planData, userInputs) => {
 
 /**
  * Calculate cost breakdown for a single plan
- * @param {Object} plan - Individual plan object
- * @param {Object} planData - Full plan data (for limits, etc.)
- * @param {Object} userInputs - User's inputs
- * @returns {Object} Cost breakdown for this plan
  */
-export const calculatePlanCost = (plan, planData, userInputs) => {
+export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInputs: UserInputs): PlanResult => {
   const { coverage, ageGroup, taxRate, costs } = userInputs;
   const taxRateDecimal = taxRate / 100; // Convert percentage to decimal
 
@@ -57,10 +51,21 @@ export const calculatePlanCost = (plan, planData, userInputs) => {
   };
 };
 
+interface ContributionResult {
+  userContribution: number;
+  employerContribution: number;
+  taxSavings: number;
+}
+
 /**
  * Calculate user and employer contributions and resulting tax savings
  */
-const calculateContributionsAndTaxSavings = (plan, planData, userInputs, taxRateDecimal) => {
+const calculateContributionsAndTaxSavings = (
+  plan: HealthPlan,
+  planData: PlanData,
+  userInputs: UserInputs,
+  taxRateDecimal: number
+): ContributionResult => {
   const { coverage, ageGroup } = userInputs;
 
   let userContribution = 0;
@@ -94,13 +99,13 @@ const calculateContributionsAndTaxSavings = (plan, planData, userInputs, taxRate
  * Calculate out-of-pocket healthcare costs based on plan rules
  * This is the simple version - will be extended for detailed cost breakdown later
  */
-const calculateOutOfPocketCosts = (plan, costs, coverage) => {
-  if (costs.costInputMode === 'detailed') {
-    // TODO: Implement detailed cost calculation
-    return calculateDetailedOutOfPocketCosts(plan, costs, coverage);
-  }
-
-  // Simple calculation - assume all costs are in-network for now
+const calculateOutOfPocketCosts = (
+  plan: HealthPlan,
+  costs: UserCosts,
+  coverage: 'single' | 'two_party' | 'family'
+): number => {
+  // For now, always use simple calculation
+  // TODO: Add costInputMode parameter when implementing detailed calculation
   return calculateSimpleOutOfPocketCosts(plan, costs.totalAnnualCosts, coverage);
 };
 
@@ -108,7 +113,11 @@ const calculateOutOfPocketCosts = (plan, costs, coverage) => {
  * Simple out-of-pocket calculation
  * Assumes all costs are subject to deductible, then coinsurance, capped at OOP max
  */
-const calculateSimpleOutOfPocketCosts = (plan, totalCosts, coverage) => {
+const calculateSimpleOutOfPocketCosts = (
+  plan: HealthPlan,
+  totalCosts: number,
+  coverage: 'single' | 'two_party' | 'family'
+): number => {
   // Get plan parameters (assuming in-network for simple calculation)
   const deductible = getDeductibleForCoverage(plan, coverage, 'in_network');
   const oopMax = getOOPMaxForCoverage(plan, coverage, 'in_network');
@@ -138,7 +147,11 @@ const calculateSimpleOutOfPocketCosts = (plan, totalCosts, coverage) => {
  * Placeholder for detailed out-of-pocket calculation
  * Will be implemented when adding detailed cost breakdown
  */
-const calculateDetailedOutOfPocketCosts = (plan, costs, coverage) => {
+const calculateDetailedOutOfPocketCosts = (
+  plan: HealthPlan,
+  costs: UserCosts,
+  coverage: 'single' | 'two_party' | 'family'
+): number => {
   // TODO: Implement detailed calculation by service type
   // This will handle specific copays, coinsurance rates, etc.
   return 0;
@@ -147,7 +160,11 @@ const calculateDetailedOutOfPocketCosts = (plan, costs, coverage) => {
 /**
  * Helper function to get deductible for coverage type
  */
-const getDeductibleForCoverage = (plan, coverage, network) => {
+const getDeductibleForCoverage = (
+  plan: HealthPlan,
+  coverage: 'single' | 'two_party' | 'family',
+  network: 'in_network' | 'out_of_network'
+): number => {
   const deductible = plan.annual_deductible[network];
   if (coverage === 'single') {
     return deductible.single;
@@ -160,7 +177,11 @@ const getDeductibleForCoverage = (plan, coverage, network) => {
 /**
  * Helper function to get out-of-pocket maximum for coverage type
  */
-const getOOPMaxForCoverage = (plan, coverage, network) => {
+const getOOPMaxForCoverage = (
+  plan: HealthPlan,
+  coverage: 'single' | 'two_party' | 'family',
+  network: 'in_network' | 'out_of_network'
+): number => {
   const oopMax = plan.out_of_pocket_maximum[network];
   if (coverage === 'single') {
     return oopMax.individual;

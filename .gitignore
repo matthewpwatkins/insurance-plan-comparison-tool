@@ -28,6 +28,10 @@ pids
 *.seed
 *.pid.lock
 
+# TypeScript
+*.tsbuildinfo
+*.d.ts.map
+
 # IDE
 .vscode/
 .idea/

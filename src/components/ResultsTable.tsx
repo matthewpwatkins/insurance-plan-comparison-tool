@@ -1,8 +1,13 @@
 import React from 'react';
 import { Badge, Card, Row, Col } from 'react-bootstrap';
 import { formatCurrency } from '../utils/formatters';
+import { PlanResult } from '../types';
 
-const ResultsTable = ({ results }) => {
+interface ResultsTableProps {
+  results: PlanResult[];
+}
+
+const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
   if (!results || results.length === 0) {
     return null;
   }
@@ -10,7 +15,7 @@ const ResultsTable = ({ results }) => {
   const lowestCostAmount = results[0]?.totalCost;
 
   // Card View Component for All Screen Sizes
-  const PlanCard = ({ result, isLowestCost }) => (
+  const PlanCard: React.FC<{ result: PlanResult; isLowestCost: boolean }> = ({ result, isLowestCost }) => (
     <Card className={`mb-3 ${isLowestCost ? 'border-success border-2' : ''}`}>
       <Card.Header className={`d-flex justify-content-between align-items-center ${isLowestCost ? 'bg-success-subtle' : ''}`}>
         <div className="d-flex align-items-center">

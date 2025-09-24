@@ -1,10 +1,7 @@
 /**
  * Format a number as currency with commas
- * @param {number} amount - The amount to format
- * @param {boolean} showCents - Whether to show cents (default: false)
- * @returns {string} Formatted currency string
  */
-export const formatCurrency = (amount, showCents = false) => {
+export const formatCurrency = (amount: number | null | undefined, showCents: boolean = false): string => {
   if (amount === null || amount === undefined || isNaN(amount)) {
     return '$0';
   }
@@ -19,10 +16,8 @@ export const formatCurrency = (amount, showCents = false) => {
 
 /**
  * Format a number with commas (no currency symbol)
- * @param {number} num - The number to format
- * @returns {string} Formatted number string
  */
-export const formatNumber = (num) => {
+export const formatNumber = (num: number | null | undefined): string => {
   if (num === null || num === undefined || isNaN(num)) {
     return '0';
   }
@@ -33,10 +28,8 @@ export const formatNumber = (num) => {
 /**
  * Parse a formatted number string back to a number
  * Removes commas and currency symbols
- * @param {string} str - The formatted string
- * @returns {number} Parsed number
  */
-export const parseFormattedNumber = (str) => {
+export const parseFormattedNumber = (str: string | number): number => {
   if (!str) return 0;
 
   // Remove commas, dollar signs, and other non-digit characters except decimal points

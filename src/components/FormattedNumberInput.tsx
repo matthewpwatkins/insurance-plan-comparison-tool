@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Form } from 'react-bootstrap';
 import { formatNumber, parseFormattedNumber } from '../utils/formatters';
 
-const FormattedNumberInput = ({
+interface FormattedNumberInputProps {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  required?: boolean;
+  placeholder?: string;
+  [key: string]: any; // For additional props
+}
+
+const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   value,
   onChange,
   min = 0,
@@ -23,14 +34,14 @@ const FormattedNumberInput = ({
     }
   }, [value]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
 
     // Allow user to type freely, but parse on blur
     setDisplayValue(inputValue);
   };
 
-  const handleBlur = (e) => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     const numericValue = parseFormattedNumber(inputValue);
 
@@ -50,7 +61,7 @@ const FormattedNumberInput = ({
     setDisplayValue(formatNumber(constrainedValue));
   };
 
-  const handleFocus = (e) => {
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     // Remove formatting on focus for easier editing
     const numericValue = parseFormattedNumber(displayValue);
     setDisplayValue(numericValue.toString());

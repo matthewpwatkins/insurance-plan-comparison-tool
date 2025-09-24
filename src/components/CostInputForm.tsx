@@ -3,13 +3,20 @@ import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
 import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
+import { UserInputs, PlanData } from '../types';
 
-const CostInputForm = ({ inputs, onChange, planData }) => {
-  const handleChange = (field, value) => {
+interface CostInputFormProps {
+  inputs: UserInputs;
+  onChange: (updates: Partial<UserInputs>) => void;
+  planData: PlanData | null;
+}
+
+const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planData }) => {
+  const handleChange = (field: keyof UserInputs, value: any) => {
     onChange({ [field]: value });
   };
 
-  const handleCostChange = (field, value) => {
+  const handleCostChange = (field: keyof UserInputs['costs'], value: any) => {
     onChange({
       costs: {
         ...inputs.costs,
@@ -64,7 +71,7 @@ const CostInputForm = ({ inputs, onChange, planData }) => {
   // Update default contribution values when dependencies change
   useEffect(() => {
     if (planData) {
-      const newValues = {};
+      const newValues: Partial<UserInputs> = {};
 
       // Set default HSA contribution if it's currently 0 or null
       if (inputs.hsaContribution === 0 || inputs.hsaContribution === null) {
