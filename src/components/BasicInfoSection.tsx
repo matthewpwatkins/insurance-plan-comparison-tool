@@ -176,19 +176,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                     content={
                       <div>
                         <p>Enter your combined federal and state marginal tax rate as a percentage.</p>
-                        <p>This is the rate at which your last dollar of income is taxed, and it's used to calculate:</p>
-                        <ul>
-                          <li>Tax savings from HSA/FSA contributions</li>
-                          <li>After-tax cost of premiums</li>
-                          <li>Net value of employer HSA contributions</li>
-                        </ul>
-                        <p><strong>Common rates:</strong></p>
-                        <ul>
-                          <li>22% federal + 5% state = 27% total</li>
-                          <li>24% federal + 6% state = 30% total</li>
-                          <li>32% federal + 7% state = 39% total</li>
-                        </ul>
-                        <p>Check your last tax return or use an online tax calculator to find your marginal rate.</p>
+                        <p>This rate is used to calculate tax savings from HSA/FSA contributions and after-tax premium costs.</p>
+                        <div className="mt-3 p-3 bg-info-subtle rounded">
+                          <p className="mb-0">
+                            📋 <strong>Need help determining your tax rate?</strong><br />
+                            Click the <strong>FAQ</strong> button at the top of the page for detailed guidance on finding your marginal tax rate, including common examples and calculation methods.
+                          </p>
+                        </div>
                       </div>
                     }
                   />
