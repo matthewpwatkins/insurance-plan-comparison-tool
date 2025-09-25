@@ -58,7 +58,16 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
           <p>But even better, you can invest your HSA in index funds, where it can grow 8-10% on average. This is incredibly powerful. If you're in your early 20s, you can expect each $1,000 you invest in your HSA today to grow to $88,000 by the time you retire. That's not a typo-- that's the power of compound interest-- the eighth wonder of the world!</p>
           <p><strong>Third superpower:</strong> Triple tax advantage! Like FSAs, HSAs are tax-deductible on the front-end. But they also grow tax-free, and are tax-free on withdrawal for medical expenses. HSA is the best parts of an FSA plus the best parts of a Roth IRA combined!</p>
           <p>Those are some amazing superpowers. But those are long-term financial benefits that play out over the rest of our life. In order to provide an apples-to-apples comparison to PPO plans (which have zero long-term financial benefits), I had to ignore all of HSA's superpowers for this tool. Just know that they're there, and they're amazing. If you want to learn about the hundreds of thousands of dollars you save from just a single year's contributions to an HSA check out this great explainer video:</p>
-          <p><a href="https://www.youtube.com/watch?v=xn6FtTZYeWE" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=xn6FtTZYeWE</a></p>
+          <div className="mt-3" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+            <iframe
+              src="https://www.youtube.com/embed/xn6FtTZYeWE"
+              title="HSA Explainer Video"
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         </div>
       )
     }

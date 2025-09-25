@@ -1,21 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { Navbar, Nav, Container, Toast, ToastContainer } from 'react-bootstrap';
+import { Navbar, Nav } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import FAQButton, { FAQButtonRef } from './FAQButton';
-import { copyURLToClipboard } from '../utils/urlParams';
-import { UserInputs } from '../types';
 
 interface NavigationHeaderProps {
-  userInputs: UserInputs;
   onFAQRef?: (ref: FAQButtonRef | null) => void;
 }
 
-const NavigationHeader: React.FC<NavigationHeaderProps> = ({ userInputs, onFAQRef }) => {
+const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
   const [expanded, setExpanded] = useState(false);
   const faqRef = useRef<FAQButtonRef>(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
 
   // Expose the ref to parent component
   React.useEffect(() => {
@@ -23,16 +18,6 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ userInputs, onFAQRe
       onFAQRef(faqRef.current);
     }
   }, [onFAQRef]);
-
-  const handleShare = async () => {
-    const success = await copyURLToClipboard(userInputs);
-    if (success) {
-      setToastMessage('URL copied to clipboard! Share this link with others.');
-    } else {
-      setToastMessage('Failed to copy URL. Please try again.');
-    }
-    setShowToast(true);
-  };
 
   return (
     <div className="d-flex justify-content-between align-items-center mb-3">
@@ -49,16 +34,6 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ userInputs, onFAQRe
           }}
         >
           FAQ
-        </a>
-        <a
-          href="#"
-          className="nav-link text-primary text-decoration-none"
-          onClick={(e) => {
-            e.preventDefault();
-            handleShare();
-          }}
-        >
-          Share
         </a>
       </div>
 
@@ -90,40 +65,12 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ userInputs, onFAQRe
                 FAQ
               </Nav.Link>
             </Nav.Item>
-            <Nav.Item>
-              <Nav.Link
-                href="#"
-                className="text-primary"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleShare();
-                  setExpanded(false);
-                }}
-              >
-                Share
-              </Nav.Link>
-            </Nav.Item>
           </Nav>
         </Navbar.Collapse>
       </Navbar>
 
       {/* FAQ Component - only modal, no button */}
       <FAQButton ref={faqRef} showButton={false} />
-
-      {/* Toast for Share Feedback */}
-      <ToastContainer position="top-end" className="position-fixed" style={{ top: '20px', right: '20px', zIndex: 9999 }}>
-        <Toast
-          show={showToast}
-          onClose={() => setShowToast(false)}
-          delay={3000}
-          autohide
-          bg="success"
-        >
-          <Toast.Body className="text-white">
-            {toastMessage}
-          </Toast.Body>
-        </Toast>
-      </ToastContainer>
     </div>
   );
 };

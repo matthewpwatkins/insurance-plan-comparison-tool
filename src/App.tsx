@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
+import { Container, Row, Col, Alert, Button, Toast, ToastContainer } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faArrowDown, faShare } from '@fortawesome/free-solid-svg-icons';
 
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
 import NavigationHeader from './components/NavigationHeader';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
-import { readURLParamsOnLoad, updateURL } from './utils/urlParams';
+import { readURLParamsOnLoad, updateURL, copyURLToClipboard } from './utils/urlParams';
 import { PlanData, UserInputs, PlanResult } from './types';
 
 function App() {
@@ -39,6 +39,8 @@ function App() {
     const dismissed = localStorage.getItem('helpTextDismissed');
     return dismissed === 'true';
   });
+  const [showShareToast, setShowShareToast] = useState(false);
+  const [shareToastMessage, setShareToastMessage] = useState('');
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -100,6 +102,16 @@ function App() {
     localStorage.setItem('helpTextDismissed', 'true');
   };
 
+  const handleShare = async () => {
+    const success = await copyURLToClipboard(userInputs);
+    if (success) {
+      setShareToastMessage('URL copied to clipboard! Share this link with others.');
+    } else {
+      setShareToastMessage('Failed to copy URL. Please try again.');
+    }
+    setShowShareToast(true);
+  };
+
   const handleComparePlans = () => {
     if (planData && userInputs) {
       try {
@@ -119,7 +131,7 @@ function App() {
       <Container className="mt-4 flex-grow-1">
       <Row>
         <Col>
-          <NavigationHeader userInputs={userInputs} />
+          <NavigationHeader />
 
           {!isHelpTextDismissed && (
             <div className="mb-4 p-3 bg-light rounded position-relative">
@@ -174,7 +186,18 @@ function App() {
 
           {results.length > 0 && (
             <div className="mt-4" style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}>
-              <h2>Plan Comparison Results</h2>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="mb-0">Plan Comparison Results</h2>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={handleShare}
+                  className="d-flex align-items-center gap-2"
+                >
+                  <FontAwesomeIcon icon={faShare} />
+                  Share Results
+                </Button>
+              </div>
               {results.length > 1 && (
                 <Alert variant="success" className="mb-3">
                   <strong>💰 Great news!</strong> You may save at least <strong>${(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing the {results[0].planName} plan over the {results[1].planName}.
@@ -203,6 +226,21 @@ function App() {
           </p>
         </Container>
       </footer>
+
+      {/* Toast for Share Feedback */}
+      <ToastContainer position="top-end" className="position-fixed" style={{ top: '20px', right: '20px', zIndex: 9999 }}>
+        <Toast
+          show={showShareToast}
+          onClose={() => setShowShareToast(false)}
+          delay={3000}
+          autohide
+          bg="success"
+        >
+          <Toast.Body className="text-white">
+            {shareToastMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
     </div>
   );
 }
