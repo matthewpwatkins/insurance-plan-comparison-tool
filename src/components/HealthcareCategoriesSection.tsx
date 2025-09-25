@@ -59,35 +59,6 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
 
   return (
     <>
-          {/* Add Category Section */}
-          <Row className="mb-3">
-            <Col md={8}>
-              <Form.Group>
-                <Form.Select
-                  value={selectedCategoryToAdd}
-                  onChange={(e) => setSelectedCategoryToAdd(e.target.value)}
-                >
-                  <option value="">Select a category to add...</option>
-                  {availableCategories.map(categoryId => (
-                    <option key={categoryId} value={categoryId}>
-                      {categoriesData[categoryId].name}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={4} className="d-flex align-items-end">
-              <Button
-                variant="primary"
-                onClick={addCategory}
-                disabled={!selectedCategoryToAdd}
-                className="w-100"
-              >
-                Add Category
-              </Button>
-            </Col>
-          </Row>
-
           {/* Category Estimates */}
           {inputs.costs.categoryEstimates.map((estimate) => (
             <Card key={estimate.categoryId} className="mb-3">
@@ -137,6 +108,35 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
               </Card.Body>
             </Card>
           ))}
+
+          {/* Add Category Section */}
+          <Row className="mb-3">
+            <Col md={8}>
+              <Form.Group>
+                <Form.Select
+                  value={selectedCategoryToAdd}
+                  onChange={(e) => setSelectedCategoryToAdd(e.target.value)}
+                >
+                  <option value="">Select a category to add...</option>
+                  {availableCategories.map(categoryId => (
+                    <option key={categoryId} value={categoryId}>
+                      {categoriesData[categoryId].name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4} className="d-flex align-items-end">
+              <Button
+                variant="primary"
+                onClick={addCategory}
+                disabled={!selectedCategoryToAdd}
+                className="w-100"
+              >
+                Add Category
+              </Button>
+            </Col>
+          </Row>
     </>
   );
 };

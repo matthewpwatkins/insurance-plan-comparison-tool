@@ -26,12 +26,12 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
         </Card.Header>
         <Card.Body>
           <Form>
-            <HealthcareCategoriesSection
+            <OtherCostsSection
               inputs={inputs}
               onChange={onChange}
             />
 
-            <OtherCostsSection
+            <HealthcareCategoriesSection
               inputs={inputs}
               onChange={onChange}
             />
