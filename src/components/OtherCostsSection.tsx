@@ -26,8 +26,32 @@ const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange 
     <Card className="mb-3">
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h6 className="mb-0">
-            "Other" Covered Costs
+          <h6 className="mb-0 d-flex align-items-center">
+            <span>"Other" Covered Costs</span>
+            <span className="ms-2">
+              <HelpIcon
+                title="Other Covered Healthcare Costs"
+                content={
+                  <div>
+                    <p>This section is for <strong>additional healthcare costs</strong> that don't fit into specific categories you've added above.</p>
+                    <p><strong>What to include here:</strong></p>
+                    <ul>
+                      <li>General medical services not covered by your specific categories</li>
+                      <li>Unexpected or miscellaneous healthcare needs</li>
+                      <li>Additional visits beyond what you've estimated in categories</li>
+                      <li>Services that fall under general medical coverage</li>
+                    </ul>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                      <li>Uses your plan's default coinsurance rates after deductible</li>
+                      <li>Separate from the specific categories you've defined</li>
+                      <li>Helps account for unpredictable healthcare costs</li>
+                    </ul>
+                    <p>If you've already captured all your expected healthcare costs in the categories above, you can leave this at $0.</p>
+                  </div>
+                }
+              />
+            </span>
           </h6>
           <small className="text-muted">Uses plan default coverage rates</small>
         </div>

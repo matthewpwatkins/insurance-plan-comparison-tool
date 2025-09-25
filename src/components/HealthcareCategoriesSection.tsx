@@ -53,10 +53,10 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   // Get categories already added
   const addedCategoryIds = inputs.costs.categoryEstimates.map(est => est.categoryId);
 
-  // Get available categories to add (not already added)
-  const availableCategories = Object.keys(categoriesData).filter(
-    categoryId => !addedCategoryIds.includes(categoryId)
-  );
+  // Get available categories to add (not already added), sorted alphabetically
+  const availableCategories = Object.keys(categoriesData)
+    .filter(categoryId => !addedCategoryIds.includes(categoryId))
+    .sort((a, b) => categoriesData[a].name.localeCompare(categoriesData[b].name));
 
   return (
     <>

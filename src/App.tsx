@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
@@ -166,7 +168,7 @@ function App() {
               disabled={!planData}
               className="w-100 mb-3"
             >
-              📊 Compare Plans
+              Compare Plans <FontAwesomeIcon icon={faArrowRight} />
             </Button>
             {resultsOutOfDate && hasCalculatedOnce && (
               <div className="text-center">
