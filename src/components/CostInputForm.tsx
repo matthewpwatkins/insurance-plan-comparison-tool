@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
-import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { Card, Form, Row, Col, InputGroup, Button, Badge } from 'react-bootstrap';
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution, getAvailableDataYears } from '../services/planDataService';
+import { getCategoriesData } from '../generated/dataHelpers';
 import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
-import { UserInputs, PlanData } from '../types';
+import { UserInputs, PlanData, CategoryEstimate } from '../types';
 
 interface CostInputFormProps {
   inputs: UserInputs;
@@ -24,6 +25,48 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
       }
     });
   };
+
+  const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState<string>('');
+  const categoriesData = getCategoriesData();
+
+  const addCategory = () => {
+    if (!selectedCategoryToAdd) return;
+
+    const newEstimate: CategoryEstimate = {
+      categoryId: selectedCategoryToAdd,
+      inNetworkCost: 0,
+      outOfNetworkCost: 0
+    };
+
+    handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
+    setSelectedCategoryToAdd('');
+  };
+
+  const removeCategory = (categoryId: string) => {
+    const updatedEstimates = inputs.costs.categoryEstimates.filter(est => est.categoryId !== categoryId);
+    handleCostChange('categoryEstimates', updatedEstimates);
+  };
+
+  const updateCategoryEstimate = (categoryId: string, field: 'inNetworkCost' | 'outOfNetworkCost', value: number) => {
+    const updatedEstimates = inputs.costs.categoryEstimates.map(est =>
+      est.categoryId === categoryId
+        ? { ...est, [field]: value }
+        : est
+    );
+    handleCostChange('categoryEstimates', updatedEstimates);
+  };
+
+  const updateOtherCosts = (field: 'inNetworkCost' | 'outOfNetworkCost', value: number) => {
+    handleCostChange('otherCosts', {
+      ...inputs.costs.otherCosts,
+      [field]: value
+    });
+  };
+
+  // Get available categories (not already added)
+  const availableCategories = Object.keys(categoriesData).filter(
+    categoryId => !inputs.costs.categoryEstimates.some(est => est.categoryId === categoryId)
+  );
 
   // Calculate max contributions for display and defaults
   const maxHSAContribution = planData
@@ -90,12 +133,13 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
   }, [planData, inputs.coverage, inputs.ageGroup, maxUserHSAContribution, maxFSAContribution, inputs.hsaContribution, inputs.fsaContribution, onChange]);
 
   return (
-    <Card className="mb-4">
-      <Card.Header>
-        <h3>Your Information</h3>
-      </Card.Header>
-      <Card.Body>
-        <Form>
+    <>
+      <Card className="mb-4">
+        <Card.Header>
+          <h3>Basic Information</h3>
+        </Card.Header>
+        <Card.Body>
+          <Form>
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
@@ -128,7 +172,7 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Age Group</Form.Label>
+                <Form.Label>Your Age</Form.Label>
                 <Form.Select
                   value={inputs.ageGroup}
                   onChange={(e) => handleChange('ageGroup', e.target.value)}
@@ -157,45 +201,6 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
                 </InputGroup>
                 <Form.Text className="text-muted">
                   Your combined federal and state marginal tax rate
-                </Form.Text>
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <hr />
-
-          <h5>Healthcare Cost Estimates</h5>
-          <Row className="mb-3">
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label>Total Annual Healthcare Costs</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text>$</InputGroup.Text>
-                  <FormattedNumberInput
-                    value={inputs.costs.totalAnnualCosts}
-                    onChange={(value) => handleCostChange('totalAnnualCosts', value)}
-                    min={0}
-                    step={100}
-                  />
-                </InputGroup>
-                <Form.Text className="text-muted">
-                  Estimate your total healthcare spending for the year
-                </Form.Text>
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label>Network Usage</Form.Label>
-                <Form.Select
-                  value={inputs.costs.networkMix}
-                  onChange={(e) => handleCostChange('networkMix', e.target.value)}
-                >
-                  <option value="in_network">All In-Network</option>
-                  <option value="mixed">Mixed In/Out Network</option>
-                  <option value="out_network">Mostly Out-of-Network</option>
-                </Form.Select>
-                <Form.Text className="text-muted">
-                  For now, calculations assume in-network usage
                 </Form.Text>
               </Form.Group>
             </Col>
@@ -253,6 +258,141 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
         </Form>
       </Card.Body>
     </Card>
+
+    <Card className="mb-4">
+      <Card.Header>
+        <h3>Healthcare Cost Estimates</h3>
+      </Card.Header>
+      <Card.Body>
+        <Form>
+
+          {/* Add Category Section */}
+          <Row className="mb-3">
+            <Col md={8}>
+              <Form.Group>
+                <Form.Label>Add Healthcare Category</Form.Label>
+                <Form.Select
+                  value={selectedCategoryToAdd}
+                  onChange={(e) => setSelectedCategoryToAdd(e.target.value)}
+                >
+                  <option value="">Select a category to add...</option>
+                  {availableCategories.map(categoryId => (
+                    <option key={categoryId} value={categoryId}>
+                      {categoriesData[categoryId].name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4} className="d-flex align-items-end">
+              <Button
+                variant="primary"
+                onClick={addCategory}
+                disabled={!selectedCategoryToAdd}
+                className="w-100"
+              >
+                Add Category
+              </Button>
+            </Col>
+          </Row>
+
+          {/* Category Estimates */}
+          {inputs.costs.categoryEstimates.map((estimate) => (
+            <Card key={estimate.categoryId} className="mb-3">
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h6 className="mb-0">
+                    <Badge bg="secondary" className="me-2">Category</Badge>
+                    {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
+                  </h6>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => removeCategory(estimate.categoryId)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>In-Network Annual Cost</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text>$</InputGroup.Text>
+                        <FormattedNumberInput
+                          value={estimate.inNetworkCost}
+                          onChange={(value) => updateCategoryEstimate(estimate.categoryId, 'inNetworkCost', value)}
+                          min={0}
+                          step={50}
+                        />
+                      </InputGroup>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Out-of-Network Annual Cost</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text>$</InputGroup.Text>
+                        <FormattedNumberInput
+                          value={estimate.outOfNetworkCost}
+                          onChange={(value) => updateCategoryEstimate(estimate.categoryId, 'outOfNetworkCost', value)}
+                          min={0}
+                          step={50}
+                        />
+                      </InputGroup>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          ))}
+
+          {/* Other Costs Category */}
+          <Card className="mb-3">
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0">
+                  <Badge bg="info" className="me-2">Other</Badge>
+                  Other Healthcare Costs
+                </h6>
+                <small className="text-muted">Uses plan default coverage rates</small>
+              </div>
+              <Row>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>In-Network Annual Cost</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text>$</InputGroup.Text>
+                      <FormattedNumberInput
+                        value={inputs.costs.otherCosts?.inNetworkCost || 0}
+                        onChange={(value) => updateOtherCosts('inNetworkCost', value)}
+                        min={0}
+                        step={50}
+                      />
+                    </InputGroup>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Out-of-Network Annual Cost</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text>$</InputGroup.Text>
+                      <FormattedNumberInput
+                        value={inputs.costs.otherCosts?.outOfNetworkCost || 0}
+                        onChange={(value) => updateOtherCosts('outOfNetworkCost', value)}
+                        min={0}
+                        step={50}
+                      />
+                    </InputGroup>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Form>
+      </Card.Body>
+    </Card>
+    </>
   );
 };
 

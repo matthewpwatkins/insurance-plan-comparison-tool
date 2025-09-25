@@ -97,16 +97,41 @@ const calculateContributionsAndTaxSavings = (
 
 /**
  * Calculate out-of-pocket healthcare costs based on plan rules
- * This is the simple version - will be extended for detailed cost breakdown later
+ * Uses category-specific costs and default rates for "other" costs
  */
 const calculateOutOfPocketCosts = (
   plan: HealthPlan,
   costs: UserCosts,
   coverage: 'single' | 'two_party' | 'family'
 ): number => {
-  // For now, always use simple calculation
-  // TODO: Add costInputMode parameter when implementing detailed calculation
-  return calculateSimpleOutOfPocketCosts(plan, costs.totalAnnualCosts, coverage);
+  let totalOutOfPocket = 0;
+
+  // Process each category estimate
+  for (const estimate of costs.categoryEstimates) {
+    const categoryOutOfPocket = calculateCategoryOutOfPocketCosts(
+      plan,
+      estimate.categoryId,
+      estimate.inNetworkCost,
+      estimate.outOfNetworkCost,
+      coverage
+    );
+    totalOutOfPocket += categoryOutOfPocket;
+  }
+
+  // Process "other" costs using default plan coverage
+  if (costs.otherCosts && (costs.otherCosts.inNetworkCost > 0 || costs.otherCosts.outOfNetworkCost > 0)) {
+    const otherOutOfPocket = calculateOtherOutOfPocketCosts(
+      plan,
+      costs.otherCosts.inNetworkCost,
+      costs.otherCosts.outOfNetworkCost,
+      coverage
+    );
+    totalOutOfPocket += otherOutOfPocket;
+  }
+
+  // Cap at plan's out-of-pocket maximum (simplified - in reality this is more complex)
+  const oopMaxInNetwork = getOOPMaxForCoverage(plan, coverage, 'in_network');
+  return Math.min(totalOutOfPocket, oopMaxInNetwork);
 };
 
 /**
@@ -144,17 +169,120 @@ const calculateSimpleOutOfPocketCosts = (
 };
 
 /**
- * Placeholder for detailed out-of-pocket calculation
- * Will be implemented when adding detailed cost breakdown
+ * Calculate out-of-pocket costs for a specific category
  */
-const calculateDetailedOutOfPocketCosts = (
+const calculateCategoryOutOfPocketCosts = (
   plan: HealthPlan,
-  costs: UserCosts,
+  categoryId: string,
+  inNetworkCost: number,
+  outOfNetworkCost: number,
   coverage: 'single' | 'two_party' | 'family'
 ): number => {
-  // TODO: Implement detailed calculation by service type
-  // This will handle specific copays, coinsurance rates, etc.
-  return 0;
+  let outOfPocket = 0;
+
+  // Get category-specific coverage or fall back to default
+  const categoryBenefits = plan.categories[categoryId] || plan.default;
+
+  // Calculate in-network costs
+  if (inNetworkCost > 0 && categoryBenefits.in_network_coverage) {
+    outOfPocket += calculateCostWithBenefits(
+      inNetworkCost,
+      categoryBenefits.in_network_coverage,
+      plan,
+      coverage,
+      'in_network'
+    );
+  }
+
+  // Calculate out-of-network costs
+  if (outOfNetworkCost > 0 && categoryBenefits.out_of_network_coverage) {
+    outOfPocket += calculateCostWithBenefits(
+      outOfNetworkCost,
+      categoryBenefits.out_of_network_coverage,
+      plan,
+      coverage,
+      'out_of_network'
+    );
+  }
+
+  return outOfPocket;
+};
+
+/**
+ * Calculate out-of-pocket costs for "other" costs using default plan coverage
+ */
+const calculateOtherOutOfPocketCosts = (
+  plan: HealthPlan,
+  inNetworkCost: number,
+  outOfNetworkCost: number,
+  coverage: 'single' | 'two_party' | 'family'
+): number => {
+  let outOfPocket = 0;
+
+  // Use default plan coverage
+  const defaultBenefits = plan.default;
+
+  // Calculate in-network costs
+  if (inNetworkCost > 0 && defaultBenefits.in_network_coverage) {
+    outOfPocket += calculateCostWithBenefits(
+      inNetworkCost,
+      defaultBenefits.in_network_coverage,
+      plan,
+      coverage,
+      'in_network'
+    );
+  }
+
+  // Calculate out-of-network costs
+  if (outOfNetworkCost > 0 && defaultBenefits.out_of_network_coverage) {
+    outOfPocket += calculateCostWithBenefits(
+      outOfNetworkCost,
+      defaultBenefits.out_of_network_coverage,
+      plan,
+      coverage,
+      'out_of_network'
+    );
+  }
+
+  return outOfPocket;
+};
+
+/**
+ * Calculate cost with specific benefit structure (copay, coinsurance, etc.)
+ */
+const calculateCostWithBenefits = (
+  totalCost: number,
+  benefits: { copay?: number; coinsurance?: number; max_coinsurance?: number },
+  plan: HealthPlan,
+  coverage: 'single' | 'two_party' | 'family',
+  network: 'in_network' | 'out_of_network'
+): number => {
+  // If there's a copay, that's the out-of-pocket cost (simplified)
+  if (benefits.copay !== undefined) {
+    return benefits.copay;
+  }
+
+  // If there's coinsurance, calculate based on that
+  if (benefits.coinsurance !== undefined) {
+    let outOfPocket = totalCost * benefits.coinsurance;
+
+    // Apply max coinsurance cap if specified
+    if (benefits.max_coinsurance !== undefined) {
+      outOfPocket = Math.min(outOfPocket, benefits.max_coinsurance);
+    }
+
+    return outOfPocket;
+  }
+
+  // If no specific benefits, assume full deductible + coinsurance (simplified)
+  const deductible = getDeductibleForCoverage(plan, coverage, network);
+  const deductiblePortion = Math.min(totalCost, deductible);
+  const remainingCost = Math.max(0, totalCost - deductible);
+
+  // Assume 20% coinsurance after deductible as fallback
+  const coinsurancePortion = remainingCost * 0.2;
+
+  return deductiblePortion + coinsurancePortion;
 };
 
 /**

@@ -20,7 +20,12 @@ function App() {
     costInputMode: 'simple',
     costs: {
       totalAnnualCosts: 2000,
-      networkMix: 'in_network'
+      networkMix: 'in_network',
+      categoryEstimates: [],
+      otherCosts: {
+        inNetworkCost: 2000,
+        outOfNetworkCost: 0
+      }
     },
     hsaContribution: 0,
     fsaContribution: 0

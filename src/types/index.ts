@@ -71,9 +71,20 @@ export interface PlanData {
   plans: HealthPlan[];
 }
 
+export interface CategoryEstimate {
+  categoryId: string;
+  inNetworkCost: number;
+  outOfNetworkCost: number;
+}
+
 export interface UserCosts {
   totalAnnualCosts: number;
   networkMix: 'in_network' | 'mixed' | 'out_network';
+  categoryEstimates: CategoryEstimate[];
+  otherCosts?: {
+    inNetworkCost: number;
+    outOfNetworkCost: number;
+  };
 }
 
 export interface UserInputs {
