@@ -63,7 +63,6 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
           <Row className="mb-3">
             <Col md={8}>
               <Form.Group>
-                <Form.Label>Add Healthcare Category</Form.Label>
                 <Form.Select
                   value={selectedCategoryToAdd}
                   onChange={(e) => setSelectedCategoryToAdd(e.target.value)}
