@@ -97,19 +97,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
         })}
       </div>
 
-      {/* Calculation Notes */}
-      <Card className="mt-3">
-        <Card.Body>
-          <h6>💡 How We Calculate These Numbers:</h6>
-          <ul className="small text-muted mb-0">
-            <li><strong>Total Annual Cost</strong> = Premiums + Out-of-Pocket Costs - Tax Savings</li>
-            <li><strong>Tax Savings</strong> calculated on HSA/FSA contributions using your marginal tax rate</li>
-            <li><strong>HSA Plans</strong> include employer contributions which also provide tax benefits</li>
-            <li><strong>Out-of-Pocket Costs</strong> assume in-network usage, capped at plan's maximum</li>
-            <li><strong>💰 Bonus:</strong> HSA funds roll over year-to-year and can be invested for long-term growth!</li>
-          </ul>
-        </Card.Body>
-      </Card>
     </>
   );
 };
