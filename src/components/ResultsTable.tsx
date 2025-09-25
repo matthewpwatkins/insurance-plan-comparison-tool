@@ -16,12 +16,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
 
   // Card View Component for All Screen Sizes
   const PlanCard: React.FC<{ result: PlanResult; isLowestCost: boolean }> = ({ result, isLowestCost }) => (
-    <Card className={`mb-3 ${isLowestCost ? 'border-success border-2' : ''}`}>
-      <Card.Header className={`d-flex justify-content-between align-items-center ${isLowestCost ? 'bg-success-subtle' : ''}`}>
+    <div className={isLowestCost ? 'mx-n2 mx-md-n3' : ''}>
+      <Card
+        className={`mb-3 ${isLowestCost ? 'border-success border-3 shadow-lg bg-success-subtle' : ''}`}
+        style={isLowestCost ? { transform: 'scale(1.02)' } : {}}
+      >
+        <Card.Header className={`d-flex justify-content-between align-items-center py-3 ${isLowestCost ? 'bg-success text-white' : ''}`}>
         <div className="d-flex align-items-center">
           <strong className="fs-5">{result.planName}</strong>
           {isLowestCost && (
-            <Badge bg="success" className="ms-2">
+            <Badge bg="warning" className="ms-2 text-dark">
               🏆 Best Value
             </Badge>
           )}
@@ -78,7 +82,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
           </Col>
         </Row>
       </Card.Body>
-    </Card>
+      </Card>
+    </div>
   );
 
   return (
