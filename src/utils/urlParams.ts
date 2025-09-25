@@ -13,6 +13,15 @@ export const userInputsToURLParams = (inputs: UserInputs): URLSearchParams => {
   params.set('hsaContribution', inputs.hsaContribution.toString());
   params.set('fsaContribution', inputs.fsaContribution.toString());
 
+  // Serialize costs object
+  if (inputs.costs.categoryEstimates && inputs.costs.categoryEstimates.length > 0) {
+    params.set('categoryEstimates', JSON.stringify(inputs.costs.categoryEstimates));
+  }
+
+  if (inputs.costs.otherCosts) {
+    params.set('otherCosts', JSON.stringify(inputs.costs.otherCosts));
+  }
+
   return params;
 };
 
@@ -65,6 +74,43 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): PartialUse
     const parsed = parseFloat(fsaContribution);
     if (!isNaN(parsed) && parsed >= 0) {
       updates.fsaContribution = parsed;
+    }
+  }
+
+  // Parse costs object
+  const categoryEstimatesParam = searchParams.get('categoryEstimates');
+  const otherCostsParam = searchParams.get('otherCosts');
+
+  if (categoryEstimatesParam || otherCostsParam) {
+    updates.costs = {};
+
+    if (categoryEstimatesParam) {
+      try {
+        const categoryEstimates = JSON.parse(categoryEstimatesParam);
+        if (Array.isArray(categoryEstimates)) {
+          updates.costs.categoryEstimates = categoryEstimates.filter(estimate =>
+            estimate &&
+            typeof estimate.categoryId === 'string' &&
+            typeof estimate.inNetworkCost === 'number' &&
+            typeof estimate.outOfNetworkCost === 'number'
+          );
+        }
+      } catch (error) {
+        console.error('Failed to parse categoryEstimates from URL:', error);
+      }
+    }
+
+    if (otherCostsParam) {
+      try {
+        const otherCosts = JSON.parse(otherCostsParam);
+        if (otherCosts &&
+            typeof otherCosts.inNetworkCost === 'number' &&
+            typeof otherCosts.outOfNetworkCost === 'number') {
+          updates.costs.otherCosts = otherCosts;
+        }
+      } catch (error) {
+        console.error('Failed to parse otherCosts from URL:', error);
+      }
     }
   }
 

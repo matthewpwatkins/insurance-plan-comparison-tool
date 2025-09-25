@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -7,11 +7,10 @@ import { faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
 import NavigationHeader from './components/NavigationHeader';
-import { FAQButtonRef } from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL } from './utils/urlParams';
-import { PlanData, UserInputs, PartialUserInputs, PlanResult } from './types';
+import { PlanData, UserInputs, PlanResult } from './types';
 
 function App() {
   const [planData, setPlanData] = useState<PlanData | null>(null);
@@ -35,7 +34,6 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [resultsOutOfDate, setResultsOutOfDate] = useState(false);
   const [hasCalculatedOnce, setHasCalculatedOnce] = useState(false);
-  const [faqRef, setFaqRef] = useState<FAQButtonRef | null>(null);
   const [isHelpTextDismissed, setIsHelpTextDismissed] = useState(() => {
     // Initialize from localStorage to prevent flicker
     const dismissed = localStorage.getItem('helpTextDismissed');
@@ -121,7 +119,7 @@ function App() {
       <Container className="mt-4 flex-grow-1">
       <Row>
         <Col>
-          <NavigationHeader userInputs={userInputs} onFAQRef={setFaqRef} />
+          <NavigationHeader userInputs={userInputs} />
 
           {!isHelpTextDismissed && (
             <div className="mb-4 p-3 bg-light rounded position-relative">
@@ -177,6 +175,11 @@ function App() {
           {results.length > 0 && (
             <div className="mt-4" style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}>
               <h2>Plan Comparison Results</h2>
+              {results.length > 1 && (
+                <Alert variant="success" className="mb-3">
+                  <strong>💰 Great news!</strong> You may save at least <strong>${(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing the {results[0].planName} plan over the {results[1].planName}.
+                </Alert>
+              )}
               <ResultsTable results={results} />
             </div>
           )}
