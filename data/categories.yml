@@ -1,116 +1,155 @@
 office_visit_pcp:
   name: "Office Visit - Primary Care"
+  description: "Visit to your primary care physician (PCP) for diagnosis, treatment, or routine care. Includes consultations, examinations, and routine medical services provided in an office setting. After-hours visits have an additional $5 fee. Related services like lab work and X-rays are covered at their appropriate benefit levels."
 
 office_visit_specialist:
   name: "Office Visit - Specialist"
+  description: "Visit to a medical specialist for diagnosis, treatment, or consultation for specific health conditions. Specialists require referrals from your PCP in most cases and provide specialized care for specific body systems or medical conditions. After-hours visits have an additional $5 fee."
 
 wellness_exam:
   name: "Wellness Exam"
+  description: "Annual preventive physical examination designed to help maintain your health and detect problems early. Includes one office visit with exam every calendar year, recommended procedures, and related lab work. These exams are part of preventive care services designed to prevent illness and disease before they start."
 
 telemedicine_pcp:
   name: "Telemedicine - Primary Care"
+  description: "Virtual visits with your primary care physician using interactive multimedia communications for real-time audio and video. Includes office visits and certain other health services provided remotely through secure technology platforms. Same coverage as in-person visits when medically appropriate services are provided via telemedicine."
 
 telemedicine_specialist:
   name: "Telemedicine - Specialist"
+  description: "Virtual consultations with medical specialists using secure video and audio technology. Allows access to specialized care remotely when appropriate and medically necessary. Provides convenient access to specialist care without travel requirements."
 
 telemedicine_urgent_care:
   name: "Telemedicine - Urgent Care"
+  description: "Virtual urgent care services for non-emergency medical needs that require prompt attention. Provides convenient access to medical care for conditions that don't require an emergency room visit. Available through secure multimedia communication systems with qualified healthcare providers."
 
 eye_exams:
   name: "Eye Exams"
+  description: "Comprehensive eye examinations to assess vision and eye health. Includes routine eye exams, vision screenings, and diagnostic testing for eye conditions. Important for early detection of eye diseases and maintaining optimal vision health."
 
 behavioral_mental_health_outpatient:
   name: "Behavioral/Mental Health - Outpatient"
+  description: "Outpatient mental health and substance use disorder treatment services. Must be diagnosed with and treated for a mental disorder included in the current Diagnostic and Statistical Manual of Mental Disorders. Covered services include diagnostic evaluation, individual therapy, group therapy, and other outpatient mental health treatments."
 
 laboratory_outpatient:
   name: "Laboratory - Outpatient"
+  description: "Laboratory tests and diagnostic services performed on an outpatient basis. Includes blood tests, urine tests, and other diagnostic laboratory work ordered by your physician. Essential for diagnosing conditions, monitoring health status, and guiding treatment decisions."
 
 emergency_room:
   name: "Emergency Room"
+  description: "Emergency medical services for life-threatening conditions or serious injuries requiring immediate attention. Covered at the same rate whether you use in-network or out-network emergency rooms. Follow-up care at the emergency room is subject to normal coinsurance rates. Consider urgent care for non-life-threatening conditions."
 
 pharmacy_tier_1_retail_30:
   name: "Pharmacy - Tier 1 (30-day retail)"
+  description: "Generic medications and lowest-cost prescription drugs available at retail pharmacies for a 30-day supply. Tier 1 drugs are typically generic versions of brand-name medications and offer the lowest out-of-pocket costs. Available at most retail pharmacies with convenient access for short-term supplies."
 
 pharmacy_tier_1_retail_90:
   name: "Pharmacy - Tier 1 (90-day retail)"
+  description: "Generic medications and lowest-cost prescription drugs available at retail pharmacies for a 90-day supply. Provides cost savings compared to multiple 30-day fills and ensures better medication adherence. Ideal for maintenance medications you take regularly."
 
 pharmacy_tier_1_mail_90:
   name: "Pharmacy - Tier 1 (90-day mail)"
+  description: "Generic medications delivered by mail order pharmacy for a 90-day supply. Often the most cost-effective option for maintenance medications with additional convenience of home delivery. Best value for long-term medications you take regularly."
 
 pharmacy_tier_2_retail_30:
   name: "Pharmacy - Tier 2 (30-day retail)"
+  description: "Preferred brand-name medications and higher-cost drugs available at retail pharmacies for a 30-day supply. Includes brand-name drugs and some specialty generics with moderate out-of-pocket costs. Available when generic alternatives are not suitable or available."
 
 pharmacy_tier_2_retail_90:
   name: "Pharmacy - Tier 2 (90-day retail)"
+  description: "Preferred brand-name medications available at retail pharmacies for a 90-day supply. Provides cost savings compared to multiple 30-day fills for brand-name maintenance medications. Good option for ongoing treatment with preferred brand medications."
 
 pharmacy_tier_2_mail_90:
   name: "Pharmacy - Tier 2 (90-day mail)"
+  description: "Preferred brand-name medications delivered by mail order pharmacy for a 90-day supply. Combines convenience of home delivery with cost savings for brand-name maintenance medications. Often more cost-effective than retail options for long-term brand-name drugs."
 
 pharmacy_tier_3_retail_30:
   name: "Pharmacy - Tier 3 (30-day retail)"
+  description: "Non-preferred brand-name medications and highest-cost drugs available at retail pharmacies for a 30-day supply. Includes specialty drugs and non-preferred brands with the highest out-of-pocket costs. Used when lower-tier alternatives are not medically appropriate."
 
 pharmacy_tier_3_retail_90:
   name: "Pharmacy - Tier 3 (90-day retail)"
+  description: "Non-preferred brand-name medications available at retail pharmacies for a 90-day supply. Higher-cost option but may provide some savings compared to multiple 30-day fills. For maintenance medications where lower-tier options are not suitable."
 
 pharmacy_tier_3_mail_90:
   name: "Pharmacy - Tier 3 (90-day mail)"
+  description: "Non-preferred brand-name medications delivered by mail order pharmacy for a 90-day supply. Most convenient option for high-tier maintenance medications with home delivery. Best choice when lower-tier alternatives are not medically appropriate."
 
 pharmacy_specialty_tier_1:
   name: "Pharmacy - Specialty Tier 1"
+  description: "Lower-cost specialty medications that require special handling, administration, or monitoring. Includes complex drugs for conditions like cancer, multiple sclerosis, or rheumatoid arthritis. Often requires coordination with specialty pharmacies and healthcare providers."
 
 pharmacy_specialty_tier_2:
   name: "Pharmacy - Specialty Tier 2"
+  description: "Higher-cost specialty medications for complex conditions requiring specialized care and monitoring. Includes advanced biologics and specialized treatments for serious medical conditions. Typically requires preauthorization and coordination with specialty healthcare providers."
 
 imaging_diagnostic_facility:
   name: "Imaging Diagnostic - Facility"
+  description: "Facility charges for diagnostic imaging services such as X-rays, ultrasounds, and basic diagnostic tests. Includes the cost of using the imaging facility, equipment, and technical support staff. Essential for diagnosing conditions and monitoring treatment progress."
 
 imaging_diagnostic_professional:
   name: "Imaging Diagnostic - Professional"
+  description: "Professional fees for radiologists and other specialists who interpret diagnostic imaging results. Covers the expertise of medical professionals who read and analyze your imaging studies. Separate from facility charges and covers the professional medical interpretation."
 
 hospital_inpatient:
   name: "Hospital - Inpatient"
+  description: "Hospital services when you're admitted as an inpatient for overnight stays or extended treatment. Includes room and board, nursing care, medications, and hospital-based services during your stay. Typically requires preauthorization for non-emergency admissions."
 
 maternity_inpatient:
   name: "Maternity - Inpatient"
+  description: "Hospital services related to childbirth and delivery when admitted as an inpatient. Includes labor and delivery, postpartum care, nursery services, and related hospital services. Covers both normal deliveries and complications requiring extended hospital care."
 
 behavioral_mental_health_inpatient:
   name: "Behavioral/Mental Health - Inpatient"
+  description: "Inpatient hospital treatment for mental health conditions and substance use disorders. Includes psychiatric hospitalization and residential treatment programs when medically necessary. Requires medical necessity determination and often requires preauthorization."
 
 imaging_advanced_facility:
   name: "Imaging Advanced - Facility"
+  description: "Facility charges for advanced imaging services such as MRI, CT scans, and PET scans. Includes the cost of sophisticated imaging equipment and specialized technical support. Often requires preauthorization and provides detailed diagnostic information."
 
 imaging_advanced_professional:
   name: "Imaging Advanced - Professional"
+  description: "Professional fees for specialists who interpret advanced imaging studies like MRI and CT scans. Covers specialized radiologist expertise in reading complex imaging results. Essential for accurate diagnosis and treatment planning using advanced imaging technology."
 
 surgery:
   name: "Surgery"
+  description: "Surgical procedures performed in hospital or outpatient settings by qualified surgeons. Includes both inpatient and outpatient surgical services, from minor procedures to major operations. May require preauthorization depending on the type and complexity of the procedure."
 
 maternity_physician:
   name: "Maternity - Physician"
+  description: "Physician services related to pregnancy, childbirth, and postpartum care. Includes prenatal visits, delivery services, and postpartum follow-up care from licensed medical professionals. Covers services from physicians, nurse practitioners, or certified nurse midwives."
 
 aba_therapy:
   name: "ABA Therapy"
+  description: "Applied Behavior Analysis therapy for individuals with autism spectrum disorders. Must be provided by a board-certified behavior analyst (BCBA or BCBA-D) for confirmed autism diagnosis. Evidence-based treatment approach for developing social, communication, and behavioral skills."
 
 physical_therapy_outpatient:
   name: "Physical Therapy - Outpatient"
+  description: "Outpatient physical therapy services to restore movement and reduce pain after injury or illness. Typically limited to a specific number of visits per calendar year with possible preauthorization for additional visits. Helps improve mobility, strength, and functional abilities in an outpatient setting."
 
 physical_therapy_inpatient:
   name: "Physical Therapy - Inpatient"
+  description: "Physical therapy services provided during inpatient hospital stays or rehabilitation facilities. Intensive therapy to help regain function and mobility following serious injury, surgery, or illness. Typically part of comprehensive inpatient rehabilitation programs."
 
 occupational_therapy_outpatient:
   name: "Occupational Therapy - Outpatient"
+  description: "Outpatient occupational therapy to help develop or restore daily living and work skills. Focuses on activities of daily living, fine motor skills, and adaptive techniques for independence. Typically limited to a specific number of visits per calendar year."
 
 occupational_therapy_inpatient:
   name: "Occupational Therapy - Inpatient"
+  description: "Occupational therapy services provided during inpatient hospital stays or rehabilitation facilities. Intensive therapy focused on regaining independence in daily activities and work-related skills. Part of comprehensive inpatient rehabilitation following serious injury or illness."
 
 chiropractic_therapy:
   name: "Chiropractic Therapy"
+  description: "Chiropractic care and spinal manipulation therapy provided by licensed chiropractors. Typically limited to a specific number of visits per calendar year for spine-related conditions. Focuses on musculoskeletal system disorders, particularly spine-related pain and dysfunction."
 
 speech_therapy_outpatient:
   name: "Speech Therapy - Outpatient"
+  description: "Outpatient speech-language pathology services to address communication and swallowing disorders. Helps with speech development, language skills, voice disorders, and swallowing difficulties. Typically limited to a specific number of visits per calendar year."
 
 speech_therapy_inpatient_eval:
   name: "Speech Therapy - Inpatient Evaluation"
+  description: "Speech-language pathology evaluation services provided during inpatient hospital stays. Assessment of communication and swallowing abilities following stroke, surgery, or other medical events. Initial evaluation to determine need for ongoing speech therapy services."
 
 durable_medical_equipment:
   name: "Durable Medical Equipment"
+  description: "Medical equipment designed for repeated use in treating illness or injury, such as wheelchairs, oxygen equipment, and hospital beds. Must be prescribed by a physician and meet medical necessity requirements. Often requires preauthorization and may have specific coverage limitations or replacement schedules."

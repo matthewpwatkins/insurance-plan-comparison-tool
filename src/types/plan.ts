@@ -37,6 +37,7 @@ export interface NetworkBenefits {
 
 export interface Category {
   name: string;
+  description?: string;
 }
 
 export interface HealthPlan {

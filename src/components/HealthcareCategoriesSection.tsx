@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { getCategoriesData } from '../generated/dataHelpers';
 import CostInputRow from './CostInputRow';
+import HelpIcon from './HelpIcon';
 import { UserInputs, CategoryEstimate } from '../types';
 
 interface HealthcareCategoriesSectionProps {
@@ -54,9 +55,21 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
             <Card key={estimate.categoryId} className="mb-3">
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h6 className="mb-0">
-                    {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
-                  </h6>
+                  <div className="d-flex align-items-center">
+                    <h6 className="mb-0 me-2">
+                      {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
+                    </h6>
+                    {categoriesData[estimate.categoryId]?.description && (
+                      <HelpIcon
+                        title={categoriesData[estimate.categoryId].name}
+                        content={
+                          <div>
+                            {categoriesData[estimate.categoryId].description}
+                          </div>
+                        }
+                      />
+                    )}
+                  </div>
                   <Button
                     variant="danger"
                     size="sm"
