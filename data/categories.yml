@@ -1,0 +1,116 @@
+office_visit_pcp:
+  name: "Office Visit - Primary Care"
+
+office_visit_specialist:
+  name: "Office Visit - Specialist"
+
+wellness_exam:
+  name: "Wellness Exam"
+
+telemedicine_pcp:
+  name: "Telemedicine - Primary Care"
+
+telemedicine_specialist:
+  name: "Telemedicine - Specialist"
+
+telemedicine_urgent_care:
+  name: "Telemedicine - Urgent Care"
+
+eye_exams:
+  name: "Eye Exams"
+
+behavioral_mental_health_outpatient:
+  name: "Behavioral/Mental Health - Outpatient"
+
+laboratory_outpatient:
+  name: "Laboratory - Outpatient"
+
+emergency_room:
+  name: "Emergency Room"
+
+pharmacy_tier_1_retail_30:
+  name: "Pharmacy - Tier 1 (30-day retail)"
+
+pharmacy_tier_1_retail_90:
+  name: "Pharmacy - Tier 1 (90-day retail)"
+
+pharmacy_tier_1_mail_90:
+  name: "Pharmacy - Tier 1 (90-day mail)"
+
+pharmacy_tier_2_retail_30:
+  name: "Pharmacy - Tier 2 (30-day retail)"
+
+pharmacy_tier_2_retail_90:
+  name: "Pharmacy - Tier 2 (90-day retail)"
+
+pharmacy_tier_2_mail_90:
+  name: "Pharmacy - Tier 2 (90-day mail)"
+
+pharmacy_tier_3_retail_30:
+  name: "Pharmacy - Tier 3 (30-day retail)"
+
+pharmacy_tier_3_retail_90:
+  name: "Pharmacy - Tier 3 (90-day retail)"
+
+pharmacy_tier_3_mail_90:
+  name: "Pharmacy - Tier 3 (90-day mail)"
+
+pharmacy_specialty_tier_1:
+  name: "Pharmacy - Specialty Tier 1"
+
+pharmacy_specialty_tier_2:
+  name: "Pharmacy - Specialty Tier 2"
+
+imaging_diagnostic_facility:
+  name: "Imaging Diagnostic - Facility"
+
+imaging_diagnostic_professional:
+  name: "Imaging Diagnostic - Professional"
+
+hospital_inpatient:
+  name: "Hospital - Inpatient"
+
+maternity_inpatient:
+  name: "Maternity - Inpatient"
+
+behavioral_mental_health_inpatient:
+  name: "Behavioral/Mental Health - Inpatient"
+
+imaging_advanced_facility:
+  name: "Imaging Advanced - Facility"
+
+imaging_advanced_professional:
+  name: "Imaging Advanced - Professional"
+
+surgery:
+  name: "Surgery"
+
+maternity_physician:
+  name: "Maternity - Physician"
+
+aba_therapy:
+  name: "ABA Therapy"
+
+physical_therapy_outpatient:
+  name: "Physical Therapy - Outpatient"
+
+physical_therapy_inpatient:
+  name: "Physical Therapy - Inpatient"
+
+occupational_therapy_outpatient:
+  name: "Occupational Therapy - Outpatient"
+
+occupational_therapy_inpatient:
+  name: "Occupational Therapy - Inpatient"
+
+chiropractic_therapy:
+  name: "Chiropractic Therapy"
+
+speech_therapy_outpatient:
+  name: "Speech Therapy - Outpatient"
+
+speech_therapy_inpatient_eval:
+  name: "Speech Therapy - Inpatient Evaluation"
+
+durable_medical_equipment:
+  name: "Durable Medical Equipment"

@@ -1,1 +1,0 @@
-# insurance-plan-comparison-tool
