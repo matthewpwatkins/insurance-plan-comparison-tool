@@ -3,6 +3,7 @@ import { Container, Row, Col, Alert, Button, Toast, ToastContainer } from 'react
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown, faShare } from '@fortawesome/free-solid-svg-icons';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
@@ -225,7 +226,7 @@ function App() {
 
       <footer className="mt-auto py-4 border-top text-center text-muted bg-light">
         <Container>
-          <p className="mb-0">
+          <p className="mb-1">
             Made with ❤️ by{' '}
             <a
               href="https://watkins.dev"
@@ -235,7 +236,12 @@ function App() {
             >
               Matthew Watkins
             </a>
-            , 2025.
+            , 2025 • <a
+              href="https://github.com/matthewpwatkins/insurance-plan-comparison-tool"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-decoration-none"
+            ><FontAwesomeIcon icon={faGithub} className="me-1" />Source</a>
           </p>
         </Container>
       </footer>

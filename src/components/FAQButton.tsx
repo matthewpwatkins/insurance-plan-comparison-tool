@@ -45,6 +45,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
         <div>
           <p>Helping to pay for medical expenses is only part of what insurance companies do. They also negotiate with medical providers to get a lower price for services and reject any charges that are too high. You get the negotiated rates at in-network providers, no matter which health plan you choose.</p>
           <p>You can see how much your insurance company has negotiated off your total bill by looking EOB report. Looks for words like "Over allowed amount" or "Discounted price" on the EOB. The remaining cost is divided between you and the insurance company. In the example below, the provider wanted to bill $100. The insurance company negotiated it down by 28.81 + 25.00, leaving $46.19 as the negotiated amount. $20.00 of that $46.19 was paid as the copay, and DMBA paid the remaining $26.19.</p>
+          <img src="/img/eob-example.jpg" alt="EOB Example" className="img-fluid mt-2" />
         </div>
       )
     },
