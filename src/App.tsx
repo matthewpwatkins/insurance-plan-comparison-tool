@@ -95,9 +95,18 @@ function App() {
     <Container className="mt-4">
       <Row>
         <Col>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1 className="mb-0">Health Insurance Plan Comparison Tool</h1>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h1 className="mb-0">DMBA Health Plan Comparison Tool</h1>
             <ShareButton userInputs={userInputs} />
+          </div>
+
+          <div className="mb-4 p-3 bg-light rounded">
+            <p className="mb-0 text-muted">
+              🎉 <strong>Welcome to open enrollment!</strong> Finding the perfect health plan doesn't have to be overwhelming.
+              This tool makes it easy to compare all your DMBA health plan options and see which one could save you the most money.
+              Just enter your expected healthcare costs, and we'll crunch the numbers for you - including premiums, deductibles,
+              tax savings, and employer contributions. Let's find your perfect plan! 💪
+            </p>
           </div>
 
           {error && (
