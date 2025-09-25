@@ -160,6 +160,20 @@ function App() {
           )}
         </Col>
       </Row>
+
+      <footer className="mt-5 pt-4 border-top text-center text-muted">
+        <p className="mb-0">
+          Made with ❤️ by{' '}
+          <a
+            href="https://watkins.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-decoration-none"
+          >
+            Matthew Watkins
+          </a>
+        </p>
+      </footer>
     </Container>
   );
 }
