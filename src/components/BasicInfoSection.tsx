@@ -77,8 +77,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="position-relative">
-                  Coverage Year
+                <Form.Label className="d-flex justify-content-between">
+                  <span>Coverage Year</span>
                   <HelpIcon
                     title="Coverage Year"
                     content={
@@ -108,8 +108,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="position-relative">
-                  Coverage Type
+                <Form.Label className="d-flex justify-content-between">
+                  <span>Coverage Type</span>
                   <HelpIcon
                     title="Coverage Type"
                     content={
@@ -146,8 +146,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="position-relative">
-                  Age Group
+                <Form.Label className="d-flex justify-content-between">
+                  <span>Age Group</span>
                   <HelpIcon
                     title="Age Group"
                     content={
@@ -173,16 +173,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="position-relative">
-                  Marginal Tax Rate
+                <Form.Label className="d-flex justify-content-between">
+                  <span>Marginal Tax Rate</span>
                   <span
                     className="text-info"
                     style={{
                       cursor: 'pointer',
-                      fontSize: '1em',
-                      position: 'absolute',
-                      right: '0',
-                      top: '2px'
+                      fontSize: '1em'
                     }}
                     onClick={() => faqRef?.openFAQ(0)}
                     title="Click to see FAQ about tax rates"
@@ -211,9 +208,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="position-relative">
-                  Your HSA Contribution
-                  <small className="text-muted"> (Max: ${maxUserHSAContribution?.toLocaleString()})</small>
+                <Form.Label className="d-flex justify-content-between">
+                  <span>Your HSA Contribution <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></span>
                   <HelpIcon
                     title="HSA Contribution"
                     content={
@@ -251,9 +247,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="position-relative">
-                  Your FSA Contribution
-                  <small className="text-muted"> (Max: ${maxFSAContribution?.toLocaleString()})</small>
+                <Form.Label className="d-flex justify-content-between">
+                  <span>Your FSA Contribution <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></span>
                   <HelpIcon
                     title="FSA Contribution"
                     content={

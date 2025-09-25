@@ -34,8 +34,8 @@ const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange 
         <Row>
           <Col md={6}>
             <Form.Group>
-              <Form.Label className="position-relative">
-                In-Network Annual Cost
+              <Form.Label className="d-flex justify-content-between">
+                <span>In-Network Annual Cost</span>
                 <HelpIcon
                   title="In-Network Costs"
                   content={
@@ -71,8 +71,8 @@ const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange 
           </Col>
           <Col md={6}>
             <Form.Group>
-              <Form.Label className="position-relative">
-                Out-of-Network Annual Cost
+              <Form.Label className="d-flex justify-content-between">
+                <span>Out-of-Network Annual Cost</span>
                 <HelpIcon
                   title="Out-of-Network Costs"
                   content={
