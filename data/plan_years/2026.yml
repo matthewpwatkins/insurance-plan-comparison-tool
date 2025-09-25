@@ -1,14 +1,25 @@
+# DMBA Health Plan Data for 2026
+# This file contains all the plan details, contribution limits, and coverage information
+
 year: 2026
 
+# HSA Contribution Limits (set by IRS annually)
+# These are the maximum amounts that can be contributed to HSA accounts
 hsa_contribution_limits:
-  single_coverage: 4_400
-  family_coverage: 8_750
-  catch_up_age_55_plus: 1_000
+  single_coverage: 4_400      # Maximum HSA contribution for single coverage
+  family_coverage: 8_750      # Maximum HSA contribution for family coverage (includes two_party)
+  catch_up_age_55_plus: 1_000 # Additional contribution allowed for people 55 and older
 
+# FSA Contribution Limits (set by IRS annually)
+# These are the maximum amounts that can be contributed to FSA accounts
 fsa_contribution_limits:
-  healthcare_fsa: 3_400
+  healthcare_fsa: 3_400       # Maximum healthcare FSA contribution
 
+# Available Health Plans
+# Each plan includes premiums, deductibles, out-of-pocket maximums, and coverage details
 plans:
+  # PPO 90 Plan - High premium, low out-of-pocket costs
+  # This plan has 90% coverage (10% coinsurance) with low deductibles
   - name: "DMBA PPO 90 Plan"
     type: "PPO"
     monthly_premiums:
@@ -141,6 +152,8 @@ plans:
         in_network_coverage:
           copay: 0
 
+  # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
+  # This plan has 70% coverage (30% coinsurance) with moderate deductibles
   - name: "DMBA PPO 70 Plan"
     type: "PPO"
     monthly_premiums:
@@ -275,6 +288,8 @@ plans:
         in_network_coverage:
           copay: 0
 
+  # HSA 80 Plan - Health Savings Account plan with moderate deductible
+  # This plan has 80% coverage (20% coinsurance) after deductible, includes employer HSA contribution
   - name: "DMBA HSA 80 Plan"
     type: "HSA"
     employer_hsa_contribution:
@@ -351,6 +366,8 @@ plans:
         in_network_coverage:
           copay: 0
 
+  # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
+  # This plan has 60% coverage (40% coinsurance) after deductible, includes highest employer HSA contribution
   - name: "DMBA HSA 60 Plan"
     type: "HSA"
     employer_hsa_contribution:
