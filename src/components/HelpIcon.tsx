@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 
 interface HelpIconProps {
   title: string;
@@ -23,7 +23,7 @@ const HelpIcon: React.FC<HelpIconProps> = ({ title, content, className = '' }) =
         onClick={() => setShowModal(true)}
         title="Click for help"
       >
-        <FontAwesomeIcon icon={faCircleQuestion} />
+        <FontAwesomeIcon icon={faCircleInfo} />
       </span>
 
       <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">

@@ -56,28 +56,29 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <div className="d-flex align-items-center">
-                    <h6 className="mb-0 me-2">
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => removeCategory(estimate.categoryId)}
+                      title="Remove category"
+                      className="me-2"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </Button>
+                    <h6 className="mb-0">
                       {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
                     </h6>
-                    {categoriesData[estimate.categoryId]?.description && (
-                      <HelpIcon
-                        title={categoriesData[estimate.categoryId].name}
-                        content={
-                          <div>
-                            {categoriesData[estimate.categoryId].description}
-                          </div>
-                        }
-                      />
-                    )}
                   </div>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => removeCategory(estimate.categoryId)}
-                    title="Remove category"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </Button>
+                  {categoriesData[estimate.categoryId]?.description && (
+                    <HelpIcon
+                      title={categoriesData[estimate.categoryId].name}
+                      content={
+                        <div>
+                          {categoriesData[estimate.categoryId].description}
+                        </div>
+                      }
+                    />
+                  )}
                 </div>
                 <CostInputRow
                   inNetworkValue={estimate.inNetworkCost}
