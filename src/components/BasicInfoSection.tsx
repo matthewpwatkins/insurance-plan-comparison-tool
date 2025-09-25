@@ -4,15 +4,19 @@ import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContributio
 import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
 import { UserInputs, PlanData } from '../types';
+import { FAQButtonRef } from './FAQButton';
 
 interface BasicInfoSectionProps {
   inputs: UserInputs;
   onChange: (updates: Partial<UserInputs>) => void;
   planData: PlanData | null;
+  faqRef?: FAQButtonRef | null;
 }
 
-const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, planData }) => {
+const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, planData, faqRef }) => {
   const handleChange = (field: keyof UserInputs, value: any) => {
     onChange({ [field]: value });
   };
@@ -171,21 +175,19 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
               <Form.Group>
                 <Form.Label>
                   Marginal Tax Rate
-                  <HelpIcon
-                    title="Marginal Tax Rate"
-                    content={
-                      <div>
-                        <p>Enter your combined federal and state marginal tax rate as a percentage.</p>
-                        <p>This rate is used to calculate tax savings from HSA/FSA contributions and after-tax premium costs.</p>
-                        <div className="mt-3 p-3 bg-info-subtle rounded">
-                          <p className="mb-0">
-                            📋 <strong>Need help determining your tax rate?</strong><br />
-                            Click the <strong>FAQ</strong> button at the top of the page for detailed guidance on finding your marginal tax rate, including common examples and calculation methods.
-                          </p>
-                        </div>
-                      </div>
-                    }
-                  />
+                  <span
+                    className="text-info"
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: '1em',
+                      float: 'right',
+                      marginTop: '2px'
+                    }}
+                    onClick={() => faqRef?.openFAQ(0)}
+                    title="Click to see FAQ about tax rates"
+                  >
+                    <FontAwesomeIcon icon={faCircleQuestion} />
+                  </span>
                 </Form.Label>
                 <InputGroup>
                   <FormattedNumberInput

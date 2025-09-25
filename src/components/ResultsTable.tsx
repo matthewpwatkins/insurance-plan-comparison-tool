@@ -16,16 +16,21 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
 
   // Card View Component for All Screen Sizes
   const PlanCard: React.FC<{ result: PlanResult; isLowestCost: boolean }> = ({ result, isLowestCost }) => (
-    <div className={isLowestCost ? 'mx-n2 mx-md-n3' : ''}>
+    <div className={isLowestCost ? 'mx-n3 mx-md-n4' : ''}>
       <Card
-        className={`mb-3 ${isLowestCost ? 'border-success border-3 shadow-lg bg-success-subtle' : ''}`}
-        style={isLowestCost ? { transform: 'scale(1.02)' } : {}}
+        className={`mb-4 ${isLowestCost ? 'border-success border-4 shadow-lg bg-success-subtle' : 'mb-3'}`}
+        style={isLowestCost ? {
+          transform: 'scale(1.05)',
+          transformOrigin: 'center',
+          position: 'relative',
+          zIndex: 10
+        } : {}}
       >
-        <Card.Header className={`d-flex justify-content-between align-items-center py-3 ${isLowestCost ? 'bg-success text-white' : ''}`}>
+        <Card.Header className={`d-flex justify-content-between align-items-center ${isLowestCost ? 'py-4 bg-success text-white' : 'py-3'}`}>
         <div className="d-flex align-items-center">
-          <strong className="fs-5">{result.planName}</strong>
+          <strong className={isLowestCost ? 'fs-4' : 'fs-5'}>{result.planName}</strong>
           {isLowestCost && (
-            <Badge bg="warning" className="ms-2 text-dark">
+            <Badge bg="warning" className="ms-3 text-dark fs-6 px-3 py-2">
               🏆 Best Value
             </Badge>
           )}

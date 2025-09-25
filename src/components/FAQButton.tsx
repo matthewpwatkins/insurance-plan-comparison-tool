@@ -1,140 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { Modal, Button, Accordion } from 'react-bootstrap';
 
-const FAQButton: React.FC = () => {
+export interface FAQButtonRef {
+  openFAQ: (sectionIndex?: number) => void;
+}
+
+const FAQButton = forwardRef<FAQButtonRef>((props, ref) => {
   const [showModal, setShowModal] = useState(false);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    openFAQ: (sectionIndex?: number) => {
+      setShowModal(true);
+      if (sectionIndex !== undefined) {
+        setActiveKey(sectionIndex.toString());
+      }
+    }
+  }));
 
   const faqData = [
     {
-      question: "How do I determine my marginal tax rate?",
+      question: "Why do I need my marginal tax rate?",
       answer: (
         <div>
-          <p>Your marginal tax rate is the rate at which your last dollar of income is taxed. It's the sum of your federal and state marginal tax rates.</p>
-          <p><strong>To find yours:</strong></p>
-          <ul>
-            <li>Check your last tax return for your tax bracket</li>
-            <li>Add your state income tax rate</li>
-            <li>Use online tax calculators for estimates</li>
-          </ul>
-          <p><strong>Common combined rates:</strong></p>
-          <ul>
-            <li>22% federal + 5% state = 27% total</li>
-            <li>24% federal + 6% state = 30% total</li>
-            <li>32% federal + 7% state = 39% total</li>
-          </ul>
+          <p>FSA and HSA contributions are tax-deductible, meaning that you can subtract them from your taxable income. For example, if you have a 25% tax rate and contribute $5,000 of your money to an HSA, you'll save at least $1,250 less in taxes this year. Win!</p>
         </div>
       )
     },
     {
-      question: "What's the difference between HSA and FSA?",
+      question: "How can I estimate my future medical expenses?",
       answer: (
         <div>
-          <p><strong>HSA (Health Savings Account):</strong></p>
-          <ul>
-            <li>Triple tax advantage (deductible, tax-free growth, tax-free withdrawals)</li>
-            <li>Money rolls over year to year</li>
-            <li>Can be invested for long-term growth</li>
-            <li>Only available with high-deductible health plans</li>
-            <li>Becomes retirement account after age 65</li>
-          </ul>
-          <p><strong>FSA (Flexible Spending Account):</strong></p>
-          <ul>
-            <li>Tax-deductible contributions, tax-free spending</li>
-            <li>"Use it or lose it" - must spend by year end</li>
-            <li>Available with PPO plans</li>
-            <li>Full amount available immediately</li>
-            <li>Cannot have both HSA and FSA</li>
-          </ul>
+          <p>The best way to tell what kind of medical expenses you'll have in the future is to look at your past. Log in to DMBA, navigate to <a href="https://www.dmba.com/sc/medical/HealthClaims.aspx?type=medical" target="_blank" rel="noopener noreferrer">My Health &gt; Claims</a>, and click "Create Claims History Report." Select all family members, both prescription and medical categories, and include the past 2 years. Select a "Detail" report. You should see all EOBs for that time range which will list all the associated medical costs you submitted through insurance.</p>
         </div>
       )
     },
     {
-      question: "How should I estimate my healthcare costs?",
+      question: "Negotiated price? What's that?",
       answer: (
         <div>
-          <p><strong>Review your past year:</strong></p>
-          <ul>
-            <li>Look at EOBs (Explanation of Benefits) from your current plan</li>
-            <li>Count doctor visits, prescriptions, procedures</li>
-            <li>Consider upcoming known expenses (surgery, pregnancy, etc.)</li>
-          </ul>
-          <p><strong>Common cost estimates:</strong></p>
-          <ul>
-            <li>Primary care visit: $200-300</li>
-            <li>Specialist visit: $300-500</li>
-            <li>Generic prescription (30-day): $10-50</li>
-            <li>Brand prescription (30-day): $100-300</li>
-            <li>Annual wellness exam: Usually covered 100%</li>
-          </ul>
-          <p><strong>Don't forget:</strong> It's better to overestimate than underestimate!</p>
+          <p>Helping to pay for medical expenses is only part of what insurance companies do. They also negotiate with medical providers to get a lower price for services and reject any charges that are too high. You get the negotiated rates at in-network providers, no matter which health plan you choose.</p>
+          <p>You can see how much your insurance company has negotiated off your total bill by looking EOB report. Looks for words like "Over allowed amount" or "Discounted price" on the EOB. The remaining cost is divided between you and the insurance company. In the example below, the provider wanted to bill $100. The insurance company negotiated it down by 28.81 + 25.00, leaving $46.19 as the negotiated amount. $20.00 of that $46.19 was paid as the copay, and DMBA paid the remaining $26.19.</p>
         </div>
       )
     },
     {
-      question: "What does 'in-network' vs 'out-of-network' mean?",
+      question: "This tool doesn't show the hundreds of thousands of dollars I can save from a single year of HSA Contributions!",
       answer: (
         <div>
-          <p><strong>In-Network Providers:</strong></p>
-          <ul>
-            <li>Have contracts with your insurance company</li>
-            <li>Offer negotiated, lower rates</li>
-            <li>Count toward your deductible and out-of-pocket maximum</li>
-            <li>Usually require just a copay</li>
-          </ul>
-          <p><strong>Out-of-Network Providers:</strong></p>
-          <ul>
-            <li>Don't have contracts with your insurance</li>
-            <li>You pay significantly more</li>
-            <li>May have separate, higher deductibles</li>
-            <li>You might pay upfront and seek reimbursement</li>
-            <li>Some plans don't cover out-of-network care at all</li>
-          </ul>
-          <p><strong>Pro tip:</strong> Always check if a provider is in-network before scheduling!</p>
-        </div>
-      )
-    },
-    {
-      question: "Which plan type should I choose?",
-      answer: (
-        <div>
-          <p><strong>Choose a PPO if:</strong></p>
-          <ul>
-            <li>You prefer predictable costs (copays vs. coinsurance)</li>
-            <li>You have ongoing medical needs</li>
-            <li>You want lower deductibles</li>
-            <li>You prefer access to specialists without referrals</li>
-          </ul>
-          <p><strong>Choose an HSA if:</strong></p>
-          <ul>
-            <li>You're generally healthy with minimal healthcare needs</li>
-            <li>You want maximum tax savings</li>
-            <li>You can handle higher deductibles</li>
-            <li>You want to build long-term savings for healthcare</li>
-            <li>You're looking for retirement planning benefits</li>
-          </ul>
-          <p><strong>Remember:</strong> You can always change during open enrollment!</p>
-        </div>
-      )
-    },
-    {
-      question: "How accurate are these calculations?",
-      answer: (
-        <div>
-          <p>These calculations are estimates based on:</p>
-          <ul>
-            <li>Your input cost estimates</li>
-            <li>Official plan documents and coverage details</li>
-            <li>Current IRS contribution limits</li>
-            <li>Standard tax calculations</li>
-          </ul>
-          <p><strong>Factors that may affect actual costs:</strong></p>
-          <ul>
-            <li>Actual healthcare utilization vs. estimates</li>
-            <li>Network status of providers you use</li>
-            <li>Plan changes during the year</li>
-            <li>Emergency or unexpected medical needs</li>
-          </ul>
-          <p><strong>Use this tool to:</strong> Compare relative costs between plans, not as a guarantee of exact expenses.</p>
+          <p>Good for you for picking up on that! Yes, HSAs have some amazing superpowers that aren't accounted for in this tool:</p>
+          <p><strong>First superpower:</strong> You keep the money and you use it whenever you want. FSAs (the kind you get with the PPO plan) are "use it or lose it" -- if you don't spend the money by the end of the year, you've just made a generous contribution to the FSA plan administrator. But HSAs are truly yours forever, and you can use them for any medical expenses you ever incur after the opening date of the HSA-- even when you're no longer on DMBA's plans!</p>
+          <p><strong>Second superpower:</strong> Investment. FSAs sit in a cash account and earn no interest. So technically, the money you put in an FSA is slowly evaporating to inflation over the course of the year. But HSAs usually live in a brokerage account, where cash by itself can often earn enough interest to outpace inflation.</p>
+          <p>But even better, you can invest your HSA in index funds, where it can grow 8-10% on average. This is incredibly powerful. If you're in your early 20s, you can expect each $1,000 you invest in your HSA today to grow to $88,000 by the time you retire. That's not a typo-- that's the power of compound interest-- the eighth wonder of the world!</p>
+          <p><strong>Third superpower:</strong> Triple tax advantage! Like FSAs, HSAs are tax-deductible on the front-end. But they also grow tax-free, and are tax-free on withdrawal for medical expenses. HSA is the best parts of an FSA plus the best parts of a Roth IRA combined!</p>
+          <p>Those are some amazing superpowers. But those are long-term financial benefits that play out over the rest of our life. In order to provide an apples-to-apples comparison to PPO plans (which have zero long-term financial benefits), I had to ignore all of HSA's superpowers for this tool. Just know that they're there, and they're amazing. If you want to learn about the hundreds of thousands of dollars you save from just a single year's contributions to an HSA check out this great explainer video:</p>
+          <p><a href="https://www.youtube.com/watch?v=xn6FtTZYeWE" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=xn6FtTZYeWE</a></p>
         </div>
       )
     }
@@ -155,7 +75,10 @@ const FAQButton: React.FC = () => {
           <Modal.Title>Frequently Asked Questions</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Accordion>
+          <Accordion
+            activeKey={activeKey}
+            onSelect={(eventKey) => setActiveKey(typeof eventKey === 'string' ? eventKey : null)}
+          >
             {faqData.map((faq, index) => (
               <Accordion.Item eventKey={index.toString()} key={index}>
                 <Accordion.Header>{faq.question}</Accordion.Header>
@@ -174,6 +97,6 @@ const FAQButton: React.FC = () => {
       </Modal>
     </>
   );
-};
+});
 
 export default FAQButton;

@@ -4,8 +4,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
-import ShareButton from './components/ShareButton';
-import FAQButton from './components/FAQButton';
+import NavigationHeader from './components/NavigationHeader';
+import { FAQButtonRef } from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL } from './utils/urlParams';
@@ -33,6 +33,16 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [resultsOutOfDate, setResultsOutOfDate] = useState(false);
   const [hasCalculatedOnce, setHasCalculatedOnce] = useState(false);
+  const [faqRef, setFaqRef] = useState<FAQButtonRef | null>(null);
+  const [isHelpTextDismissed, setIsHelpTextDismissed] = useState(false);
+
+  // Load help text dismissed state from localStorage
+  useEffect(() => {
+    const dismissed = localStorage.getItem('helpTextDismissed');
+    if (dismissed === 'true') {
+      setIsHelpTextDismissed(true);
+    }
+  }, []);
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -83,10 +93,15 @@ function App() {
     if (hasCalculatedOnce && isInitialized) {
       setResultsOutOfDate(true);
     }
-  }, [userInputs, hasCalculatedOnce, isInitialized]);
+  }, [userInputs, isInitialized]);
 
   const handleInputChange = (newInputs: Partial<UserInputs>) => {
     setUserInputs(prev => ({ ...prev, ...newInputs }));
+  };
+
+  const handleDismissHelpText = () => {
+    setIsHelpTextDismissed(true);
+    localStorage.setItem('helpTextDismissed', 'true');
   };
 
   const handleComparePlans = () => {
@@ -104,25 +119,31 @@ function App() {
   };
 
   return (
-    <Container className="mt-4 mb-5">
+    <div className="d-flex flex-column min-vh-100">
+      <Container className="mt-4 flex-grow-1">
       <Row>
         <Col>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h1 className="mb-0">DMBA Health Plan Comparison Tool</h1>
-            <div>
-              <FAQButton />
-              <ShareButton userInputs={userInputs} />
-            </div>
-          </div>
+          <NavigationHeader userInputs={userInputs} onFAQRef={setFaqRef} />
 
-          <div className="mb-4 p-3 bg-light rounded">
-            <p className="mb-0 text-muted">
-              🎉 <strong>Welcome to open enrollment!</strong> Finding the perfect health plan doesn't have to be overwhelming.
-              This tool makes it easy to compare all your DMBA health plan options and see which one could save you the most money.
-              Just enter your expected healthcare costs, and we'll crunch the numbers for you - including premiums, deductibles,
-              tax savings, and employer contributions. Let's find your perfect plan! 💪
-            </p>
-          </div>
+          {!isHelpTextDismissed && (
+            <div className="mb-4 p-3 bg-light rounded position-relative">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="position-absolute top-0 end-0 mt-2 me-2"
+                onClick={handleDismissHelpText}
+                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+              >
+                ×
+              </Button>
+              <p className="mb-0 text-muted pe-5">
+                <strong>Welcome to open enrollment!</strong> Finding the perfect health plan doesn't have to be overwhelming.
+                This tool makes it easy to compare all your DMBA health plan options and see which one could save you the most money.
+                Just enter your expected healthcare costs, and we'll crunch the numbers for you - including premiums, deductibles,
+                tax savings, and employer contributions. Let's find your perfect plan!
+              </p>
+            </div>
+          )}
 
           {error && (
             <Alert variant="danger" className="mb-4">
@@ -134,21 +155,25 @@ function App() {
             inputs={userInputs}
             onChange={handleInputChange}
             planData={planData}
+            faqRef={faqRef}
           />
 
-          <div className="mt-4 d-flex align-items-center gap-3">
+          <div className="mt-4">
             <Button
               variant="success"
               size="lg"
               onClick={handleComparePlans}
               disabled={!planData}
+              className="w-100 mb-3"
             >
               📊 Compare Plans
             </Button>
             {resultsOutOfDate && hasCalculatedOnce && (
-              <span className="text-warning">
-                ⚠️ Results out of date
-              </span>
+              <div className="text-center">
+                <span className="text-warning">
+                  ⚠️ Results out of date
+                </span>
+              </div>
             )}
           </div>
 
@@ -160,21 +185,25 @@ function App() {
           )}
         </Col>
       </Row>
+      </Container>
 
-      <footer className="mt-5 pt-4 border-top text-center text-muted">
-        <p className="mb-0">
-          Made with ❤️ by{' '}
-          <a
-            href="https://watkins.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-decoration-none"
-          >
-            Matthew Watkins
-          </a>
-        </p>
+      <footer className="mt-auto py-4 border-top text-center text-muted bg-light">
+        <Container>
+          <p className="mb-0">
+            Made with ❤️ by{' '}
+            <a
+              href="https://watkins.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-decoration-none"
+            >
+              Matthew Watkins
+            </a>
+            , 2025.
+          </p>
+        </Container>
       </footer>
-    </Container>
+    </div>
   );
 }
 

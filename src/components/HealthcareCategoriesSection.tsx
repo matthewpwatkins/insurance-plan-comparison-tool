@@ -171,7 +171,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                 </Form.Select>
               </Form.Group>
             </Col>
-            <Col md={4} className="d-flex align-items-end">
+            <Col md={4} className="d-flex align-items-end mt-3 mt-md-0">
               <Button
                 variant="primary"
                 onClick={addCategory}
