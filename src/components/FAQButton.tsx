@@ -5,7 +5,11 @@ export interface FAQButtonRef {
   openFAQ: (sectionIndex?: number) => void;
 }
 
-const FAQButton = forwardRef<FAQButtonRef>((props, ref) => {
+interface FAQButtonProps {
+  showButton?: boolean;
+}
+
+const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true }, ref) => {
   const [showModal, setShowModal] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
@@ -62,13 +66,15 @@ const FAQButton = forwardRef<FAQButtonRef>((props, ref) => {
 
   return (
     <>
-      <Button
-        variant="outline-primary"
-        onClick={() => setShowModal(true)}
-        className="ms-2"
-      >
-        📋 FAQ
-      </Button>
+      {showButton && (
+        <Button
+          variant="outline-primary"
+          onClick={() => setShowModal(true)}
+          className="ms-2"
+        >
+          📋 FAQ
+        </Button>
+      )}
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
