@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import CostInputForm from './components/CostInputForm';
@@ -30,6 +30,8 @@ function App() {
   const [results, setResults] = useState<PlanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [resultsOutOfDate, setResultsOutOfDate] = useState(false);
+  const [hasCalculatedOnce, setHasCalculatedOnce] = useState(false);
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -75,20 +77,29 @@ function App() {
     }
   }, [userInputs.year]);
 
-  // Recalculate results when inputs or plan data change
+  // Mark results as out of date when inputs change (after first calculation)
   useEffect(() => {
+    if (hasCalculatedOnce && isInitialized) {
+      setResultsOutOfDate(true);
+    }
+  }, [userInputs, hasCalculatedOnce, isInitialized]);
+
+  const handleInputChange = (newInputs: Partial<UserInputs>) => {
+    setUserInputs(prev => ({ ...prev, ...newInputs }));
+  };
+
+  const handleComparePlans = () => {
     if (planData && userInputs) {
       try {
+        setError(null);
         const calculatedResults = calculateAllPlans(planData, userInputs);
         setResults(calculatedResults);
+        setResultsOutOfDate(false);
+        setHasCalculatedOnce(true);
       } catch (err) {
         setError(`Calculation error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
-  }, [planData, userInputs]);
-
-  const handleInputChange = (newInputs: Partial<UserInputs>) => {
-    setUserInputs(prev => ({ ...prev, ...newInputs }));
   };
 
   return (
@@ -121,8 +132,24 @@ function App() {
             planData={planData}
           />
 
+          <div className="mt-4 d-flex align-items-center gap-3">
+            <Button
+              variant="success"
+              size="lg"
+              onClick={handleComparePlans}
+              disabled={!planData}
+            >
+              📊 Compare Plans
+            </Button>
+            {resultsOutOfDate && hasCalculatedOnce && (
+              <span className="text-warning">
+                ⚠️ Results out of date
+              </span>
+            )}
+          </div>
+
           {results.length > 0 && (
-            <div className="mt-4">
+            <div className="mt-4" style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}>
               <h2>Plan Comparison Results</h2>
               <ResultsTable results={results} />
             </div>
