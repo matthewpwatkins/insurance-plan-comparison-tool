@@ -75,27 +75,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
       <Card.Body>
         <Form>
           <Row className="mb-3">
-            <Col md={6}>
+            <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
-                <Form.Label className="d-flex justify-content-between">
-                  <span>Coverage Year</span>
-                  <HelpIcon
-                    title="Coverage Year"
-                    content={
-                      <div>
-                        <p>Select the year for which you want to compare health plans.</p>
-                        <p>Different years may have different:</p>
-                        <ul>
-                          <li>Premium costs</li>
-                          <li>HSA/FSA contribution limits</li>
-                          <li>Plan coverage details</li>
-                          <li>Employer HSA contributions</li>
-                        </ul>
-                        <p>Choose the year when your coverage will be active.</p>
-                      </div>
-                    }
-                  />
-                </Form.Label>
+                <Form.Label>Coverage Year</Form.Label>
                 <Form.Select
                   value={inputs.year}
                   onChange={(e) => handleChange('year', parseInt(e.target.value))}
@@ -108,29 +90,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="d-flex justify-content-between">
-                  <span>Coverage Type</span>
-                  <HelpIcon
-                    title="Coverage Type"
-                    content={
-                      <div>
-                        <p>Choose who will be covered under your health plan:</p>
-                        <ul>
-                          <li><strong>Single:</strong> Just you</li>
-                          <li><strong>Two Party:</strong> You and one other person (spouse or child)</li>
-                          <li><strong>Family:</strong> You and two or more family members</li>
-                        </ul>
-                        <p>Coverage type affects:</p>
-                        <ul>
-                          <li>Monthly premium costs</li>
-                          <li>Deductible amounts</li>
-                          <li>Out-of-pocket maximums</li>
-                          <li>HSA contribution limits</li>
-                        </ul>
-                      </div>
-                    }
-                  />
-                </Form.Label>
+                <Form.Label>Coverage Type</Form.Label>
                 <Form.Select
                   value={inputs.coverage}
                   onChange={(e) => handleChange('coverage', e.target.value)}
@@ -144,7 +104,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           </Row>
 
           <Row className="mb-3">
-            <Col md={6}>
+            <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
                   <span>Age Group</span>
@@ -204,34 +164,52 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
 
           <hr />
 
-          <h5>HSA/FSA Contributions</h5>
+          <h5 className="d-flex justify-content-between align-items-center">
+            <span>HSA/FSA Contributions</span>
+            <HelpIcon
+              title="HSA/FSA Contributions"
+              content={
+                <div>
+                  <h6><strong>Health Savings Account (HSA)</strong></h6>
+                  <p>Triple tax advantage for high-deductible health plans:</p>
+                  <ul>
+                    <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
+                    <li><strong>Tax-free growth:</strong> Investment earnings aren't taxed</li>
+                    <li><strong>Tax-free withdrawals:</strong> For qualified medical expenses</li>
+                  </ul>
+                  <p><strong>Key HSA benefits:</strong></p>
+                  <ul>
+                    <li>Money rolls over year to year (no "use it or lose it")</li>
+                    <li>Can be invested like a retirement account</li>
+                    <li>After age 65, works like a traditional IRA</li>
+                  </ul>
+                  <p>Your employer contributes ${employerHSAContribution?.toLocaleString()}, so your max is ${maxUserHSAContribution?.toLocaleString()}.</p>
+                  <p><em>Only available with HSA-eligible plans (high-deductible health plans).</em></p>
+
+                  <hr className="my-3" />
+
+                  <h6><strong>Flexible Spending Account (FSA)</strong></h6>
+                  <p>Tax-free healthcare spending for PPO plans:</p>
+                  <ul>
+                    <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
+                    <li><strong>Tax-free spending:</strong> Use for qualified medical expenses</li>
+                    <li><strong>Immediate access:</strong> Full annual amount available at start of year</li>
+                  </ul>
+                  <p><strong>Important FSA limitations:</strong></p>
+                  <ul>
+                    <li><strong>"Use it or lose it":</strong> Must spend by end of plan year (small carryover may be allowed)</li>
+                    <li><strong>Cannot invest:</strong> Money doesn't grow like HSA</li>
+                    <li><strong>PPO plans only:</strong> Can't have both FSA and HSA</li>
+                  </ul>
+                  <p>Best for predictable medical expenses you know you'll have during the year.</p>
+                </div>
+              }
+            />
+          </h5>
           <Row className="mb-3">
-            <Col md={6}>
+            <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
-                <Form.Label className="d-flex justify-content-between">
-                  <span>Your HSA Contribution <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></span>
-                  <HelpIcon
-                    title="HSA Contribution"
-                    content={
-                      <div>
-                        <p><strong>Health Savings Account (HSA)</strong> - Triple tax advantage:</p>
-                        <ul>
-                          <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
-                          <li><strong>Tax-free growth:</strong> Investment earnings aren't taxed</li>
-                          <li><strong>Tax-free withdrawals:</strong> For qualified medical expenses</li>
-                        </ul>
-                        <p><strong>Key benefits:</strong></p>
-                        <ul>
-                          <li>Money rolls over year to year (no "use it or lose it")</li>
-                          <li>Can be invested like a retirement account</li>
-                          <li>After age 65, works like a traditional IRA</li>
-                        </ul>
-                        <p>Your employer contributes ${employerHSAContribution?.toLocaleString()}, so your max is ${maxUserHSAContribution?.toLocaleString()}.</p>
-                        <p><em>Only available with HSA-eligible plans (high-deductible health plans).</em></p>
-                      </div>
-                    }
-                  />
-                </Form.Label>
+                <Form.Label>Your HSA Contribution <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
@@ -247,29 +225,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label className="d-flex justify-content-between">
-                  <span>Your FSA Contribution <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></span>
-                  <HelpIcon
-                    title="FSA Contribution"
-                    content={
-                      <div>
-                        <p><strong>Flexible Spending Account (FSA)</strong> - Tax-free healthcare spending:</p>
-                        <ul>
-                          <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
-                          <li><strong>Tax-free spending:</strong> Use for qualified medical expenses</li>
-                          <li><strong>Immediate access:</strong> Full annual amount available at start of year</li>
-                        </ul>
-                        <p><strong>Important limitations:</strong></p>
-                        <ul>
-                          <li><strong>"Use it or lose it":</strong> Must spend by end of plan year (small carryover may be allowed)</li>
-                          <li><strong>Cannot invest:</strong> Money doesn't grow like HSA</li>
-                          <li><strong>PPO plans only:</strong> Can't have both FSA and HSA</li>
-                        </ul>
-                        <p>Best for predictable medical expenses you know you'll have during the year.</p>
-                      </div>
-                    }
-                  />
-                </Form.Label>
+                <Form.Label>Your FSA Contribution <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput

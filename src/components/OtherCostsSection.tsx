@@ -27,12 +27,12 @@ const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange 
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h6 className="mb-0">
-            Other Covered Healthcare Costs
+            "Other" Covered Costs
           </h6>
           <small className="text-muted">Uses plan default coverage rates</small>
         </div>
         <Row>
-          <Col md={6}>
+          <Col md={6} className="mb-3 mb-md-0">
             <Form.Group>
               <Form.Label className="d-flex justify-content-between">
                 <span>In-Network Annual Cost</span>

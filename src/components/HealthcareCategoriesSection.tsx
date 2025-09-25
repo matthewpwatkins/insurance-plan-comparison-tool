@@ -77,7 +77,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   </Button>
                 </div>
                 <Row>
-                  <Col md={6}>
+                  <Col md={6} className="mb-3 mb-md-0">
                     <Form.Group>
                       <Form.Label className="d-flex justify-content-between">
                         <span>In-Network Annual Cost</span>
