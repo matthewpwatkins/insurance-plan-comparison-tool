@@ -210,7 +210,7 @@ function App() {
               </div>
               {results.length > 1 && (
                 <Alert variant="success" className="mb-3">
-                  <strong>💰 Great news!</strong> You could save at least <strong>${(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing {results[0].planName}.
+                  <strong>💰 Great news!</strong> You could save at least <strong>${Math.round(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing {results[0].planName}.
                 </Alert>
               )}
               <ResultsTable results={results} />

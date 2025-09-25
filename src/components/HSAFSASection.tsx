@@ -159,6 +159,11 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     }
                   />
                 </Form.Label>
+                <div className="mb-2">
+                  <small className="text-muted">
+                    If I went with an HSA plan, I'd put <strong>up to</strong> this amount in my HSA (do not include the employer match in this number).
+                  </small>
+                </div>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
@@ -189,6 +194,11 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     }
                   />
                 </Form.Label>
+                <div className="mb-2">
+                  <small className="text-muted">
+                    If I went with a PPO plan, I'd put this amount in DMBA's FSA.
+                  </small>
+                </div>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
