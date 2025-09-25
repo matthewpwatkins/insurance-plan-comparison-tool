@@ -13,7 +13,7 @@ interface ShareButtonProps {
 const ShareButton: React.FC<ShareButtonProps> = ({
   userInputs,
   className = '',
-  variant = 'outline-primary',
+  variant = 'primary',
   size
 }) => {
   const [showToast, setShowToast] = useState(false);
