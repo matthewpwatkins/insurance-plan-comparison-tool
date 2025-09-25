@@ -10,8 +10,6 @@ export const userInputsToURLParams = (inputs: UserInputs): URLSearchParams => {
   params.set('coverage', inputs.coverage);
   params.set('ageGroup', inputs.ageGroup);
   params.set('taxRate', inputs.taxRate.toString());
-  params.set('totalAnnualCosts', inputs.costs.totalAnnualCosts.toString());
-  params.set('networkMix', inputs.costs.networkMix);
   params.set('hsaContribution', inputs.hsaContribution.toString());
   params.set('fsaContribution', inputs.fsaContribution.toString());
 
@@ -51,26 +49,6 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): PartialUse
     }
   }
 
-  // Parse costs
-  const totalAnnualCosts = searchParams.get('totalAnnualCosts');
-  const networkMix = searchParams.get('networkMix');
-
-  if (totalAnnualCosts || networkMix) {
-    const costsUpdate: Partial<UserCosts> = {};
-
-    if (totalAnnualCosts) {
-      const parsed = parseFloat(totalAnnualCosts);
-      if (!isNaN(parsed) && parsed >= 0) {
-        costsUpdate.totalAnnualCosts = parsed;
-      }
-    }
-
-    if (networkMix && ['in_network', 'mixed', 'out_network'].includes(networkMix)) {
-      costsUpdate.networkMix = networkMix as 'in_network' | 'mixed' | 'out_network';
-    }
-
-    updates.costs = costsUpdate;
-  }
 
   // Parse HSA contribution
   const hsaContribution = searchParams.get('hsaContribution');

@@ -17,10 +17,7 @@ function App() {
     coverage: 'family',
     ageGroup: 'under_55',
     taxRate: 24,
-    costInputMode: 'simple',
     costs: {
-      totalAnnualCosts: 2000,
-      networkMix: 'in_network',
       categoryEstimates: [],
       otherCosts: {
         inNetworkCost: 2000,

@@ -78,8 +78,6 @@ export interface CategoryEstimate {
 }
 
 export interface UserCosts {
-  totalAnnualCosts: number;
-  networkMix: 'in_network' | 'mixed' | 'out_network';
   categoryEstimates: CategoryEstimate[];
   otherCosts?: {
     inNetworkCost: number;
@@ -92,7 +90,6 @@ export interface UserInputs {
   coverage: 'single' | 'two_party' | 'family';
   ageGroup: 'under_55' | '55_plus';
   taxRate: number;
-  costInputMode: 'simple' | 'detailed';
   costs: UserCosts;
   hsaContribution: number;
   fsaContribution: number;
@@ -125,8 +122,6 @@ export interface URLParams {
   coverage?: string;
   ageGroup?: string;
   taxRate?: string;
-  totalAnnualCosts?: string;
-  networkMix?: string;
   hsaContribution?: string;
   fsaContribution?: string;
 }

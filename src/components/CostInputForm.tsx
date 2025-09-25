@@ -302,7 +302,6 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h6 className="mb-0">
-                    <Badge bg="secondary" className="me-2">Category</Badge>
                     {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
                   </h6>
                   <Button
@@ -352,8 +351,7 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className="mb-0">
-                  <Badge bg="info" className="me-2">Other</Badge>
-                  Other Healthcare Costs
+                  Other Covered Healthcare Costs
                 </h6>
                 <small className="text-muted">Uses plan default coverage rates</small>
               </div>

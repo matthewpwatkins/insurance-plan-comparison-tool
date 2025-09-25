@@ -134,39 +134,6 @@ const calculateOutOfPocketCosts = (
   return Math.min(totalOutOfPocket, oopMaxInNetwork);
 };
 
-/**
- * Simple out-of-pocket calculation
- * Assumes all costs are subject to deductible, then coinsurance, capped at OOP max
- */
-const calculateSimpleOutOfPocketCosts = (
-  plan: HealthPlan,
-  totalCosts: number,
-  coverage: 'single' | 'two_party' | 'family'
-): number => {
-  // Get plan parameters (assuming in-network for simple calculation)
-  const deductible = getDeductibleForCoverage(plan, coverage, 'in_network');
-  const oopMax = getOOPMaxForCoverage(plan, coverage, 'in_network');
-
-  let remainingCosts = totalCosts;
-  let outOfPocket = 0;
-
-  // Apply deductible first
-  const deductiblePaid = Math.min(remainingCosts, deductible);
-  outOfPocket += deductiblePaid;
-  remainingCosts -= deductiblePaid;
-
-  // If there are remaining costs, apply coinsurance
-  if (remainingCosts > 0) {
-    // For simplicity, assume average coinsurance of 20% for in-network
-    // (This would be more sophisticated in the detailed version)
-    const coinsuranceRate = 0.20;
-    const coinsurancePaid = remainingCosts * coinsuranceRate;
-    outOfPocket += coinsurancePaid;
-  }
-
-  // Cap at out-of-pocket maximum
-  return Math.min(outOfPocket, oopMax);
-};
 
 /**
  * Calculate out-of-pocket costs for a specific category
