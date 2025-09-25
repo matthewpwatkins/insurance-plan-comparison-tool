@@ -32,8 +32,14 @@ export const formatNumber = (num: number | null | undefined): string => {
 export const parseFormattedNumber = (str: string | number): number => {
   if (!str) return 0;
 
-  // Remove commas, dollar signs, and other non-digit characters except decimal points
-  const cleaned = str.toString().replace(/[,$]/g, '');
+  // Remove commas, dollar signs, and spaces
+  const cleaned = str.toString().replace(/[,$\s]/g, '');
+
+  // Check if the cleaned string is a valid number (digits, decimal point, optional minus sign, and scientific notation)
+  if (!/^-?\d*\.?\d*([eE][+-]?\d+)?$/.test(cleaned) || cleaned === '' || cleaned === '-' || cleaned === '.') {
+    return 0;
+  }
+
   const parsed = parseFloat(cleaned);
 
   return isNaN(parsed) ? 0 : parsed;
