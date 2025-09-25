@@ -53,7 +53,6 @@ const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange 
               />
             </span>
           </h6>
-          <small className="text-muted">Uses plan default coverage rates</small>
         </div>
         <Row>
           <Col md={6} className="mb-3 mb-md-0">

@@ -170,6 +170,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
               title="HSA/FSA Contributions"
               content={
                 <div>
+                  <div className="alert alert-info mb-3">
+                    <strong>Important:</strong> FSAs and HSAs are mutually exclusive - you can't have both. To compare all plan options, this tool asks for both values as hypothetical scenarios: "If you chose an FSA plan, how much would you contribute?" and "If you chose an HSA plan, how much would you contribute?"
+                  </div>
+
                   <h6><strong>Health Savings Account (HSA)</strong></h6>
                   <p>Triple tax advantage for high-deductible health plans:</p>
                   <ul>
@@ -183,7 +187,20 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                     <li>Can be invested like a retirement account</li>
                     <li>After age 65, works like a traditional IRA</li>
                   </ul>
-                  <p>Your employer contributes ${employerHSAContribution?.toLocaleString()}, so your max is ${maxUserHSAContribution?.toLocaleString()}.</p>
+
+                  <h6><strong>Employer HSA Contributions by Plan:</strong></h6>
+                  <ul>
+                    {planData?.plans.filter(plan => plan.type === 'HSA').map(plan => (
+                      <li key={plan.name}>
+                        <strong>{plan.name}:</strong>
+                        <ul>
+                          <li>Single: ${plan.employer_hsa_contribution?.single?.toLocaleString() || '0'}</li>
+                          <li>Two Party: ${plan.employer_hsa_contribution?.two_party?.toLocaleString() || '0'}</li>
+                          <li>Family: ${plan.employer_hsa_contribution?.family?.toLocaleString() || '0'}</li>
+                        </ul>
+                      </li>
+                    )) || <li>No HSA plans available</li>}
+                  </ul>
                   <p><em>Only available with HSA-eligible plans (high-deductible health plans).</em></p>
 
                   <hr className="my-3" />
@@ -206,10 +223,15 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
               }
             />
           </h5>
+          <div className="mb-3">
+            <small className="text-muted">
+              <strong>Note:</strong> FSAs and HSAs are mutually exclusive. Enter how much you would contribute to each type to compare all plan options.
+            </small>
+          </div>
           <Row className="mb-3">
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
-                <Form.Label>Your HSA Contribution <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label>If you had an HSA, how much would you contribute? <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
@@ -225,7 +247,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Your FSA Contribution <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label>If you had an FSA, how much would you contribute? <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
