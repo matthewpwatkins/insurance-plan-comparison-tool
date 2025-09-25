@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, Form, Row, Col, InputGroup, Button } from 'react-bootstrap';
 import { getCategoriesData } from '../generated/dataHelpers';
 import FormattedNumberInput from './FormattedNumberInput';
+import HelpIcon from './HelpIcon';
 import { UserInputs, CategoryEstimate } from '../types';
 
 interface HealthcareCategoriesSectionProps {
@@ -78,7 +79,29 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                 <Row>
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label>In-Network Annual Cost</Form.Label>
+                      <Form.Label>
+                        In-Network Annual Cost
+                        <HelpIcon
+                          title="Category In-Network Cost"
+                          content={
+                            <div>
+                              <p>Estimate your annual spending for this healthcare category using <strong>in-network</strong> providers.</p>
+                              <p><strong>This category has specific coverage rules:</strong></p>
+                              <ul>
+                                <li>May have fixed copays instead of coinsurance</li>
+                                <li>Some services may be covered at 100%</li>
+                                <li>Coverage details vary by plan type</li>
+                              </ul>
+                              <p><strong>Examples for this category:</strong></p>
+                              <ul>
+                                <li>Total cost of all visits/services in this category</li>
+                                <li>Multiply: visits per year × average cost per visit</li>
+                                <li>Consider both routine and unexpected needs</li>
+                              </ul>
+                            </div>
+                          }
+                        />
+                      </Form.Label>
                       <InputGroup>
                         <InputGroup.Text>$</InputGroup.Text>
                         <FormattedNumberInput
@@ -92,7 +115,29 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   </Col>
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label>Out-of-Network Annual Cost</Form.Label>
+                      <Form.Label>
+                        Out-of-Network Annual Cost
+                        <HelpIcon
+                          title="Category Out-of-Network Cost"
+                          content={
+                            <div>
+                              <p>Estimate your annual spending for this healthcare category using <strong>out-of-network</strong> providers.</p>
+                              <p><strong>Important notes:</strong></p>
+                              <ul>
+                                <li>Out-of-network costs are significantly higher</li>
+                                <li>Some categories may have limited or no out-of-network coverage</li>
+                                <li>You may need to pay upfront and seek reimbursement</li>
+                              </ul>
+                              <p><strong>Consider:</strong></p>
+                              <ul>
+                                <li>Emergency care is usually covered at in-network rates</li>
+                                <li>Some specialists may not be available in-network</li>
+                                <li>Leave at $0 if you plan to stay in-network</li>
+                              </ul>
+                            </div>
+                          }
+                        />
+                      </Form.Label>
                       <InputGroup>
                         <InputGroup.Text>$</InputGroup.Text>
                         <FormattedNumberInput

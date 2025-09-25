@@ -3,6 +3,7 @@ import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution, getAvailableDataYears } from '../services/planDataService';
 import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
+import HelpIcon from './HelpIcon';
 import { UserInputs, PlanData } from '../types';
 
 interface BasicInfoSectionProps {
@@ -72,7 +73,25 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Coverage Year</Form.Label>
+                <Form.Label>
+                  Coverage Year
+                  <HelpIcon
+                    title="Coverage Year"
+                    content={
+                      <div>
+                        <p>Select the year for which you want to compare health plans.</p>
+                        <p>Different years may have different:</p>
+                        <ul>
+                          <li>Premium costs</li>
+                          <li>HSA/FSA contribution limits</li>
+                          <li>Plan coverage details</li>
+                          <li>Employer HSA contributions</li>
+                        </ul>
+                        <p>Choose the year when your coverage will be active.</p>
+                      </div>
+                    }
+                  />
+                </Form.Label>
                 <Form.Select
                   value={inputs.year}
                   onChange={(e) => handleChange('year', parseInt(e.target.value))}
@@ -85,7 +104,29 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Coverage Type</Form.Label>
+                <Form.Label>
+                  Coverage Type
+                  <HelpIcon
+                    title="Coverage Type"
+                    content={
+                      <div>
+                        <p>Choose who will be covered under your health plan:</p>
+                        <ul>
+                          <li><strong>Single:</strong> Just you</li>
+                          <li><strong>Two Party:</strong> You and one other person (spouse or child)</li>
+                          <li><strong>Family:</strong> You and two or more family members</li>
+                        </ul>
+                        <p>Coverage type affects:</p>
+                        <ul>
+                          <li>Monthly premium costs</li>
+                          <li>Deductible amounts</li>
+                          <li>Out-of-pocket maximums</li>
+                          <li>HSA contribution limits</li>
+                        </ul>
+                      </div>
+                    }
+                  />
+                </Form.Label>
                 <Form.Select
                   value={inputs.coverage}
                   onChange={(e) => handleChange('coverage', e.target.value)}
@@ -101,7 +142,22 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Age Group</Form.Label>
+                <Form.Label>
+                  Age Group
+                  <HelpIcon
+                    title="Age Group"
+                    content={
+                      <div>
+                        <p>Select your age group to determine HSA contribution limits:</p>
+                        <ul>
+                          <li><strong>Under 55:</strong> Standard HSA contribution limits apply</li>
+                          <li><strong>55+:</strong> You're eligible for additional "catch-up" HSA contributions of $1,000 per year</li>
+                        </ul>
+                        <p>This only affects HSA plans. If you or your spouse will turn 55 during the coverage year, select "55+" to maximize your tax savings.</p>
+                      </div>
+                    }
+                  />
+                </Form.Label>
                 <Form.Select
                   value={inputs.ageGroup}
                   onChange={(e) => handleChange('ageGroup', e.target.value)}
@@ -109,14 +165,34 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                   <option value="under_55">Under 55</option>
                   <option value="55_plus">55+</option>
                 </Form.Select>
-                <Form.Text className="text-muted">
-                  55+ allows additional HSA catch-up contributions
-                </Form.Text>
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>Marginal Tax Rate</Form.Label>
+                <Form.Label>
+                  Marginal Tax Rate
+                  <HelpIcon
+                    title="Marginal Tax Rate"
+                    content={
+                      <div>
+                        <p>Enter your combined federal and state marginal tax rate as a percentage.</p>
+                        <p>This is the rate at which your last dollar of income is taxed, and it's used to calculate:</p>
+                        <ul>
+                          <li>Tax savings from HSA/FSA contributions</li>
+                          <li>After-tax cost of premiums</li>
+                          <li>Net value of employer HSA contributions</li>
+                        </ul>
+                        <p><strong>Common rates:</strong></p>
+                        <ul>
+                          <li>22% federal + 5% state = 27% total</li>
+                          <li>24% federal + 6% state = 30% total</li>
+                          <li>32% federal + 7% state = 39% total</li>
+                        </ul>
+                        <p>Check your last tax return or use an online tax calculator to find your marginal rate.</p>
+                      </div>
+                    }
+                  />
+                </Form.Label>
                 <InputGroup>
                   <FormattedNumberInput
                     value={inputs.taxRate}
@@ -128,9 +204,6 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                   />
                   <InputGroup.Text>%</InputGroup.Text>
                 </InputGroup>
-                <Form.Text className="text-muted">
-                  Your combined federal and state marginal tax rate
-                </Form.Text>
               </Form.Group>
             </Col>
           </Row>
@@ -144,6 +217,27 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                 <Form.Label>
                   Your HSA Contribution
                   <small className="text-muted"> (Max: ${maxUserHSAContribution?.toLocaleString()})</small>
+                  <HelpIcon
+                    title="HSA Contribution"
+                    content={
+                      <div>
+                        <p><strong>Health Savings Account (HSA)</strong> - Triple tax advantage:</p>
+                        <ul>
+                          <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
+                          <li><strong>Tax-free growth:</strong> Investment earnings aren't taxed</li>
+                          <li><strong>Tax-free withdrawals:</strong> For qualified medical expenses</li>
+                        </ul>
+                        <p><strong>Key benefits:</strong></p>
+                        <ul>
+                          <li>Money rolls over year to year (no "use it or lose it")</li>
+                          <li>Can be invested like a retirement account</li>
+                          <li>After age 65, works like a traditional IRA</li>
+                        </ul>
+                        <p>Your employer contributes ${employerHSAContribution?.toLocaleString()}, so your max is ${maxUserHSAContribution?.toLocaleString()}.</p>
+                        <p><em>Only available with HSA-eligible plans (high-deductible health plans).</em></p>
+                      </div>
+                    }
+                  />
                 </Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
@@ -156,9 +250,6 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                     required
                   />
                 </InputGroup>
-                <Form.Text className="text-muted">
-                  Maximum after employer contribution (${employerHSAContribution?.toLocaleString()}). Only applies to HSA plans.
-                </Form.Text>
               </Form.Group>
             </Col>
             <Col md={6}>
@@ -166,6 +257,26 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                 <Form.Label>
                   Your FSA Contribution
                   <small className="text-muted"> (Max: ${maxFSAContribution?.toLocaleString()})</small>
+                  <HelpIcon
+                    title="FSA Contribution"
+                    content={
+                      <div>
+                        <p><strong>Flexible Spending Account (FSA)</strong> - Tax-free healthcare spending:</p>
+                        <ul>
+                          <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
+                          <li><strong>Tax-free spending:</strong> Use for qualified medical expenses</li>
+                          <li><strong>Immediate access:</strong> Full annual amount available at start of year</li>
+                        </ul>
+                        <p><strong>Important limitations:</strong></p>
+                        <ul>
+                          <li><strong>"Use it or lose it":</strong> Must spend by end of plan year (small carryover may be allowed)</li>
+                          <li><strong>Cannot invest:</strong> Money doesn't grow like HSA</li>
+                          <li><strong>PPO plans only:</strong> Can't have both FSA and HSA</li>
+                        </ul>
+                        <p>Best for predictable medical expenses you know you'll have during the year.</p>
+                      </div>
+                    }
+                  />
                 </Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
@@ -178,9 +289,6 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                     required
                   />
                 </InputGroup>
-                <Form.Text className="text-muted">
-                  Only applies to PPO plans (can't have both HSA and FSA)
-                </Form.Text>
               </Form.Group>
             </Col>
           </Row>
