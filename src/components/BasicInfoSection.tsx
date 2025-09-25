@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution, getAvailableDataYears } from '../services/planDataService';
-import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
 import { UserInputs, PlanData } from '../types';
@@ -33,14 +32,28 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
     return minEmployerContribution;
   };
 
+  const getMaxEmployerHSAContribution = (): number => {
+    if (!planData) return 0;
+
+    const hsaPlans = planData.plans.filter(plan => plan.type === 'HSA');
+    if (hsaPlans.length === 0) return 0;
+
+    // Get the maximum employer contribution across HSA plans
+    const maxEmployerContribution = Math.max(
+      ...hsaPlans.map(plan => getEmployerHSAContribution(plan, inputs.coverage))
+    );
+
+    return maxEmployerContribution;
+  };
+
   // Calculate contribution limits and employer contributions
-  const maxUserHSAContribution = planData
-    ? getMaxHSAContribution(planData, inputs.coverage, inputs.ageGroup) - getEmployerHSAContributionForDisplay()
+  const maxTotalHSAContribution = planData
+    ? getMaxHSAContribution(planData, inputs.coverage, inputs.ageGroup)
     : 0;
+  const minEmployerHSAContribution = getEmployerHSAContributionForDisplay();
+  const maxEmployerHSAContribution = getMaxEmployerHSAContribution();
 
   const maxFSAContribution = planData ? getMaxFSAContribution(planData) : 0;
-
-  const employerHSAContribution = getEmployerHSAContributionForDisplay();
 
   // Update default contribution values when dependencies change
   useEffect(() => {
@@ -49,7 +62,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
 
       // Set default HSA contribution if it's currently 0 or null
       if (inputs.hsaContribution === 0 || inputs.hsaContribution === null) {
-        newValues.hsaContribution = maxUserHSAContribution;
+        newValues.hsaContribution = maxTotalHSAContribution;
       }
 
       // Set default FSA contribution if it's currently 0 or null
@@ -61,7 +74,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
         onChange(newValues);
       }
     }
-  }, [planData, inputs.coverage, inputs.ageGroup, maxUserHSAContribution, maxFSAContribution, inputs.hsaContribution, inputs.fsaContribution, onChange]);
+  }, [planData, inputs.coverage, inputs.ageGroup, maxTotalHSAContribution, maxFSAContribution, inputs.hsaContribution, inputs.fsaContribution, onChange]);
 
   return (
     <Card className="mb-4">
@@ -255,14 +268,27 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
-                <Form.Label>HSA <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label className="d-flex justify-content-between">
+                  <span>HSA <small className="text-muted">(incl. employer contributions, IRS max: ${maxTotalHSAContribution?.toLocaleString()})</small></span>
+                  <HelpIcon
+                    title="HSA"
+                    content={
+                      <div>
+                        <p>Enter your total desired HSA contribution for the year.</p>
+                        <p><strong>Max: ${maxTotalHSAContribution?.toLocaleString()}</strong> - IRS annual limit for {inputs.coverage === 'single' ? 'single' : 'family'} coverage</p>
+                        <p>Your employer will contribute either <strong>${minEmployerHSAContribution?.toLocaleString()}</strong> or <strong>${maxEmployerHSAContribution?.toLocaleString()}</strong> depending on your plan choice.</p>
+                        <p>The remaining amount will come from your paycheck as pre-tax deductions.</p>
+                      </div>
+                    }
+                  />
+                </Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
                     value={inputs.hsaContribution}
                     onChange={(value) => handleChange('hsaContribution', value)}
-                    min={0}
-                    max={maxUserHSAContribution}
+                    min={minEmployerHSAContribution}
+                    max={maxTotalHSAContribution}
                     step={100}
                     required
                   />
@@ -271,7 +297,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>FSA <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label>FSA <small className="text-muted">(IRS max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput

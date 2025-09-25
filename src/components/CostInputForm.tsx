@@ -22,7 +22,7 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
 
       <Card className="mb-4">
         <Card.Header>
-          <h3>Annual Healthcare Cost Estimates</h3>
+          <h3>Annual Cost Estimates</h3>
         </Card.Header>
         <Card.Body>
           <Form>

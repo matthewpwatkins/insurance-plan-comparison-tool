@@ -134,9 +134,9 @@ describe('costCalculator', () => {
       expect(result.planName).toBe('Test HSA Plan');
       expect(result.planType).toBe('HSA');
       expect(result.annualPremiums).toBe(1800); // 150 * 12
-      expect(result.userContribution).toBe(2000); // HSA contribution
+      expect(result.userContribution).toBe(1500); // Total HSA contribution 2000 - employer 500 = user 1500
       expect(result.employerContribution).toBe(500); // Employer HSA contribution
-      expect(result.taxSavings).toBe(550); // (2000 + 500) * 0.22
+      expect(result.taxSavings).toBe(440); // Total contribution 2000 * 0.22
     });
 
     it('should handle copay categories correctly', () => {
@@ -351,9 +351,9 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
 
-      // Tax savings calculation: (3800 + 500) * 0.4 = 1720
-      expect(result.taxSavings).toBe(1720);
-      expect(result.totalCost).toBe(80); // 1800 + 0 - 1720 = 80
+      // Tax savings calculation: Total contribution 3800 * 0.4 = 1520
+      expect(result.taxSavings).toBe(1520);
+      expect(result.totalCost).toBe(280); // 1800 + 0 - 1520 = 280
     });
   });
 

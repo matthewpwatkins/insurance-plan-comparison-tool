@@ -20,7 +20,7 @@ fsa_contribution_limits:
 plans:
   # PPO 90 Plan - High premium, low out-of-pocket costs
   # This plan has 90% coverage (10% coinsurance) with low deductibles
-  - name: "DMBA PPO 90 Plan"
+  - name: "DMBA PPO 90"
     type: "PPO"
     # Monthly premium costs for different coverage levels
     monthly_premiums:
@@ -161,7 +161,7 @@ plans:
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   # This plan has 70% coverage (30% coinsurance) with moderate deductibles
-  - name: "DMBA PPO 70 Plan"
+  - name: "DMBA PPO 70"
     type: "PPO"
     monthly_premiums:
       single: 101.20
@@ -297,7 +297,7 @@ plans:
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   # This plan has 80% coverage (20% coinsurance) after deductible, includes employer HSA contribution
-  - name: "DMBA HSA 80 Plan"
+  - name: "DMBA HSA 80"
     type: "HSA"
     # Annual employer contribution to your HSA account (free money!)
     employer_hsa_contribution:
@@ -376,7 +376,7 @@ plans:
 
   # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
   # This plan has 60% coverage (40% coinsurance) after deductible, includes highest employer HSA contribution
-  - name: "DMBA HSA 60 Plan"
+  - name: "DMBA HSA 60"
     type: "HSA"
     employer_hsa_contribution:
       single: 1_500

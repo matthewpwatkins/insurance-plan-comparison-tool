@@ -77,11 +77,11 @@ const calculateContributionsAndTaxSavings = (
     employerContribution = getEmployerHSAContribution(plan, coverage);
     const maxHSAContribution = getMaxHSAContribution(planData, coverage, ageGroup);
 
-    // User contributes their specified amount (up to remaining space)
-    const remainingHSASpace = maxHSAContribution - employerContribution;
-    userContribution = Math.min(userInputs.hsaContribution, remainingHSASpace);
+    // userInputs.hsaContribution now represents total contribution desired
+    const totalDesiredContribution = Math.min(userInputs.hsaContribution, maxHSAContribution);
+    userContribution = Math.max(0, totalDesiredContribution - employerContribution);
 
-    // Tax savings on total HSA contributions
+    // Tax savings on total HSA contributions (user + employer)
     taxSavings = (userContribution + employerContribution) * taxRateDecimal;
   } else {
     // PPO plans with FSA
