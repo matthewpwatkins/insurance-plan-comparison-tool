@@ -43,11 +43,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
       <Card.Body>
         <Row className="g-3">
           <Col xs={6} md={4} lg={3}>
-            <small className="text-muted d-block">Annual Premiums</small>
+            <small className="text-muted d-block">Your Premiums</small>
             <div className="fw-semibold fs-6">{formatCurrency(result.annualPremiums)}</div>
           </Col>
           <Col xs={6} md={4} lg={3}>
-            <small className="text-muted d-block">Out-of-Pocket Costs</small>
+            <small className="text-muted d-block">Your Out-of-Pocket Costs</small>
             <div className="fw-semibold fs-6">{formatCurrency(result.outOfPocketCosts)}</div>
           </Col>
           <Col xs={6} md={4} lg={3}>
@@ -75,7 +75,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
             </div>
           </Col>
           <Col xs={6} md={4} lg={3}>
-            <small className="text-muted d-block">Tax Savings</small>
+            <small className="text-muted d-block">Your Tax Savings</small>
             <div className="fw-semibold text-success fs-6">
               {formatCurrency(result.taxSavings)}
             </div>
