@@ -10,9 +10,15 @@ export interface FSAContributionLimits {
   healthcare_fsa: number;
 }
 
+export interface PayrollTaxRates {
+  social_security: number;
+  medicare: number;
+}
+
 export interface PlanData {
   year: number;
   hsa_contribution_limits: HSAContributionLimits;
   fsa_contribution_limits: FSAContributionLimits;
+  payroll_tax_rates: PayrollTaxRates;
   plans: HealthPlan[];
 }

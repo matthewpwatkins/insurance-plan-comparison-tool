@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Form } from 'react-bootstrap';
 import BasicInfoSection from './BasicInfoSection';
+import HSAFSASection from './HSAFSASection';
 import HealthcareCategoriesSection from './HealthcareCategoriesSection';
 import OtherCostsSection from './OtherCostsSection';
 import { UserInputs, PlanData } from '../types';
@@ -15,6 +16,12 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
   return (
     <>
       <BasicInfoSection
+        inputs={inputs}
+        onChange={onChange}
+        planData={planData}
+      />
+
+      <HSAFSASection
         inputs={inputs}
         onChange={onChange}
         planData={planData}

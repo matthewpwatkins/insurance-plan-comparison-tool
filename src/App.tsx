@@ -19,7 +19,7 @@ function App() {
     year: getDefaultYear(),
     coverage: 'family',
     ageGroup: 'under_55',
-    taxRate: 24,
+    taxRate: 21.7,
     costs: {
       categoryEstimates: [],
       otherCosts: {

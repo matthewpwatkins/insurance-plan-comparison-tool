@@ -29,6 +29,10 @@ describe('costCalculator', () => {
     fsa_contribution_limits: {
       healthcare_fsa: 3300,
     },
+    payroll_tax_rates: {
+      social_security: 6.2,
+      medicare: 1.45,
+    },
     plans: [],
   };
 
@@ -125,7 +129,7 @@ describe('costCalculator', () => {
       expect(result.annualPremiums).toBe(2400); // 200 * 12
       expect(result.userContribution).toBe(1500); // FSA contribution
       expect(result.employerContribution).toBe(0); // No employer contribution for PPO
-      expect(result.taxSavings).toBe(330); // 1500 * 0.22
+      expect(result.taxSavings).toBe(444.75); // 1500 * (0.22 + 0.0765)
     });
 
     it('should calculate HSA plan costs correctly', () => {
@@ -136,7 +140,7 @@ describe('costCalculator', () => {
       expect(result.annualPremiums).toBe(1800); // 150 * 12
       expect(result.userContribution).toBe(2000); // Employee HSA contribution from input
       expect(result.employerContribution).toBe(500); // Employer HSA contribution
-      expect(result.taxSavings).toBe(440); // Employee contribution only: 2000 * 0.22
+      expect(result.taxSavings).toBe(593); // Employee contribution only: 2000 * (0.22 + 0.0765)
     });
 
     it('should handle copay categories correctly', () => {
@@ -252,7 +256,7 @@ describe('costCalculator', () => {
       // Should limit employee contribution to remaining space: 4300 - 1000 = 3300
       expect(result.userContribution).toBe(3300);
       expect(result.employerContribution).toBe(1000);
-      expect(result.taxSavings).toBe(726); // Employee contribution only: 3300 * 0.22
+      expect(result.taxSavings).toBeCloseTo(978.45, 2); // Employee contribution only: 3300 * (0.22 + 0.0765)
     });
 
     it('should handle FSA contribution limits correctly', () => {
@@ -267,7 +271,7 @@ describe('costCalculator', () => {
 
       // Should limit FSA contribution to max
       expect(result.userContribution).toBe(3300);
-      expect(result.taxSavings).toBe(726); // 3300 * 0.22
+      expect(result.taxSavings).toBeCloseTo(978.45, 2); // 3300 * (0.22 + 0.0765)
     });
 
     it('should cap out-of-pocket costs at plan maximum', () => {
@@ -351,9 +355,9 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
 
-      // Tax savings calculation: Employee contribution only: 3800 * 0.4 = 1520
-      expect(result.taxSavings).toBe(1520);
-      expect(result.totalCost).toBe(-220); // 1800 + 0 - 1520 - 500 = -220
+      // Tax savings calculation: Employee contribution only: 3800 * (0.4 + 0.0765) = 1810.7
+      expect(result.taxSavings).toBe(1810.7);
+      expect(result.totalCost).toBeCloseTo(-510.7, 1); // 1800 + 0 - 1810.7 - 500 = -510.7
     });
 
     it('should handle zero employee HSA contribution correctly (bug reproduction)', () => {
@@ -396,6 +400,38 @@ describe('costCalculator', () => {
       expect(result.employerContribution).toBe(3050); // Employer contributes $3050
       expect(result.taxSavings).toBe(0); // No tax savings since employee contributed $0
       expect(result.totalCost).toBeCloseTo(1322.8, 0); // 4372.8 + 0 - 0 - 3050 = 1322.8
+    });
+
+    it('should include payroll tax savings for HSA contributions', () => {
+      const userInputs = {
+        ...mockUserInputs,
+        hsaContribution: 1000, // Employee contributes $1000
+        taxRate: 24, // 24% income tax rate
+      };
+
+      const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
+
+      // Tax savings should include:
+      // - Income tax: $1000 * 0.24 = $240
+      // - Payroll taxes: $1000 * 0.0765 = $76.50
+      // - Total: $316.50
+      expect(result.taxSavings).toBe(316.5);
+    });
+
+    it('should include payroll tax savings for FSA contributions', () => {
+      const userInputs = {
+        ...mockUserInputs,
+        fsaContribution: 1000, // Employee contributes $1000
+        taxRate: 24, // 24% income tax rate
+      };
+
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
+
+      // Tax savings should include:
+      // - Income tax: $1000 * 0.24 = $240
+      // - Payroll taxes: $1000 * 0.0765 = $76.50
+      // - Total: $316.50
+      expect(result.taxSavings).toBe(316.5);
     });
   });
 

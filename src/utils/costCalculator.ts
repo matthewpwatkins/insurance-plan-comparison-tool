@@ -81,15 +81,17 @@ const calculateContributionsAndTaxSavings = (
     // userInputs.hsaContribution now represents employee contribution only
     userContribution = Math.min(userInputs.hsaContribution, maxHSAContribution - employerContribution);
 
-    // Tax savings only on employee HSA contributions (employer contribution is already pre-tax)
-    taxSavings = userContribution * taxRateDecimal;
+    // Tax savings on employee HSA contributions include income tax + payroll taxes
+    const payrollTaxRate = (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
+    taxSavings = userContribution * (taxRateDecimal + payrollTaxRate);
   } else {
     // PPO plans with FSA
     const maxFSAContribution = getMaxFSAContribution(planData);
     userContribution = Math.min(userInputs.fsaContribution, maxFSAContribution);
 
-    // Tax savings only on user FSA contributions
-    taxSavings = userContribution * taxRateDecimal;
+    // Tax savings on user FSA contributions include income tax + payroll taxes
+    const payrollTaxRate = (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
+    taxSavings = userContribution * (taxRateDecimal + payrollTaxRate);
   }
 
   return { userContribution, employerContribution, taxSavings };

@@ -15,6 +15,13 @@ hsa_contribution_limits:
 fsa_contribution_limits:
   healthcare_fsa: 3_300       # Maximum healthcare FSA contribution
 
+# Payroll Tax Rates (set by IRS/SSA annually)
+# These rates apply to HSA/FSA contributions for additional tax savings beyond income tax
+payroll_tax_rates:
+  social_security: 6.2        # Social Security tax rate (percentage)
+  medicare: 1.45              # Medicare tax rate (percentage)
+  # Combined rate: 7.65% (6.2% + 1.45%)
+
 # Available Health Plans
 # Each plan includes premiums, deductibles, out-of-pocket maximums, and coverage details
 plans:
