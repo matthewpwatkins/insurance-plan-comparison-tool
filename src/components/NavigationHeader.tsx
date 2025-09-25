@@ -107,6 +107,9 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ userInputs, onFAQRe
         </Navbar.Collapse>
       </Navbar>
 
+      {/* FAQ Component */}
+      <FAQButton ref={faqRef} />
+
       {/* Toast for Share Feedback */}
       <ToastContainer position="top-end" className="position-fixed" style={{ top: '20px', right: '20px', zIndex: 9999 }}>
         <Toast
