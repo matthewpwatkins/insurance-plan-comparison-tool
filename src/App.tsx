@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
 import ShareButton from './components/ShareButton';
+import FAQButton from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL } from './utils/urlParams';
@@ -108,7 +109,10 @@ function App() {
         <Col>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h1 className="mb-0">DMBA Health Plan Comparison Tool</h1>
-            <ShareButton userInputs={userInputs} />
+            <div>
+              <FAQButton />
+              <ShareButton userInputs={userInputs} />
+            </div>
           </div>
 
           <div className="mb-4 p-3 bg-light rounded">
