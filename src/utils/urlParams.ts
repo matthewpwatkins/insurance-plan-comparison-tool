@@ -1,5 +1,9 @@
 import { UserInputs, PartialUserInputs } from '../types';
 
+interface URLParamsResult extends PartialUserInputs {
+  showResults?: boolean;
+}
+
 /**
  * Convert UserInputs to URL search parameters
  */
@@ -28,8 +32,8 @@ export const userInputsToURLParams = (inputs: UserInputs): URLSearchParams => {
 /**
  * Parse URL search parameters into UserInputs
  */
-export const urlParamsToUserInputs = (searchParams: URLSearchParams): PartialUserInputs => {
-  const updates: PartialUserInputs = {};
+export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsResult => {
+  const updates: URLParamsResult = {};
 
   // Parse year
   const year = searchParams.get('year');
@@ -114,6 +118,12 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): PartialUse
     }
   }
 
+  // Parse showResults parameter
+  const showResults = searchParams.get('showResults');
+  if (showResults === 'true') {
+    updates.showResults = true;
+  }
+
   return updates;
 };
 
@@ -133,6 +143,7 @@ export const updateURL = (inputs: UserInputs): void => {
  */
 export const getShareableURL = (inputs: UserInputs): string => {
   const params = userInputsToURLParams(inputs);
+  params.set('showResults', 'true');
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 };
 
@@ -153,7 +164,7 @@ export const copyURLToClipboard = async (inputs: UserInputs): Promise<boolean> =
 /**
  * Read URL parameters on page load
  */
-export const readURLParamsOnLoad = (): PartialUserInputs => {
+export const readURLParamsOnLoad = (): URLParamsResult => {
   const searchParams = new URLSearchParams(window.location.search);
   return urlParamsToUserInputs(searchParams);
 };

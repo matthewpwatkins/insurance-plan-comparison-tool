@@ -41,6 +41,7 @@ function App() {
   });
   const [showShareToast, setShowShareToast] = useState(false);
   const [shareToastMessage, setShareToastMessage] = useState('');
+  const [shouldAutoShowResults, setShouldAutoShowResults] = useState(false);
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -65,6 +66,12 @@ function App() {
         return merged;
       });
     }
+
+    // Check if we should auto-show results
+    if (urlParams.showResults) {
+      setShouldAutoShowResults(true);
+    }
+
     setIsInitialized(true);
   }, []);
 
@@ -126,6 +133,14 @@ function App() {
     }
   };
 
+  // Auto-show results when URL contains showResults=true
+  useEffect(() => {
+    if (shouldAutoShowResults && planData && isInitialized && !hasCalculatedOnce) {
+      handleComparePlans();
+      setShouldAutoShowResults(false); // Reset flag after triggering
+    }
+  }, [shouldAutoShowResults, planData, isInitialized, hasCalculatedOnce]);
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Container className="mt-4 flex-grow-1">
@@ -172,13 +187,11 @@ function App() {
               onClick={handleComparePlans}
               disabled={!planData}
               className="w-100 mb-3"
-            >
-              Compare Plans <FontAwesomeIcon icon={faArrowDown} />
-            </Button>
+            >Compare <FontAwesomeIcon icon={faArrowDown} /></Button>
             {resultsOutOfDate && hasCalculatedOnce && (
               <div className="text-center">
                 <span className="text-warning">
-                  ⚠️ Results out of date
+                  ⚠️ Results are out of date. Click the Compare button to recalculate
                 </span>
               </div>
             )}
@@ -200,7 +213,7 @@ function App() {
               </div>
               {results.length > 1 && (
                 <Alert variant="success" className="mb-3">
-                  <strong>💰 Great news!</strong> You may save at least <strong>${(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing the {results[0].planName} plan over the {results[1].planName}.
+                  <strong>💰 Great news!</strong> You may save at least <strong>${(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing the {results[0].planName} plan.
                 </Alert>
               )}
               <ResultsTable results={results} />
