@@ -1,4 +1,4 @@
-import { UserInputs, UserCosts, PartialUserInputs, URLParams } from '../types';
+import { UserInputs, PartialUserInputs } from '../types';
 
 /**
  * Convert UserInputs to URL search parameters

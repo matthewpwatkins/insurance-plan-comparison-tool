@@ -2,5 +2,4 @@
 export * from './plan';
 export * from './user';
 export * from './results';
-export * from './url';
 export * from './data';
