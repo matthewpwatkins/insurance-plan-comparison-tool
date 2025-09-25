@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faArrowDown } from '@fortawesome/free-solid-svg-icons';
 
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
@@ -36,15 +36,11 @@ function App() {
   const [resultsOutOfDate, setResultsOutOfDate] = useState(false);
   const [hasCalculatedOnce, setHasCalculatedOnce] = useState(false);
   const [faqRef, setFaqRef] = useState<FAQButtonRef | null>(null);
-  const [isHelpTextDismissed, setIsHelpTextDismissed] = useState(false);
-
-  // Load help text dismissed state from localStorage
-  useEffect(() => {
+  const [isHelpTextDismissed, setIsHelpTextDismissed] = useState(() => {
+    // Initialize from localStorage to prevent flicker
     const dismissed = localStorage.getItem('helpTextDismissed');
-    if (dismissed === 'true') {
-      setIsHelpTextDismissed(true);
-    }
-  }, []);
+    return dismissed === 'true';
+  });
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -168,7 +164,7 @@ function App() {
               disabled={!planData}
               className="w-100 mb-3"
             >
-              Compare Plans <FontAwesomeIcon icon={faArrowRight} />
+              Compare Plans <FontAwesomeIcon icon={faArrowDown} />
             </Button>
             {resultsOutOfDate && hasCalculatedOnce && (
               <div className="text-center">
