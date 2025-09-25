@@ -30,9 +30,9 @@ plans:
   - name: "DMBA PPO 90"
     type: "PPO"
     monthly_premiums:
-      single: 302.00
-      two_party: 615.10
-      family: 976.90
+      single: 308.50
+      two_party: 621.60
+      family: 983.40
     annual_deductible:
       in_network:
         single: 0
@@ -164,9 +164,9 @@ plans:
   - name: "DMBA PPO 70"
     type: "PPO"
     monthly_premiums:
-      single: 109.20
-      two_party: 221.80
-      family: 346.40
+      single: 115.70
+      two_party: 228.30
+      family: 352.90
     annual_deductible:
       in_network:
         single: 0
@@ -304,9 +304,9 @@ plans:
       two_party: 1_700
       family: 1_700
     monthly_premiums:
-      single: 114.60
-      two_party: 230.00
-      family: 274.20
+      single: 121.10
+      two_party: 236.50
+      family: 280.70
     annual_deductible:
       in_network:
         single: 1_700
@@ -382,9 +382,9 @@ plans:
       two_party: 3_050
       family: 3_050
     monthly_premiums:
-      single: 62.40
-      two_party: 103.30
-      family: 121.30
+      single: 68.90
+      two_party: 109.80
+      family: 127.80
     annual_deductible:
       in_network:
         single: 3_050

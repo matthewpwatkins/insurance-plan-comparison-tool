@@ -31,9 +31,9 @@ plans:
     type: "PPO"
     # Monthly premium costs for different coverage levels
     monthly_premiums:
-      single: 245.30
-      two_party: 499.70
-      family: 793.70
+      single: 252.50
+      two_party: 506.90
+      family: 800.90
     # Annual deductible amounts (amount you pay before insurance starts covering)
     annual_deductible:
       in_network:
@@ -171,9 +171,9 @@ plans:
   - name: "DMBA PPO 70"
     type: "PPO"
     monthly_premiums:
-      single: 101.20
-      two_party: 205.70
-      family: 322.40
+      single: 108.40
+      two_party: 212.90
+      family: 329.60
     annual_deductible:
       in_network:
         single: 0
@@ -312,16 +312,16 @@ plans:
       two_party: 1_650
       family: 1_650
     monthly_premiums:
-      single: 97.40
-      two_party: 199.40
-      family: 248.70
+      single: 104.60
+      two_party: 206.60
+      family: 255.90
     annual_deductible:
       in_network:
-        single: 1_650
-        family: 3_300
+        single: 1_700
+        family: 3_400
       out_of_network:
-        single: 3_300
-        family: 6_600
+        single: 3_400
+        family: 6_800
     out_of_pocket_maximum:
       in_network:
         individual: 4_500
@@ -390,16 +390,16 @@ plans:
       two_party: 3_000
       family: 3_000
     monthly_premiums:
-      single: 55.70
-      two_party: 91.90
-      family: 111.60
+      single: 62.90
+      two_party: 99.10
+      family: 118.80
     annual_deductible:
       in_network:
-        single: 3_000
-        family: 6_000
+        single: 3_050
+        family: 6_100
       out_of_network:
-        single: 6_000
-        family: 12_000
+        single: 6_100
+        family: 12_200
     out_of_pocket_maximum:
       in_network:
         individual: 7_500
