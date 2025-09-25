@@ -11,6 +11,7 @@ export interface PlanResult {
   breakdown: {
     premiums: number;
     taxSavings: number;
+    employerContribution: number;
     outOfPocket: number;
     net: number;
   };

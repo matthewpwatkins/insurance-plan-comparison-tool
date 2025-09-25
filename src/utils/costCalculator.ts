@@ -29,8 +29,8 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
   // Calculate out-of-pocket healthcare costs
   const outOfPocketCosts = calculateOutOfPocketCosts(plan, costs, coverage);
 
-  // Calculate total cost
-  const totalCost = annualPremiums + outOfPocketCosts - taxSavings;
+  // Calculate total cost (employer contributions reduce total cost as they're free money)
+  const totalCost = annualPremiums + outOfPocketCosts - taxSavings - employerContribution;
 
   return {
     planName: plan.name,
@@ -45,6 +45,7 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
     breakdown: {
       premiums: annualPremiums,
       taxSavings: -taxSavings, // Negative because it reduces total cost
+      employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
       net: totalCost
     }
@@ -77,12 +78,11 @@ const calculateContributionsAndTaxSavings = (
     employerContribution = getEmployerHSAContribution(plan, coverage);
     const maxHSAContribution = getMaxHSAContribution(planData, coverage, ageGroup);
 
-    // userInputs.hsaContribution now represents total contribution desired
-    const totalDesiredContribution = Math.min(userInputs.hsaContribution, maxHSAContribution);
-    userContribution = Math.max(0, totalDesiredContribution - employerContribution);
+    // userInputs.hsaContribution now represents employee contribution only
+    userContribution = Math.min(userInputs.hsaContribution, maxHSAContribution - employerContribution);
 
-    // Tax savings on total HSA contributions (user + employer)
-    taxSavings = (userContribution + employerContribution) * taxRateDecimal;
+    // Tax savings only on employee HSA contributions (employer contribution is already pre-tax)
+    taxSavings = userContribution * taxRateDecimal;
   } else {
     // PPO plans with FSA
     const maxFSAContribution = getMaxFSAContribution(planData);

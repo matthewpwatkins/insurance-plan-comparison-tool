@@ -134,9 +134,9 @@ describe('costCalculator', () => {
       expect(result.planName).toBe('Test HSA Plan');
       expect(result.planType).toBe('HSA');
       expect(result.annualPremiums).toBe(1800); // 150 * 12
-      expect(result.userContribution).toBe(1500); // Total HSA contribution 2000 - employer 500 = user 1500
+      expect(result.userContribution).toBe(2000); // Employee HSA contribution from input
       expect(result.employerContribution).toBe(500); // Employer HSA contribution
-      expect(result.taxSavings).toBe(440); // Total contribution 2000 * 0.22
+      expect(result.taxSavings).toBe(440); // Employee contribution only: 2000 * 0.22
     });
 
     it('should handle copay categories correctly', () => {
@@ -249,10 +249,10 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
 
-      // Should limit user contribution to remaining space: 4300 - 1000 = 3300
+      // Should limit employee contribution to remaining space: 4300 - 1000 = 3300
       expect(result.userContribution).toBe(3300);
       expect(result.employerContribution).toBe(1000);
-      expect(result.taxSavings).toBe(946); // (3300 + 1000) * 0.22
+      expect(result.taxSavings).toBe(726); // Employee contribution only: 3300 * 0.22
     });
 
     it('should handle FSA contribution limits correctly', () => {
@@ -351,9 +351,51 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
 
-      // Tax savings calculation: Total contribution 3800 * 0.4 = 1520
+      // Tax savings calculation: Employee contribution only: 3800 * 0.4 = 1520
       expect(result.taxSavings).toBe(1520);
-      expect(result.totalCost).toBe(280); // 1800 + 0 - 1520 = 280
+      expect(result.totalCost).toBe(-220); // 1800 + 0 - 1520 - 500 = -220
+    });
+
+    it('should handle zero employee HSA contribution correctly (bug reproduction)', () => {
+      // Reproduce the bug scenario from user: year=2026, family coverage, 0 contributions
+      const userInputs: UserInputs = {
+        year: 2026,
+        coverage: 'family',
+        ageGroup: 'under_55',
+        taxRate: 24,
+        costs: {
+          categoryEstimates: [],
+          otherCosts: {
+            inNetworkCost: 0,
+            outOfNetworkCost: 0,
+          },
+        },
+        hsaContribution: 0, // Employee contributes nothing
+        fsaContribution: 0,
+      };
+
+      // Mock the 2026 family HSA plan with expected values
+      const hsa2026Plan: HealthPlan = {
+        ...mockHSAPlan,
+        monthly_premiums: {
+          single: 114.6,
+          two_party: 233.4,
+          family: 364.4, // This should give $1456 annually (364.4 * 4 = 1457.6, close to $1456)
+        },
+      };
+
+      mockGetMaxHSAContribution.mockReturnValue(8750); // 2026 family limit
+      mockGetEmployerHSAContribution.mockReturnValue(3050); // Employer contributes $3050
+
+      const result = calculatePlanCost(hsa2026Plan, mockPlanData, userInputs);
+
+      expect(result.planType).toBe('HSA');
+      expect(result.annualPremiums).toBeCloseTo(4372.8, 0); // 364.4 * 12
+      expect(result.outOfPocketCosts).toBe(0);
+      expect(result.userContribution).toBe(0); // Employee contributes nothing
+      expect(result.employerContribution).toBe(3050); // Employer contributes $3050
+      expect(result.taxSavings).toBe(0); // No tax savings since employee contributed $0
+      expect(result.totalCost).toBeCloseTo(1322.8, 0); // 4372.8 + 0 - 0 - 3050 = 1322.8
     });
   });
 

@@ -76,12 +76,6 @@ function App() {
     setIsInitialized(true);
   }, []);
 
-  // Update URL whenever user inputs change (after initialization)
-  useEffect(() => {
-    if (isInitialized) {
-      updateURL(userInputs);
-    }
-  }, [userInputs, isInitialized]);
 
   // Load plan data on component mount and when year changes
   useEffect(() => {
@@ -124,6 +118,8 @@ function App() {
     if (planData && userInputs) {
       try {
         setError(null);
+        // Update URL with current inputs
+        updateURL(userInputs);
         const calculatedResults = calculateAllPlans(planData, userInputs);
         setResults(calculatedResults);
         setResultsOutOfDate(false);

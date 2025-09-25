@@ -52,29 +52,11 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
     : 0;
   const minEmployerHSAContribution = getEmployerHSAContributionForDisplay();
   const maxEmployerHSAContribution = getMaxEmployerHSAContribution();
+  const maxEmployeeHSAContribution = Math.max(0, maxTotalHSAContribution - minEmployerHSAContribution);
 
   const maxFSAContribution = planData ? getMaxFSAContribution(planData) : 0;
 
   // Update default contribution values when dependencies change
-  useEffect(() => {
-    if (planData) {
-      const newValues: Partial<UserInputs> = {};
-
-      // Set default HSA contribution if it's currently 0 or null
-      if (inputs.hsaContribution === 0 || inputs.hsaContribution === null) {
-        newValues.hsaContribution = maxTotalHSAContribution;
-      }
-
-      // Set default FSA contribution if it's currently 0 or null
-      if (inputs.fsaContribution === 0 || inputs.fsaContribution === null) {
-        newValues.fsaContribution = maxFSAContribution;
-      }
-
-      if (Object.keys(newValues).length > 0) {
-        onChange(newValues);
-      }
-    }
-  }, [planData, inputs.coverage, inputs.ageGroup, maxTotalHSAContribution, maxFSAContribution, inputs.hsaContribution, inputs.fsaContribution, onChange]);
 
   return (
     <Card className="mb-4">
@@ -184,7 +166,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <hr />
 
           <h5 className="d-flex justify-content-between align-items-center">
-            <span>HSA/FSA Contributions</span>
+            <span>HSA/FSA Employee Contributions</span>
             <HelpIcon
               title="HSA/FSA Contributions"
               content={
@@ -262,22 +244,22 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           </h5>
           <div className="mb-3">
             <small className="text-muted">
-              <strong>Note:</strong> Each plan has <i>either</i> an HSA <i>or</i> an FSA. Specify how much you would contribute in each scenario to get an accurate comparison.
+              <strong>Note:</strong> Each plan has <i>either</i> an HSA <i>or</i> an FSA. Enter the maximum amount you'd be willing to contribute from your paycheck to each account type for accurate plan comparison.
             </small>
           </div>
           <Row className="mb-3">
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>HSA <small className="text-muted">(incl. employer contributions, IRS max: ${maxTotalHSAContribution?.toLocaleString()})</small></span>
+                  <span>HSA Employee Contribution <small className="text-muted">(Max: ${maxEmployeeHSAContribution?.toLocaleString()})</small></span>
                   <HelpIcon
-                    title="HSA"
+                    title="HSA Employee Contribution"
                     content={
                       <div>
-                        <p>Enter your total desired HSA contribution for the year.</p>
-                        <p><strong>Max: ${maxTotalHSAContribution?.toLocaleString()}</strong> - IRS annual limit for {inputs.coverage === 'single' ? 'single' : 'family'} coverage</p>
-                        <p>Your employer will contribute either <strong>${minEmployerHSAContribution?.toLocaleString()}</strong> or <strong>${maxEmployerHSAContribution?.toLocaleString()}</strong> depending on your plan choice.</p>
-                        <p>The remaining amount will come from your paycheck as pre-tax deductions.</p>
+                        <p>Enter the maximum amount you're willing to contribute from your paycheck to an HSA account.</p>
+                        <p><strong>Max: ${maxEmployeeHSAContribution?.toLocaleString()}</strong> - This is the IRS limit (${maxTotalHSAContribution?.toLocaleString()}) minus the minimum employer contribution (${minEmployerHSAContribution?.toLocaleString()})</p>
+                        <p>Your employer will contribute an additional <strong>${minEmployerHSAContribution?.toLocaleString()}</strong> to <strong>${maxEmployerHSAContribution?.toLocaleString()}</strong> depending on your plan choice.</p>
+                        <p>Your contribution comes from your paycheck as pre-tax deductions, reducing your taxable income.</p>
                       </div>
                     }
                   />
@@ -287,8 +269,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                   <FormattedNumberInput
                     value={inputs.hsaContribution}
                     onChange={(value) => handleChange('hsaContribution', value)}
-                    min={minEmployerHSAContribution}
-                    max={maxTotalHSAContribution}
+                    min={0}
+                    max={maxEmployeeHSAContribution}
                     step={100}
                     required
                   />
@@ -297,7 +279,21 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>FSA <small className="text-muted">(IRS max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label className="d-flex justify-content-between">
+                  <span>FSA Employee Contribution <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></span>
+                  <HelpIcon
+                    title="FSA Employee Contribution"
+                    content={
+                      <div>
+                        <p>Enter the maximum amount you're willing to contribute from your paycheck to an FSA account.</p>
+                        <p><strong>Max: ${maxFSAContribution?.toLocaleString()}</strong> - IRS annual limit for FSA contributions</p>
+                        <p>FSAs typically have no employer contributions - this is your personal contribution only.</p>
+                        <p>Your contribution comes from your paycheck as pre-tax deductions, reducing your taxable income.</p>
+                        <p><strong>Remember:</strong> FSAs are "use it or lose it" - funds must be spent by the end of the plan year.</p>
+                      </div>
+                    }
+                  />
+                </Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
