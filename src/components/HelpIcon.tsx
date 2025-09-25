@@ -19,8 +19,9 @@ const HelpIcon: React.FC<HelpIconProps> = ({ title, content, className = '' }) =
         style={{
           cursor: 'pointer',
           fontSize: '1em',
-          float: 'right',
-          marginTop: '2px'
+          position: 'absolute',
+          right: '0',
+          top: '2px'
         }}
         onClick={() => setShowModal(true)}
         title="Click for help"

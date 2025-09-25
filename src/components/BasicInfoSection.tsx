@@ -77,7 +77,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label>
+                <Form.Label className="position-relative">
                   Coverage Year
                   <HelpIcon
                     title="Coverage Year"
@@ -108,7 +108,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>
+                <Form.Label className="position-relative">
                   Coverage Type
                   <HelpIcon
                     title="Coverage Type"
@@ -146,7 +146,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label>
+                <Form.Label className="position-relative">
                   Age Group
                   <HelpIcon
                     title="Age Group"
@@ -173,15 +173,16 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>
+                <Form.Label className="position-relative">
                   Marginal Tax Rate
                   <span
                     className="text-info"
                     style={{
                       cursor: 'pointer',
                       fontSize: '1em',
-                      float: 'right',
-                      marginTop: '2px'
+                      position: 'absolute',
+                      right: '0',
+                      top: '2px'
                     }}
                     onClick={() => faqRef?.openFAQ(0)}
                     title="Click to see FAQ about tax rates"
@@ -210,7 +211,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
-                <Form.Label>
+                <Form.Label className="position-relative">
                   Your HSA Contribution
                   <small className="text-muted"> (Max: ${maxUserHSAContribution?.toLocaleString()})</small>
                   <HelpIcon
@@ -250,7 +251,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>
+                <Form.Label className="position-relative">
                   Your FSA Contribution
                   <small className="text-muted"> (Max: ${maxFSAContribution?.toLocaleString()})</small>
                   <HelpIcon

@@ -79,7 +79,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                 <Row>
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label>
+                      <Form.Label className="position-relative">
                         In-Network Annual Cost
                         <HelpIcon
                           title="Category In-Network Cost"
@@ -115,7 +115,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   </Col>
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label>
+                      <Form.Label className="position-relative">
                         Out-of-Network Annual Cost
                         <HelpIcon
                           title="Category Out-of-Network Cost"
