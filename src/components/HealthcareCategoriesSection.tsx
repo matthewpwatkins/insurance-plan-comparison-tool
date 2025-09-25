@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Card, Form, Row, Col, InputGroup, Button } from 'react-bootstrap';
+import { Card, Form, Row, Col, Button } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { getCategoriesData } from '../generated/dataHelpers';
-import FormattedNumberInput from './FormattedNumberInput';
-import HelpIcon from './HelpIcon';
+import CostInputRow from './CostInputRow';
 import { UserInputs, CategoryEstimate } from '../types';
 
 interface HealthcareCategoriesSectionProps {
@@ -23,18 +24,6 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     });
   };
 
-  const addCategory = () => {
-    if (!selectedCategoryToAdd) return;
-
-    const newEstimate: CategoryEstimate = {
-      categoryId: selectedCategoryToAdd,
-      inNetworkCost: 0,
-      outOfNetworkCost: 0
-    };
-
-    handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
-    setSelectedCategoryToAdd('');
-  };
 
   const removeCategory = (categoryId: string) => {
     const updatedEstimates = inputs.costs.categoryEstimates.filter(est => est.categoryId !== categoryId);
@@ -69,98 +58,79 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
                   </h6>
                   <Button
-                    variant="outline-danger"
+                    variant="danger"
                     size="sm"
                     onClick={() => removeCategory(estimate.categoryId)}
+                    title="Remove category"
                   >
-                    Remove
+                    <FontAwesomeIcon icon={faTrash} />
                   </Button>
                 </div>
-                <Row>
-                  <Col md={6} className="mb-3 mb-md-0">
-                    <Form.Group>
-                      <Form.Label className="d-flex justify-content-between">
-                        <span>In-Network Annual Cost</span>
-                        <HelpIcon
-                          title="Category In-Network Cost"
-                          content={
-                            <div>
-                              <p>Estimate your annual spending for this healthcare category using <strong>in-network</strong> providers.</p>
-                              <p><strong>This category has specific coverage rules:</strong></p>
-                              <ul>
-                                <li>May have fixed copays instead of coinsurance</li>
-                                <li>Some services may be covered at 100%</li>
-                                <li>Coverage details vary by plan type</li>
-                              </ul>
-                              <p><strong>Examples for this category:</strong></p>
-                              <ul>
-                                <li>Total cost of all visits/services in this category</li>
-                                <li>Multiply: visits per year × average cost per visit</li>
-                                <li>Consider both routine and unexpected needs</li>
-                              </ul>
-                            </div>
-                          }
-                        />
-                      </Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>$</InputGroup.Text>
-                        <FormattedNumberInput
-                          value={estimate.inNetworkCost}
-                          onChange={(value) => updateCategoryEstimate(estimate.categoryId, 'inNetworkCost', value)}
-                          min={0}
-                          step={50}
-                        />
-                      </InputGroup>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label className="d-flex justify-content-between">
-                        <span>Out-of-Network Annual Cost</span>
-                        <HelpIcon
-                          title="Category Out-of-Network Cost"
-                          content={
-                            <div>
-                              <p>Estimate your annual spending for this healthcare category using <strong>out-of-network</strong> providers.</p>
-                              <p><strong>Important notes:</strong></p>
-                              <ul>
-                                <li>Out-of-network costs are significantly higher</li>
-                                <li>Some categories may have limited or no out-of-network coverage</li>
-                                <li>You may need to pay upfront and seek reimbursement</li>
-                              </ul>
-                              <p><strong>Consider:</strong></p>
-                              <ul>
-                                <li>Emergency care is usually covered at in-network rates</li>
-                                <li>Some specialists may not be available in-network</li>
-                                <li>Leave at $0 if you plan to stay in-network</li>
-                              </ul>
-                            </div>
-                          }
-                        />
-                      </Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>$</InputGroup.Text>
-                        <FormattedNumberInput
-                          value={estimate.outOfNetworkCost}
-                          onChange={(value) => updateCategoryEstimate(estimate.categoryId, 'outOfNetworkCost', value)}
-                          min={0}
-                          step={50}
-                        />
-                      </InputGroup>
-                    </Form.Group>
-                  </Col>
-                </Row>
+                <CostInputRow
+                  inNetworkValue={estimate.inNetworkCost}
+                  outOfNetworkValue={estimate.outOfNetworkCost}
+                  onInNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'inNetworkCost', value)}
+                  onOutOfNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'outOfNetworkCost', value)}
+                  inNetworkHelpTitle="Category In-Network Cost"
+                  outOfNetworkHelpTitle="Category Out-of-Network Cost"
+                  inNetworkHelpContent={
+                    <div>
+                      <p>Estimate your annual spending for this healthcare category using <strong>in-network</strong> providers.</p>
+                      <p><strong>This category has specific coverage rules:</strong></p>
+                      <ul>
+                        <li>May have fixed copays instead of coinsurance</li>
+                        <li>Some services may be covered at 100%</li>
+                        <li>Coverage details vary by plan type</li>
+                      </ul>
+                      <p><strong>Examples for this category:</strong></p>
+                      <ul>
+                        <li>Total cost of all visits/services in this category</li>
+                        <li>Multiply: visits per year × average cost per visit</li>
+                        <li>Consider both routine and unexpected needs</li>
+                      </ul>
+                    </div>
+                  }
+                  outOfNetworkHelpContent={
+                    <div>
+                      <p>Estimate your annual spending for this healthcare category using <strong>out-of-network</strong> providers.</p>
+                      <p><strong>Important notes:</strong></p>
+                      <ul>
+                        <li>Out-of-network costs are significantly higher</li>
+                        <li>Some categories may have limited or no out-of-network coverage</li>
+                        <li>You may need to pay upfront and seek reimbursement</li>
+                      </ul>
+                      <p><strong>Consider:</strong></p>
+                      <ul>
+                        <li>Emergency care is usually covered at in-network rates</li>
+                        <li>Some specialists may not be available in-network</li>
+                        <li>Leave at $0 if you plan to stay in-network</li>
+                      </ul>
+                    </div>
+                  }
+                />
               </Card.Body>
             </Card>
           ))}
 
           {/* Add Category Section */}
           <Row className="mb-3">
-            <Col md={8}>
+            <Col>
               <Form.Group>
                 <Form.Select
                   value={selectedCategoryToAdd}
-                  onChange={(e) => setSelectedCategoryToAdd(e.target.value)}
+                  onChange={(e) => {
+                    const categoryId = e.target.value;
+                    if (categoryId) {
+                      setSelectedCategoryToAdd(categoryId);
+                      const newEstimate: CategoryEstimate = {
+                        categoryId: categoryId,
+                        inNetworkCost: 0,
+                        outOfNetworkCost: 0
+                      };
+                      handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
+                      setSelectedCategoryToAdd('');
+                    }
+                  }}
                 >
                   <option value="">Select a category to add...</option>
                   {availableCategories.map(categoryId => (
@@ -170,16 +140,6 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   ))}
                 </Form.Select>
               </Form.Group>
-            </Col>
-            <Col md={4} className="d-flex align-items-end mt-3 mt-md-0">
-              <Button
-                variant="primary"
-                onClick={addCategory}
-                disabled={!selectedCategoryToAdd}
-                className="w-100"
-              >
-                Add Category
-              </Button>
             </Col>
           </Row>
     </>

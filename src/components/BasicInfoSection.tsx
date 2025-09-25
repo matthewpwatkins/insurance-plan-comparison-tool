@@ -4,19 +4,15 @@ import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContributio
 import { formatNumber } from '../utils/formatters';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
 import { UserInputs, PlanData } from '../types';
-import { FAQButtonRef } from './FAQButton';
 
 interface BasicInfoSectionProps {
   inputs: UserInputs;
   onChange: (updates: Partial<UserInputs>) => void;
   planData: PlanData | null;
-  faqRef?: FAQButtonRef | null;
 }
 
-const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, planData, faqRef }) => {
+const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, planData }) => {
   const handleChange = (field: keyof UserInputs, value: any) => {
     onChange({ [field]: value });
   };
@@ -107,7 +103,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>Age Group</span>
+                  <span>Age</span>
                   <HelpIcon
                     title="Age Group"
                     content={
@@ -135,17 +131,27 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
                   <span>Marginal Tax Rate</span>
-                  <span
-                    className="text-info"
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: '1em'
-                    }}
-                    onClick={() => faqRef?.openFAQ(0)}
-                    title="Click to see FAQ about tax rates"
-                  >
-                    <FontAwesomeIcon icon={faCircleQuestion} />
-                  </span>
+                  <HelpIcon
+                    title="Marginal Tax Rate"
+                    content={
+                      <div>
+                        <p>Your marginal tax rate is the percentage of tax you pay on your last dollar of income.</p>
+                        <p><strong>How to find your rate:</strong></p>
+                        <ul>
+                          <li>Check your most recent tax return or pay stub</li>
+                          <li>Use online tax calculators</li>
+                          <li>Consult with a tax professional</li>
+                        </ul>
+                        <p><strong>Why it matters:</strong></p>
+                        <ul>
+                          <li>HSA and FSA contributions reduce your taxable income</li>
+                          <li>Higher tax rates = more savings from pre-tax contributions</li>
+                          <li>This affects the true cost comparison between plans</li>
+                        </ul>
+                        <p><strong>Common rates:</strong> 12%, 22%, 24%, 32%, 35%, 37% (for federal income tax, plus state taxes if applicable)</p>
+                      </div>
+                    }
+                  />
                 </Form.Label>
                 <InputGroup>
                   <FormattedNumberInput
@@ -171,21 +177,31 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
               content={
                 <div>
                   <div className="alert alert-info mb-3">
-                    <strong>Important:</strong> FSAs and HSAs are mutually exclusive - you can't have both. To compare all plan options, this tool asks for both values as hypothetical scenarios: "If you chose an FSA plan, how much would you contribute?" and "If you chose an HSA plan, how much would you contribute?"
+                    <strong>Important:</strong> Each plan has <i>either</i> an HSA <i>or</i> an FSA.. To compare all plan options, this tool asks for both values as hypothetical scenarios: "If you chose an FSA plan, how much would you contribute?" and "If you chose an HSA plan, how much would you contribute?"
                   </div>
 
                   <h6><strong>Health Savings Account (HSA)</strong></h6>
-                  <p>Triple tax advantage for high-deductible health plans:</p>
+                  <p>This is the most powerful account you can ever own. It's <i>quadruple</i>-tax-advantaged:</p>
                   <ul>
-                    <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
-                    <li><strong>Tax-free growth:</strong> Investment earnings aren't taxed</li>
-                    <li><strong>Tax-free withdrawals:</strong> For qualified medical expenses</li>
+                    <li><strong>No payroll taxes:</strong> Contributions made through your paycheck are exempt from Social Security and Medicare taxes</li>
+                    <li><strong>Tax-deductible:</strong> Contributions you make (out of pocket or through your paycheck) are exempt from this year's federal and State income taxes</li>
+                    <li><strong>Tax-free growth:</strong> The money the account earns over time isn't taxed</li>
+                    <li><strong>Tax-free withdrawals:</strong> No taxes when you spend the money, even decades in the future, so long as you have medical receipts to justify the withdraw</li>
                   </ul>
                   <p><strong>Key HSA benefits:</strong></p>
                   <ul>
                     <li>Money rolls over year to year (no "use it or lose it")</li>
                     <li>Can be invested like a retirement account</li>
-                    <li>After age 65, works like a traditional IRA</li>
+                    <li>After age 65, you get additional access as you can treat it like a personal retirement account</li>
+                  </ul>
+
+                  <p>So an HSA is amazing by itself, but what's even better is it comes with an employer contribution!</p>
+
+                  <h6><strong>HSA Contribution Limits ({inputs.year}):</strong></h6>
+                  <ul>
+                    <li><strong>Individual:</strong> ${planData ? getMaxHSAContribution(planData, 'single', inputs.ageGroup).toLocaleString() : 'N/A'}</li>
+                    <li><strong>Family:</strong> ${planData ? getMaxHSAContribution(planData, 'family', inputs.ageGroup).toLocaleString() : 'N/A'}</li>
+                    {inputs.ageGroup === '55_plus' && <li><em>Includes $1,000 catch-up contribution for 55+</em></li>}
                   </ul>
 
                   <h6><strong>Employer HSA Contributions by Plan:</strong></h6>
@@ -208,15 +224,23 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                   <h6><strong>Flexible Spending Account (FSA)</strong></h6>
                   <p>Tax-free healthcare spending for PPO plans:</p>
                   <ul>
-                    <li><strong>Tax-deductible:</strong> Contributions reduce your taxable income</li>
-                    <li><strong>Tax-free spending:</strong> Use for qualified medical expenses</li>
-                    <li><strong>Immediate access:</strong> Full annual amount available at start of year</li>
+                    <li><strong>Tax-deductible:</strong> Your personal contributions reduce your taxable income</li>
+                    <li><strong>Tax-free spending:</strong> when used for qualified medical expenses during this year</li>
                   </ul>
+
+                  <h6><strong>FSA Contribution Limit ({inputs.year}):</strong></h6>
+                  <ul>
+                    <li><strong>Annual Maximum:</strong> ${planData ? maxFSAContribution.toLocaleString() : 'N/A'}</li>
+                    <li><em>Same limit applies regardless of coverage type (single/family)</em></li>
+                  </ul>
+
                   <p><strong>Important FSA limitations:</strong></p>
                   <ul>
-                    <li><strong>"Use it or lose it":</strong> Must spend by end of plan year (small carryover may be allowed)</li>
-                    <li><strong>Cannot invest:</strong> Money doesn't grow like HSA</li>
-                    <li><strong>PPO plans only:</strong> Can't have both FSA and HSA</li>
+                    <li><strong>"Use it or lose it":</strong> Must spend by end of plan year or your employment</li>
+                    <li><strong>Process:</strong> Need qualifying documentation to reimburse yourself</li>
+                    <li><strong>Contribution limits:</strong> Lower maximum contributions than HSAs</li>
+                    <li><strong>No employer contributions:</strong> Unlike HSAs, FSAs typically do not have employer contributions</li>
+                    <li><strong>No investment growth:</strong> FSAs do not earn interest and are not investable</li>
                   </ul>
                   <p>Best for predictable medical expenses you know you'll have during the year.</p>
                 </div>
@@ -225,13 +249,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
           </h5>
           <div className="mb-3">
             <small className="text-muted">
-              <strong>Note:</strong> FSAs and HSAs are mutually exclusive. Enter how much you would contribute to each type to compare all plan options.
+              <strong>Note:</strong> Each plan has <i>either</i> an HSA <i>or</i> an FSA. Specify how much you would contribute in each scenario to get an accurate comparison.
             </small>
           </div>
           <Row className="mb-3">
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
-                <Form.Label>If you had an HSA, how much would you contribute? <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label>HSA <small className="text-muted">(Max: ${maxUserHSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
@@ -247,7 +271,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
             </Col>
             <Col md={6}>
               <Form.Group>
-                <Form.Label>If you had an FSA, how much would you contribute? <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
+                <Form.Label>FSA <small className="text-muted">(Max: ${maxFSAContribution?.toLocaleString()})</small></Form.Label>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput

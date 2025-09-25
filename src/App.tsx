@@ -23,7 +23,7 @@ function App() {
     costs: {
       categoryEstimates: [],
       otherCosts: {
-        inNetworkCost: 2000,
+        inNetworkCost: 0,
         outOfNetworkCost: 0
       }
     },
@@ -153,7 +153,6 @@ function App() {
             inputs={userInputs}
             onChange={handleInputChange}
             planData={planData}
-            faqRef={faqRef}
           />
 
           <div className="mt-4">

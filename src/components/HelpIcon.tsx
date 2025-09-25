@@ -26,7 +26,7 @@ const HelpIcon: React.FC<HelpIconProps> = ({ title, content, className = '' }) =
         <FontAwesomeIcon icon={faCircleQuestion} />
       </span>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title>{title}</Modal.Title>
         </Modal.Header>

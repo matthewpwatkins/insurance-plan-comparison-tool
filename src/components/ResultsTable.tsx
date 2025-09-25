@@ -18,12 +18,13 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
   const PlanCard: React.FC<{ result: PlanResult; isLowestCost: boolean }> = ({ result, isLowestCost }) => (
     <div className={isLowestCost ? 'mx-n3 mx-md-n4' : ''}>
       <Card
-        className={`mb-4 ${isLowestCost ? 'border-success border-4 shadow-lg bg-success-subtle' : 'mb-3'}`}
+        className={`mb-4 ${isLowestCost ? 'border-success border-4 shadow-lg' : 'mb-3'}`}
         style={isLowestCost ? {
           transform: 'scale(1.05)',
           transformOrigin: 'center',
           position: 'relative',
-          zIndex: 10
+          zIndex: 10,
+          backgroundColor: '#d1e7dd'
         } : {}}
       >
         <Card.Header className={`d-flex justify-content-between align-items-center ${isLowestCost ? 'py-4 bg-success text-white' : 'py-3'}`}>
