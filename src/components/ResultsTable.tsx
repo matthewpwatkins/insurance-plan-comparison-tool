@@ -71,7 +71,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
           <Col xs={6} md={4} lg={3}>
             <small className="text-muted d-block">Tax Savings</small>
             <div className="fw-semibold text-success fs-6">
-              -{formatCurrency(result.taxSavings)}
+              {formatCurrency(result.taxSavings)}
             </div>
           </Col>
           <Col xs={6} md={4} lg={3}>
