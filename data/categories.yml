@@ -268,3 +268,38 @@ transplants:
 transportation_medical:
   name: "Transportation - Medical"
   description: "Transportation services to the nearest appropriate medical facility when medically necessary and preauthorized. Includes transportation for covered individual and one parent/guardian for children under 19. Automobile travel reimbursed at IRS mileage rate after first 200 miles per round trip. Does not cover hotels, meals, or personal expenses."
+
+acupuncture:
+  name: "Acupuncture"
+  description: "Traditional Chinese medicine therapy using thin needles inserted into specific body points to treat various health conditions. Coverage limited to 12 visits per calendar year. Multiple services may be provided in a single visit. Used for pain management, stress reduction, and various chronic conditions."
+
+emergency_room_physician:
+  name: "Emergency Room - Physician"
+  description: "Professional fees for emergency room physicians providing medical evaluation and treatment during emergency room visits. Billed separately from emergency room facility charges. Covers physician expertise and medical decision-making during emergency care."
+
+colonoscopy_colorectal_screening:
+  name: "Colonoscopy/Colorectal Screening"
+  description: "Screening and diagnostic procedures for colorectal cancer detection. Preventive screenings covered at 100% for individuals aged 45-75 once every five years. Diagnostic procedures subject to regular coinsurance rates. Virtual colonoscopies not covered. Anesthesia covered at appropriate benefit level."
+  preventive: true
+
+mammograms:
+  name: "Mammograms"
+  description: "Breast imaging for cancer detection and screening. Preventive mammograms covered at 100% once per calendar year for women 40 and older, including 3D mammograms. Diagnostic mammograms subject to regular coinsurance when medically necessary. Essential for early breast cancer detection."
+  preventive: true
+
+immunizations:
+  name: "Immunizations"
+  description: "Vaccines and immunizations for disease prevention including COVID-19, influenza, hepatitis, HPV, shingles, and other CDC-recommended vaccines. Preventive immunizations covered at 100% with no deductible. Available at in-network providers, out-of-network providers, and public health departments."
+  preventive: true
+
+diabetes_education:
+  name: "Diabetes Education"
+  description: "Educational services for individuals diagnosed with diabetes, gestational diabetes, or dysmetabolic syndrome X. Provided by qualified healthcare professionals to help manage diabetes and prevent complications. Must be related to medical diagnosis - general health education not covered."
+
+diabetes_glucometers:
+  name: "Diabetes - Glucometers"
+  description: "Blood glucose monitoring devices for individuals with diabetes. Contact Navitus at 833-354-2226 for coverage details. Essential medical equipment for diabetes self-management and blood sugar monitoring."
+
+diabetes_insulin_pumps:
+  name: "Diabetes - Insulin Pumps"
+  description: "Insulin delivery devices for diabetes management. Coverage limited to one pump every four years. Preauthorization required. Insulin and additional supplies covered under prescription drug benefit. Advanced technology for continuous insulin delivery and improved diabetes control."
