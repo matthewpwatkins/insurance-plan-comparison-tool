@@ -3,7 +3,6 @@ import { Card, Form } from 'react-bootstrap';
 import BasicInfoSection from './BasicInfoSection';
 import HSAFSASection from './HSAFSASection';
 import HealthcareCategoriesSection from './HealthcareCategoriesSection';
-import OtherCostsSection from './OtherCostsSection';
 import { UserInputs, PlanData } from '../types';
 
 interface CostInputFormProps {
@@ -33,11 +32,6 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
         </Card.Header>
         <Card.Body>
           <Form>
-            <OtherCostsSection
-              inputs={inputs}
-              onChange={onChange}
-            />
-
             <HealthcareCategoriesSection
               inputs={inputs}
               onChange={onChange}
