@@ -51,16 +51,19 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   const minEmployerHSAContribution = getEmployerHSAContributionForDisplay();
   const maxEmployerHSAContribution = getMaxEmployerHSAContribution();
   
-  // Calculate max employee contribution for each coverage type
-  const maxEmployeeHSASingle = planData
-    ? Math.max(0, getMaxHSAContribution(planData, 'single', inputs.ageGroup) - minEmployerHSAContribution)
-    : 0;
-  const maxEmployeeHSAFamily = planData
-    ? Math.max(0, getMaxHSAContribution(planData, 'family', inputs.ageGroup) - minEmployerHSAContribution)
-    : 0;
+  // Calculate max employee contribution for each HSA plan based on current coverage
+  const hsaPlansWithEmployeeMax = planData
+    ? planData.plans.filter(plan => plan.type === 'HSA').map(plan => {
+        const employerContribution = getEmployerHSAContribution(plan, inputs.coverage);
+        const employeeMax = Math.max(0, maxTotalHSAContribution - employerContribution);
+        return { name: plan.name, employeeMax };
+      })
+    : [];
   
-  // Use the maximum of both for validation to accommodate plan switching
-  const maxEmployeeHSAContribution = Math.max(maxEmployeeHSASingle, maxEmployeeHSAFamily);
+  // Use the maximum employee contribution across all HSA plans for validation
+  const maxEmployeeHSAContribution = hsaPlansWithEmployeeMax.length > 0
+    ? Math.max(...hsaPlansWithEmployeeMax.map(p => p.employeeMax))
+    : 0;
 
   const maxFSAContribution = planData ? getMaxFSAContribution(planData) : 0;
 
@@ -68,9 +71,9 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
     <Card className="mb-4">
       <Card.Header>
         <h3 className="d-flex justify-content-between align-items-center">
-          <span>HSA/FSA Employee Contributions</span>
+          <span>Personal HSA/FSA Contributions</span>
           <HelpIcon
-            title="HSA/FSA Contributions"
+            title="Personal HSA/FSA Contributions"
             content={
               <div>
                 <div className="alert alert-info mb-3">
@@ -148,7 +151,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
       <Card.Body>
         <div className="mb-3">
           <small className="text-muted">
-            <strong>Note:</strong> Each plan has <i>either</i> an HSA <i>or</i> an FSA. Enter the maximum amount you'd be willing to contribute from your paycheck to each account type for accurate plan comparison.
+            <strong>Note:</strong> Each plan has <i>either</i> an HSA <i>or</i> an FSA. Enter the maximum amount you'd be willing to contribute from your paycheck to each account type for accurate plan comparison. The max amounts shown for the HSA plans are your own contributions, not including the free money from your employer.
           </small>
         </div>
         <Form>
@@ -156,7 +159,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>HSA <small className="text-muted">(Single Max: ${maxEmployeeHSASingle?.toLocaleString() || 'N/A'} | Family Max: ${maxEmployeeHSAFamily?.toLocaleString() || 'N/A'})</small></span>
+                  <span>HSA <small className="text-muted">({hsaPlansWithEmployeeMax.map(p => `${p.name.replace('DMBA ', '')} Max: $${p.employeeMax.toLocaleString()}`).join(' | ')})</small></span>
                   <HelpIcon
                     title="HSA"
                     content={

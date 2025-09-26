@@ -1,5 +1,5 @@
 import React from 'react';
-import { Row, Col, Form, InputGroup } from 'react-bootstrap';
+import { Row, Col, Form, InputGroup, Badge } from 'react-bootstrap';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
 import { NetworkVisits } from '../types';
@@ -13,6 +13,8 @@ interface NetworkVisitsInputRowProps {
   outOfNetworkHelpTitle: string;
   inNetworkHelpContent: React.ReactNode;
   outOfNetworkHelpContent: React.ReactNode;
+  inNetworkIsFree?: boolean;
+  outOfNetworkIsFree?: boolean;
 }
 
 const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
@@ -24,12 +26,19 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
   outOfNetworkHelpTitle,
   inNetworkHelpContent,
   outOfNetworkHelpContent,
+  inNetworkIsFree = false,
+  outOfNetworkIsFree = false,
 }) => {
   return (
     <Row>
       <Col md={6} className="mb-3 mb-md-0">
         <div className="d-flex justify-content-between align-items-center mb-2">
-          <strong>In-Network</strong>
+          <div className="d-flex align-items-center">
+            <strong>In-Network</strong>
+            {inNetworkIsFree && (
+              <Badge bg="primary" className="ms-2">Free</Badge>
+            )}
+          </div>
           <HelpIcon
             title={inNetworkHelpTitle}
             content={inNetworkHelpContent}
@@ -45,6 +54,7 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
                 min={0}
                 step={1}
                 decimalPlaces={0}
+                disabled={inNetworkIsFree}
               />
             </Form.Group>
           </Col>
@@ -58,6 +68,7 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
                   onChange={(value) => onInNetworkChange({ ...inNetworkValue, costPerVisit: value })}
                   min={0}
                   step={10}
+                  disabled={inNetworkIsFree}
                 />
               </InputGroup>
             </Form.Group>
@@ -67,7 +78,12 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
 
       <Col md={6}>
         <div className="d-flex justify-content-between align-items-center mb-2">
-          <strong>Out-of-Network</strong>
+          <div className="d-flex align-items-center">
+            <strong>Out-of-Network</strong>
+            {outOfNetworkIsFree && (
+              <Badge bg="primary" className="ms-2">Free</Badge>
+            )}
+          </div>
           <HelpIcon
             title={outOfNetworkHelpTitle}
             content={outOfNetworkHelpContent}
@@ -83,6 +99,7 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
                 min={0}
                 step={1}
                 decimalPlaces={0}
+                disabled={outOfNetworkIsFree}
               />
             </Form.Group>
           </Col>
@@ -96,6 +113,7 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
                   onChange={(value) => onOutOfNetworkChange({ ...outOfNetworkValue, costPerVisit: value })}
                   min={0}
                   step={10}
+                  disabled={outOfNetworkIsFree}
                 />
               </InputGroup>
             </Form.Group>

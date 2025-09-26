@@ -9,6 +9,7 @@ office_visit_specialist:
 wellness_exam:
   name: "Wellness Exam"
   description: "Annual preventive physical examination designed to help maintain your health and detect problems early. Includes one office visit with exam every calendar year, recommended procedures, and related lab work. These exams are part of preventive care services designed to prevent illness and disease before they start."
+  preventive: true
 
 telemedicine_pcp:
   name: "Telemedicine - Primary Care"
@@ -25,6 +26,7 @@ telemedicine_urgent_care:
 eye_exams:
   name: "Eye Exams"
   description: "Comprehensive eye examinations to assess vision and eye health. Includes routine eye exams, vision screenings, and diagnostic testing for eye conditions. Important for early detection of eye diseases and maintaining optimal vision health."
+  preventive: true
 
 behavioral_mental_health_outpatient:
   name: "Behavioral/Mental Health - Outpatient"
@@ -225,6 +227,7 @@ injections_iv_therapy:
 lifestyle_screenings:
   name: "Lifestyle Screenings"
   description: "Health assessments available once every three calendar years for employees and spouses including blood pressure checks, cholesterol testing, body fat evaluation, fitness assessments, and health history review. Limited to $100 per screening with deductible applying. Designed to promote wellness and early detection of health risks. Not available for dependent children."
+  preventive: true
 
 nutritional_education:
   name: "Nutritional Education"

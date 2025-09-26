@@ -1,20 +1,38 @@
 import React, { useState } from 'react';
-import { Card, Form, Row, Col, Button } from 'react-bootstrap';
+import { Card, Form, Row, Col, Button, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { getCategoriesData } from '../generated/dataHelpers';
 import NetworkVisitsInputRow from './NetworkVisitsInputRow';
 import HelpIcon from './HelpIcon';
-import { UserInputs, CategoryEstimate } from '../types';
+import { UserInputs, CategoryEstimate, PlanData } from '../types';
 
 interface HealthcareCategoriesSectionProps {
   inputs: UserInputs;
   onChange: (updates: Partial<UserInputs>) => void;
+  planData: PlanData | null;
 }
 
-const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = ({ inputs, onChange }) => {
+const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = ({ inputs, onChange, planData }) => {
   const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState<string>('');
   const categoriesData = getCategoriesData();
+
+  // Helper function to check if a category is free for in-network or out-of-network
+  const isCategoryFree = (categoryId: string, network: 'in_network' | 'out_of_network'): boolean => {
+    if (!planData) return false;
+
+    // Check if ANY plan has this category marked as free for the specified network
+    return planData.plans.some(plan => {
+      const categoryConfig = plan.categories[categoryId];
+      if (!categoryConfig) return false;
+
+      const coverage = network === 'in_network'
+        ? categoryConfig.in_network_coverage
+        : categoryConfig.out_of_network_coverage;
+
+      return coverage?.is_free === true;
+    });
+  };
 
   const handleCostChange = (field: keyof UserInputs['costs'], value: any) => {
     onChange({
@@ -65,8 +83,11 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </Button>
-                    <h6 className="mb-0">
+                    <h6 className="mb-0 d-flex align-items-center">
                       {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
+                      {categoriesData[estimate.categoryId]?.preventive && (
+                        <Badge bg="success" className="ms-2">Preventive</Badge>
+                      )}
                     </h6>
                   </div>
                   {categoriesData[estimate.categoryId]?.description && (
@@ -123,6 +144,8 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                       </ul>
                     </div>
                   }
+                  inNetworkIsFree={isCategoryFree(estimate.categoryId, 'in_network')}
+                  outOfNetworkIsFree={isCategoryFree(estimate.categoryId, 'out_of_network')}
                 />
               </Card.Body>
             </Card>
@@ -157,7 +180,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   <option value="">Select a category to add...</option>
                   {availableCategories.map(categoryId => (
                     <option key={categoryId} value={categoryId}>
-                      {categoriesData[categoryId].name}
+                      {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}{categoriesData[categoryId].name}
                     </option>
                   ))}
                 </Form.Select>

@@ -39,6 +39,7 @@ export interface NetworkBenefits {
 export interface Category {
   name: string;
   description?: string;
+  preventive?: boolean;
 }
 
 export interface HealthPlan {
