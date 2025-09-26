@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from 'react-bootstrap';
-import CostInputRow from './CostInputRow';
+import NetworkVisitsInputRow from './NetworkVisitsInputRow';
 import HelpIcon from './HelpIcon';
 import { UserInputs } from '../types';
 
@@ -10,13 +10,13 @@ interface OtherCostsSectionProps {
 }
 
 const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange }) => {
-  const updateOtherCosts = (field: 'inNetworkCost' | 'outOfNetworkCost', value: number) => {
+  const updateOtherCosts = (network: 'inNetwork' | 'outOfNetwork', value: any) => {
     onChange({
       costs: {
         ...inputs.costs,
         otherCosts: {
-          inNetworkCost: field === 'inNetworkCost' ? value : (inputs.costs.otherCosts?.inNetworkCost || 0),
-          outOfNetworkCost: field === 'outOfNetworkCost' ? value : (inputs.costs.otherCosts?.outOfNetworkCost || 0)
+          inNetwork: network === 'inNetwork' ? value : (inputs.costs.otherCosts?.inNetwork || { quantity: 0, costPerVisit: 0 }),
+          outOfNetwork: network === 'outOfNetwork' ? value : (inputs.costs.otherCosts?.outOfNetwork || { quantity: 0, costPerVisit: 0 })
         }
       }
     });
@@ -50,47 +50,48 @@ const OtherCostsSection: React.FC<OtherCostsSectionProps> = ({ inputs, onChange 
             }
           />
         </h6>
-        <CostInputRow
-          inNetworkValue={inputs.costs.otherCosts?.inNetworkCost || 0}
-          outOfNetworkValue={inputs.costs.otherCosts?.outOfNetworkCost || 0}
-          onInNetworkChange={(value) => updateOtherCosts('inNetworkCost', value)}
-          onOutOfNetworkChange={(value) => updateOtherCosts('outOfNetworkCost', value)}
-          inNetworkHelpTitle="In-Network Costs"
-          outOfNetworkHelpTitle="Out-of-Network Costs"
+        <NetworkVisitsInputRow
+          inNetworkValue={inputs.costs.otherCosts?.inNetwork || { quantity: 0, costPerVisit: 0 }}
+          outOfNetworkValue={inputs.costs.otherCosts?.outOfNetwork || { quantity: 0, costPerVisit: 0 }}
+          onInNetworkChange={(value) => updateOtherCosts('inNetwork', value)}
+          onOutOfNetworkChange={(value) => updateOtherCosts('outOfNetwork', value)}
+          inNetworkHelpTitle="In-Network Other Visits"
+          outOfNetworkHelpTitle="Out-of-Network Other Visits"
           inNetworkHelpContent={
             <div>
-              <p>Estimate your annual healthcare costs when using <strong>in-network</strong> providers.</p>
-              <p><strong>In-network providers:</strong></p>
+              <p>Other healthcare visits using <strong>in-network</strong> providers beyond your specific categories.</p>
+              <p><strong>Consider:</strong></p>
               <ul>
-                <li>Have contracts with your insurance plan</li>
-                <li>Offer lower costs and better coverage</li>
-                <li>Apply toward your deductible and out-of-pocket maximum</li>
+                <li>Unexpected medical visits</li>
+                <li>Additional services not in your categories</li>
+                <li>Urgent care or walk-in clinic visits</li>
+                <li>Lab work or imaging not elsewhere categorized</li>
               </ul>
-              <p><strong>Include costs like:</strong></p>
+              <p><strong>In-network benefits:</strong></p>
               <ul>
-                <li>Medical services not covered by specific categories</li>
-                <li>Additional visits beyond what you've specified</li>
-                <li>Unexpected medical needs</li>
+                <li>Lower costs with contracted rates</li>
+                <li>Better coverage under your plan</li>
+                <li>Predictable copays or coinsurance</li>
               </ul>
-              <p>This uses your plan's default coinsurance rates after deductible.</p>
             </div>
           }
           outOfNetworkHelpContent={
             <div>
-              <p>Estimate your annual healthcare costs when using <strong>out-of-network</strong> providers.</p>
-              <p><strong>Out-of-network providers:</strong></p>
+              <p>Other healthcare visits using <strong>out-of-network</strong> providers beyond your specific categories.</p>
+              <p><strong>Consider:</strong></p>
               <ul>
-                <li>Don't have contracts with your insurance plan</li>
-                <li>Result in higher costs and less coverage</li>
-                <li>May have separate deductibles and out-of-pocket maximums</li>
+                <li>Emergency care (often covered at in-network rates)</li>
+                <li>Specialists not available in-network</li>
+                <li>Care received while traveling</li>
+                <li>Services from preferred providers outside network</li>
               </ul>
-              <p><strong>Important considerations:</strong></p>
+              <p><strong>Important notes:</strong></p>
               <ul>
-                <li>You may pay significantly more</li>
-                <li>You might need to pay upfront and get reimbursed</li>
-                <li>Some plans don't cover out-of-network care at all</li>
+                <li>Higher out-of-pocket costs</li>
+                <li>May require pre-authorization</li>
+                <li>Some plans don't cover out-of-network care</li>
+                <li>You might pay upfront and seek reimbursement</li>
               </ul>
-              <p>Leave at $0 if you plan to stay in-network. This uses your plan's out-of-network coinsurance rates.</p>
             </div>
           }
         />
