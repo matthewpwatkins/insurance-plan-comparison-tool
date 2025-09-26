@@ -31,9 +31,9 @@ plans:
     type: "PPO"
     # Monthly premium costs for different coverage levels
     monthly_premiums:
-      single: 252.50
-      two_party: 506.90
-      family: 800.90
+      single: 245.30
+      two_party: 499.70
+      family: 793.70
     # Annual deductible amounts (amount you pay before insurance starts covering)
     annual_deductible:
       in_network:
@@ -84,6 +84,8 @@ plans:
         out_of_network_coverage:
           copay: 45
       telemedicine_urgent_care:
+        in_network_coverage:
+          copay: 45
         out_of_network_coverage:
           copay: 45
       eye_exams:
@@ -165,15 +167,82 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+        out_of_network_coverage:
+          coinsurance: 0.3
+      imaging_diagnostic_facility:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      imaging_diagnostic_professional:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.1
+      hospital_inpatient:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      maternity_inpatient:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      behavioral_mental_health_inpatient:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      imaging_advanced_facility:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      imaging_advanced_professional:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.1
+      surgery:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      aba_therapy:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      physical_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      occupational_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      speech_therapy_inpatient_eval:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
+      durable_medical_equipment:
+        in_network_coverage:
+          coinsurance: 0.1
+        out_of_network_coverage:
+          coinsurance: 0.3
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   # This plan has 70% coverage (30% coinsurance) with moderate deductibles
   - name: "DMBA PPO 70"
     type: "PPO"
     monthly_premiums:
-      single: 108.40
-      two_party: 212.90
-      family: 329.60
+      single: 101.20
+      two_party: 205.70
+      family: 322.40
     annual_deductible:
       in_network:
         single: 0
@@ -220,6 +289,8 @@ plans:
         out_of_network_coverage:
           copay: 45
       telemedicine_urgent_care:
+        in_network_coverage:
+          copay: 45
         out_of_network_coverage:
           copay: 45
       eye_exams:
@@ -301,6 +372,73 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+        out_of_network_coverage:
+          coinsurance: 0.5
+      imaging_diagnostic_facility:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      imaging_diagnostic_professional:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.3
+      hospital_inpatient:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      maternity_inpatient:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      behavioral_mental_health_inpatient:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      imaging_advanced_facility:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      imaging_advanced_professional:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.3
+      surgery:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      aba_therapy:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      physical_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      occupational_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      speech_therapy_inpatient_eval:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
+      durable_medical_equipment:
+        in_network_coverage:
+          coinsurance: 0.3
+        out_of_network_coverage:
+          coinsurance: 0.5
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   # This plan has 80% coverage (20% coinsurance) after deductible, includes employer HSA contribution
@@ -312,16 +450,16 @@ plans:
       two_party: 1_650
       family: 1_650
     monthly_premiums:
-      single: 104.60
-      two_party: 206.60
-      family: 255.90
+      single: 97.40
+      two_party: 199.40
+      family: 248.70
     annual_deductible:
       in_network:
-        single: 1_700
-        family: 3_400
+        single: 1_650
+        family: 3_300
       out_of_network:
-        single: 3_400
-        family: 6_800
+        single: 3_300
+        family: 6_600
     out_of_pocket_maximum:
       in_network:
         individual: 4_500
@@ -380,6 +518,73 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+        out_of_network_coverage:
+          coinsurance: 0.4
+      imaging_diagnostic_facility:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      imaging_diagnostic_professional:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.2
+      hospital_inpatient:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      maternity_inpatient:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      behavioral_mental_health_inpatient:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      imaging_advanced_facility:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      imaging_advanced_professional:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.2
+      surgery:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      aba_therapy:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      physical_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      occupational_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      speech_therapy_inpatient_eval:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
+      durable_medical_equipment:
+        in_network_coverage:
+          coinsurance: 0.2
+        out_of_network_coverage:
+          coinsurance: 0.4
 
   # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
   # This plan has 60% coverage (40% coinsurance) after deductible, includes highest employer HSA contribution
@@ -390,16 +595,16 @@ plans:
       two_party: 3_000
       family: 3_000
     monthly_premiums:
-      single: 62.90
-      two_party: 99.10
-      family: 118.80
+      single: 55.70
+      two_party: 91.90
+      family: 111.60
     annual_deductible:
       in_network:
-        single: 3_050
-        family: 6_100
+        single: 3_000
+        family: 6_000
       out_of_network:
-        single: 6_100
-        family: 12_200
+        single: 6_000
+        family: 12_000
     out_of_pocket_maximum:
       in_network:
         individual: 7_500
@@ -458,3 +663,70 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+        out_of_network_coverage:
+          coinsurance: 0.6
+      imaging_diagnostic_facility:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      imaging_diagnostic_professional:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.4
+      hospital_inpatient:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      maternity_inpatient:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      behavioral_mental_health_inpatient:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      imaging_advanced_facility:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      imaging_advanced_professional:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.4
+      surgery:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      aba_therapy:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      physical_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      occupational_therapy_inpatient:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      speech_therapy_inpatient_eval:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6
+      durable_medical_equipment:
+        in_network_coverage:
+          coinsurance: 0.4
+        out_of_network_coverage:
+          coinsurance: 0.6

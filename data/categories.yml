@@ -153,3 +153,115 @@ speech_therapy_inpatient_eval:
 durable_medical_equipment:
   name: "Durable Medical Equipment"
   description: "Medical equipment designed for repeated use in treating illness or injury, such as wheelchairs, oxygen equipment, and hospital beds. Must be prescribed by a physician and meet medical necessity requirements. Often requires preauthorization and may have specific coverage limitations or replacement schedules."
+
+urgent_care:
+  name: "Urgent Care"
+  description: "Medical care for non-emergency conditions that require prompt attention but don't require an emergency room visit. Urgent care centers provide convenient access to healthcare for conditions like minor injuries, infections, or illnesses that need treatment but aren't life-threatening. Available for both in-network and out-of-network providers with the same coverage level."
+
+allergy_testing:
+  name: "Allergy Testing"
+  description: "Diagnostic testing to identify specific allergens that may cause allergic reactions. Includes skin tests, blood tests, and other medically necessary allergy assessments. Essential for developing effective treatment plans and avoiding allergens. Some specialized tests like ALCAT and LHRT are not covered."
+
+anesthesia:
+  name: "Anesthesia"
+  description: "Medical services provided by anesthesiologists or nurse anesthetists during surgical procedures, diagnostic procedures, or other medical treatments requiring sedation or pain management. Includes general anesthesia, regional anesthesia, and local anesthesia administered by qualified professionals."
+
+ambulance_emergency:
+  name: "Ambulance - Emergency"
+  description: "Licensed ambulance services to transport patients to the nearest appropriate medical facility during medical emergencies. Includes ground ambulance and air ambulance services when medically necessary. Medical services and supplies provided during transportation are covered separately at their appropriate benefit levels."
+
+cardiac_rehabilitation:
+  name: "Cardiac Rehabilitation"
+  description: "Medically supervised programs designed to help individuals recover from heart attacks, heart surgery, or other cardiac conditions. Includes exercise training, education about heart-healthy living, and counseling to reduce stress and help patients return to active lives. Requires physician referral and medical necessity."
+
+chemotherapy_provider_administered:
+  name: "Chemotherapy - Provider Administered"
+  description: "Cancer treatment medications administered by healthcare providers in clinical settings such as hospitals, outpatient infusion centers, or physician offices. Includes intravenous, injection, and other provider-administered chemotherapy drugs. Preauthorization required. Oral chemotherapy may be covered under prescription drug benefits."
+
+dialysis:
+  name: "Dialysis"
+  description: "Treatment for kidney failure that removes waste products and excess fluid from the blood when kidneys can no longer perform these functions adequately. Includes hemodialysis and peritoneal dialysis treatments provided in dialysis centers or other appropriate medical facilities."
+
+genetic_counseling:
+  name: "Genetic Counseling"
+  description: "Professional services provided by certified genetic counselors or board-certified medical geneticists to help individuals and families understand genetic conditions, inheritance patterns, and genetic testing options. Important for making informed decisions about genetic testing and family planning."
+
+genetic_testing:
+  name: "Genetic Testing"
+  description: "Laboratory tests that analyze DNA, chromosomes, or proteins to detect genetic disorders or predisposition to certain diseases. May require preauthorization and genetic counseling prior to testing. Not all genetic testing is covered - medical necessity must be established."
+
+hearing_aids:
+  name: "Hearing Aids"
+  description: "Prescription hearing devices to treat hearing loss, prescribed and fitted by licensed audiologists. Coverage limited to $1,200 per ear once every three years. Only prescription hearing aids are covered - over-the-counter hearing aids and personal sound amplification products are not covered."
+
+hearing_exams:
+  name: "Hearing Exams"
+  description: "Professional evaluation of hearing ability by qualified healthcare providers. Includes comprehensive hearing assessments, audiological evaluations, and diagnostic testing for hearing disorders. Important for early detection of hearing loss and determining appropriate treatment."
+
+hearing_testing_audiometry:
+  name: "Hearing Testing (Audiometry)"
+  description: "Specialized diagnostic tests to measure hearing acuity and identify the type and degree of hearing loss. Includes pure tone audiometry, speech audiometry, and other auditory function tests performed by qualified professionals. Separate from preventive hearing loss screening."
+
+home_healthcare:
+  name: "Home Healthcare"
+  description: "Medical services provided in the patient's home by licensed healthcare professionals including registered nurses (RN) or licensed practical nurses (LPN). Must be medically necessary and prescribed by a physician. Preauthorization required. Does not include custodial care such as bathing, dressing, or meal preparation."
+
+hospice_care:
+  name: "Hospice Care"
+  description: "Comprehensive end-of-life care for individuals with terminal illness and life expectancy of less than six months. Includes coordinated team of hospice professionals, medical equipment and supplies, medications related to terminal illness, nursing services, counseling, and bereavement services. Preauthorization required."
+
+infertility_artificial_insemination:
+  name: "Infertility - Artificial Insemination"
+  description: "Medical procedure to treat infertility by directly inserting sperm into a woman's reproductive system. Includes intrauterine insemination (IUI) and other artificial insemination techniques when medically appropriate. Preauthorization required. Part of covered infertility services with specific medical criteria."
+
+infertility_ivf:
+  name: "Infertility - IVF"
+  description: "In vitro fertilization treatment for infertility with lifetime benefit limit of $10,000 per contract. Requires that patient's spouse be the donor for all tissue used including eggs, sperm, and embryos. Must meet DMBA's medical criteria. Preauthorization required. Associated services like surgery and lab work apply to the lifetime benefit limit."
+
+injections_iv_therapy:
+  name: "Injections and IV Therapy"
+  description: "Administration of prescription drugs, specialty medications, and intravenous therapies in outpatient settings. Includes provider-maintained drugs, pharmacy-provided drug administration, infusion therapy, and injectable medications that must be administered by healthcare providers. Some medications administered by Archimedes may require separate preauthorization."
+
+lifestyle_screenings:
+  name: "Lifestyle Screenings"
+  description: "Health assessments available once every three calendar years for employees and spouses including blood pressure checks, cholesterol testing, body fat evaluation, fitness assessments, and health history review. Limited to $100 per screening with deductible applying. Designed to promote wellness and early detection of health risks. Not available for dependent children."
+
+nutritional_education:
+  name: "Nutritional Education"
+  description: "Education services provided by certified or licensed dietitians or nutritionists for individuals diagnosed with specific medical conditions including eating disorders (anorexia, bulimia) or celiac disease. Must be medically necessary and related to diagnosed conditions. General nutrition education is not covered."
+
+obesity_surgery:
+  name: "Obesity Surgery"
+  description: "Surgical treatment for severe obesity including Roux-en-Y gastric bypass, vertical gastrectomy with duodenal switch, and gastric sleeve procedures. Limited to one procedure per lifetime for individuals at least 18 years old. Requires preauthorization with documentation of prescribed treatment plan compliance for at least one year."
+
+pain_management:
+  name: "Pain Management"
+  description: "Medical services to diagnose and treat chronic or acute pain conditions. Includes physician consultations, diagnostic procedures, therapeutic interventions, and pain relief treatments. Preauthorization required for inpatient services, some physician services, outpatient procedures, and durable medical equipment like pain pumps and spinal cord stimulators."
+
+prosthetics:
+  name: "Prosthetics"
+  description: "Artificial devices to replace missing body parts such as artificial arms, legs, or eyes. Includes initial fitting, training in use, and repairs for normal wear and tear. Coverage for replacement at specific intervals when medically necessary. Preauthorization required. Replacement of lost prosthetics not covered."
+
+radiation_therapy:
+  name: "Radiation Therapy"
+  description: "Cancer treatment using high-energy radiation to destroy cancer cells and shrink tumors. Includes external beam radiation and other radiation oncology treatments. Preauthorization required for some specialized types such as proton beam therapy, IMRT, and brachytherapy. Essential component of comprehensive cancer care."
+
+respiratory_education:
+  name: "Respiratory Education"
+  description: "Educational services provided by licensed respiratory therapists for individuals under age 26 with asthma or cystic fibrosis. Includes evaluation of respiratory condition, education about disease management, proper use of medications and equipment, and techniques for optimal respiratory health."
+
+skilled_nursing_facility:
+  name: "Skilled Nursing Facility"
+  description: "Extended care services in licensed facilities for individuals recuperating from acute injury or illness after inpatient hospitalization. Covered for up to 50 days per calendar year when medically necessary for recovery. Preauthorization required. Does not include custodial care for activities of daily living."
+
+tmj_dysfunction:
+  name: "TMJ Dysfunction"
+  description: "Treatment for temporomandibular joint disorders affecting jaw function and causing pain or difficulty with jaw movement. Includes medical and surgical treatments for TMJ conditions. Services covered at appropriate benefit levels but excludes night guards for teeth grinding and orthognathic surgery specifically for TMJ treatment."
+
+transplants:
+  name: "Transplants"
+  description: "Organ and tissue transplant procedures when medical criteria are met. Covered transplants include blood/bone marrow stem cell, heart, liver, kidney, lung, intestine, cornea, and combined organ transplants. Preauthorization required except for cornea transplants. Includes evaluation, surgery, and post-transplant care with limitations on donor benefits."
+
+transportation_medical:
+  name: "Transportation - Medical"
+  description: "Transportation services to the nearest appropriate medical facility when medically necessary and preauthorized. Includes transportation for covered individual and one parent/guardian for children under 19. Automobile travel reimbursed at IRS mileage rate after first 200 miles per round trip. Does not cover hotels, meals, or personal expenses."
