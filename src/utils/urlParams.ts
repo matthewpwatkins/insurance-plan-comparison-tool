@@ -90,12 +90,10 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
         updates.costs.categoryEstimates = categoryEstimates.filter(estimate =>
           estimate &&
           typeof estimate.categoryId === 'string' &&
-          estimate.inNetwork &&
-          typeof estimate.inNetwork.quantity === 'number' &&
-          typeof estimate.inNetwork.costPerVisit === 'number' &&
-          estimate.outOfNetwork &&
-          typeof estimate.outOfNetwork.quantity === 'number' &&
-          typeof estimate.outOfNetwork.costPerVisit === 'number'
+          estimate.estimate &&
+          typeof estimate.estimate.quantity === 'number' &&
+          typeof estimate.estimate.costPerVisit === 'number' &&
+          typeof estimate.estimate.isInNetwork === 'boolean'
         );
       }
     } catch (error) {

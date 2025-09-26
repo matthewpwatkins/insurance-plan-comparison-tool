@@ -1,6 +1,6 @@
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
 import { getCategoriesData } from '../generated/dataHelpers';
-import { PlanData, HealthPlan, UserInputs, PlanResult, UserCosts, OrganizedLedger, ContributionEntry, PremiumEntry, ExpenseEntry } from '../types';
+import { PlanData, HealthPlan, UserInputs, PlanResult, OrganizedLedger, ContributionEntry, PremiumEntry, ExpenseEntry } from '../types';
 
 /**
  * Calculate costs for all plans given user inputs and plan data
@@ -12,11 +12,12 @@ export const calculateAllPlans = (planData: PlanData, userInputs: UserInputs): P
   return results.sort((a, b) => a.totalCost - b.totalCost);
 };
 
+
 /**
  * Calculate cost breakdown for a single plan
  */
 export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInputs: UserInputs): PlanResult => {
-  const { coverage, ageGroup, taxRate, costs } = userInputs;
+  const { coverage, taxRate, costs } = userInputs;
   const taxRateDecimal = taxRate / 100; // Convert percentage to decimal
 
   // Calculate annual premiums
@@ -41,14 +42,13 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
   execution.addTaxSavings(taxSavings, contributionType);
 
   // Process all category expenses
-  for (const estimate of costs.categoryEstimates) {
-    // Process in-network visits
-    for (let i = 0; i < estimate.inNetwork.quantity; i++) {
-      execution.recordExpense(estimate.categoryId, estimate.inNetwork.costPerVisit, 'in_network', estimate.notes);
-    }
-    // Process out-of-network visits
-    for (let i = 0; i < estimate.outOfNetwork.quantity; i++) {
-      execution.recordExpense(estimate.categoryId, estimate.outOfNetwork.costPerVisit, 'out_of_network', estimate.notes);
+  for (const categoryEstimate of costs.categoryEstimates) {
+    const { estimate } = categoryEstimate;
+    const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
+
+    // Process all visits for this category
+    for (let i = 0; i < estimate.quantity; i++) {
+      execution.recordExpense(categoryEstimate.categoryId, estimate.costPerVisit, network, categoryEstimate.notes);
     }
   }
 
@@ -78,6 +78,7 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
     ledger
   };
 };
+
 
 interface ContributionResult {
   userContribution: number;

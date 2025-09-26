@@ -3,7 +3,7 @@ import { Card, Form, Row, Col, Button, Badge, InputGroup } from 'react-bootstrap
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencil } from '@fortawesome/free-solid-svg-icons';
 import { getCategoriesData } from '../generated/dataHelpers';
-import NetworkVisitsInputRow from './NetworkVisitsInputRow';
+import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
 import { UserInputs, CategoryEstimate, PlanData } from '../types';
 
@@ -13,7 +13,11 @@ interface HealthcareCategoriesSectionProps {
   planData: PlanData | null;
 }
 
-const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = ({ inputs, onChange, planData }) => {
+const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = ({
+  inputs,
+  onChange,
+  planData
+}) => {
   const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState<string>('');
   const categoriesData = getCategoriesData();
 
@@ -47,13 +51,12 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     });
   };
 
-
   const removeCategory = (index: number) => {
     const updatedEstimates = inputs.costs.categoryEstimates.filter((_, i) => i !== index);
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
-  const updateCategoryEstimate = (index: number, field: 'inNetwork' | 'outOfNetwork' | 'notes', value: any) => {
+  const updateCategoryEstimate = (index: number, field: 'estimate' | 'notes', value: any) => {
     const updatedEstimates = inputs.costs.categoryEstimates.map((est, i) =>
       i === index
         ? { ...est, [field]: value }
@@ -72,144 +75,168 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
 
   return (
     <>
-          {/* Category Estimates */}
-          {inputs.costs.categoryEstimates.map((estimate, index) => (
-            <Card key={index} className="mb-3">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className="d-flex align-items-center">
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => removeCategory(index)}
-                      title="Remove category"
-                      className="me-2"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </Button>
-                    <h6 className="mb-0 d-flex align-items-center">
-                      {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
-                      {categoriesData[estimate.categoryId]?.preventive && (
-                        <Badge bg="success" className="ms-2">Preventive</Badge>
-                      )}
-                    </h6>
-                  </div>
-                  {categoriesData[estimate.categoryId]?.description && (
-                    <HelpIcon
-                      title={categoriesData[estimate.categoryId].name}
-                      content={
-                        <div>
-                          {categoriesData[estimate.categoryId].description}
-                        </div>
-                      }
-                    />
+      {/* Category Estimates */}
+      {inputs.costs.categoryEstimates.map((estimate, index) => (
+        <Card key={index} className="mb-3">
+          <Card.Body>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="d-flex align-items-center">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => removeCategory(index)}
+                  title="Remove category"
+                  className="me-2"
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </Button>
+                <h6 className="mb-0 d-flex align-items-center">
+                  {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
+                  {categoriesData[estimate.categoryId]?.preventive && (
+                    <Badge bg="success" className="ms-2">Preventive</Badge>
+                  )}
+                </h6>
+              </div>
+              {categoriesData[estimate.categoryId]?.description && (
+                <HelpIcon
+                  title={categoriesData[estimate.categoryId].name}
+                  content={
+                    <div>
+                      {categoriesData[estimate.categoryId].description}
+                    </div>
+                  }
+                />
+              )}
+            </div>
+
+            {/* First Row: Network Radio + Notes */}
+            <Row className="align-items-center mb-2">
+              <Col md={3} className="mb-3">
+                <div>
+                  <Form.Check
+                    type="radio"
+                    id={`in-network-${index}`}
+                    name={`network-${index}`}
+                    label="In-Network"
+                    checked={estimate.estimate.isInNetwork}
+                    onChange={() => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, isInNetwork: true })}
+                  />
+                  <Form.Check
+                    type="radio"
+                    id={`out-network-${index}`}
+                    name={`network-${index}`}
+                    label="Out-of-Network"
+                    checked={!estimate.estimate.isInNetwork}
+                    onChange={() => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, isInNetwork: false })}
+                  />
+                  {isCategoryFree(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network') && (
+                    <Badge bg="primary" className="mt-1">Free</Badge>
                   )}
                 </div>
+              </Col>
 
-                {/* Notes Field */}
-                <Form.Group className="mb-3">
+              <Col md={9} className="mb-3">
+                <InputGroup>
+                  <InputGroup.Text>
+                    <FontAwesomeIcon icon={faPencil} className="text-muted" />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    placeholder="Optional notes: ex. Jill's allergy medicine"
+                    value={estimate.notes || ''}
+                    maxLength={100}
+                    onChange={(e) => updateCategoryEstimate(index, 'notes', e.target.value)}
+                    style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
+                  />
+                </InputGroup>
+              </Col>
+            </Row>
+
+            {/* Second Row: Quantity + Cost + Help */}
+            <Row className="align-items-center">
+              <Col md={3} className="mb-3">
+                <Form.Group>
+                  <Form.Label className="small text-muted">Visits</Form.Label>
+                  <FormattedNumberInput
+                    value={estimate.estimate.quantity}
+                    onChange={(value: number) => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, quantity: value })}
+                    min={0}
+                    step={1}
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col md={9} className="mb-3 position-relative">
+                <Form.Group>
+                  <Form.Label className="small text-muted">Cost Per Visit</Form.Label>
                   <InputGroup>
-                    <InputGroup.Text>
-                      <FontAwesomeIcon icon={faPencil} className="text-muted" />
-                    </InputGroup.Text>
-                    <Form.Control
-                      type="text"
-                      placeholder="Optional notes: ex. Jill's allergy medicine"
-                      value={estimate.notes || ''}
-                      maxLength={100}
-                      onChange={(e) => updateCategoryEstimate(index, 'notes', e.target.value)}
-                      style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
+                    <InputGroup.Text>$</InputGroup.Text>
+                    <FormattedNumberInput
+                      value={isCategoryFree(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network') ? 0 : estimate.estimate.costPerVisit}
+                      onChange={(value: number) => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, costPerVisit: value })}
+                      min={0}
+                      step={10}
+                      disabled={isCategoryFree(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network')}
                     />
                   </InputGroup>
                 </Form.Group>
-
-                <NetworkVisitsInputRow
-                  inNetworkValue={estimate.inNetwork}
-                  outOfNetworkValue={estimate.outOfNetwork}
-                  onInNetworkChange={(value) => updateCategoryEstimate(index, 'inNetwork', value)}
-                  onOutOfNetworkChange={(value) => updateCategoryEstimate(index, 'outOfNetwork', value)}
-                  inNetworkHelpTitle="In-Network Visits"
-                  outOfNetworkHelpTitle="Out-of-Network Visits"
-                  inNetworkHelpContent={
-                    <div>
-                      <p>Estimate your visits using <strong>in-network</strong> providers for this category.</p>
-                      <p><strong>In-network providers:</strong></p>
-                      <ul>
-                        <li>Have contracts with your insurance plan</li>
-                        <li>Offer lower costs and better coverage</li>
-                        <li>May have copays instead of coinsurance</li>
-                        <li>Count toward your deductible and out-of-pocket maximum</li>
-                      </ul>
-                      <p><strong>Cost should be the full amount charged:</strong></p>
-                      <ul>
-                        <li>Not your copay - the provider's full charge</li>
-                        <li>Check your EOBs for negotiated rates</li>
-                        <li>The calculator will apply copays/coinsurance</li>
-                      </ul>
-                    </div>
-                  }
-                  outOfNetworkHelpContent={
-                    <div>
-                      <p>Estimate your visits using <strong>out-of-network</strong> providers for this category.</p>
-                      <p><strong>Out-of-network providers:</strong></p>
-                      <ul>
-                        <li>Don't have contracts with your insurance plan</li>
-                        <li>Result in higher costs and less coverage</li>
-                        <li>May have separate deductibles and maximums</li>
-                        <li>You might pay upfront and get reimbursed</li>
-                      </ul>
-                      <p><strong>Important:</strong></p>
-                      <ul>
-                        <li>Some plans don't cover out-of-network care at all</li>
-                        <li>Emergency care is usually covered at in-network rates</li>
-                        <li>Leave at 0 if you plan to stay in-network</li>
-                      </ul>
-                    </div>
-                  }
-                  inNetworkIsFree={isCategoryFree(estimate.categoryId, 'in_network')}
-                  outOfNetworkIsFree={isCategoryFree(estimate.categoryId, 'out_of_network')}
-                />
-              </Card.Body>
-            </Card>
-          ))}
-
-          {/* Add Category Section */}
-          <Row className="mb-3">
-            <Col>
-              <Form.Group>
-                <Form.Select
-                  value={selectedCategoryToAdd}
-                  onChange={(e) => {
-                    const categoryId = e.target.value;
-                    if (categoryId) {
-                      setSelectedCategoryToAdd(categoryId);
-                      const newEstimate: CategoryEstimate = {
-                        categoryId: categoryId,
-                        inNetwork: {
-                          quantity: 1,
-                          costPerVisit: 0
-                        },
-                        outOfNetwork: {
-                          quantity: 0,
-                          costPerVisit: 0
-                        },
-                        notes: ''
-                      };
-                      handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
-                      setSelectedCategoryToAdd('');
+                <div className="position-absolute" style={{ top: '0', right: '0' }}>
+                  <HelpIcon
+                    title="Cost Estimate"
+                    content={
+                      <div>
+                        <p><strong>Quantity:</strong> How many times you expect to use this service annually.</p>
+                        <p><strong>Cost per visit:</strong> The full amount charged by the provider (not your copay).</p>
+                        <p><strong>Network:</strong></p>
+                        <ul>
+                          <li><strong>In-Network:</strong> Providers with contracts with your insurance plan. Lower costs, better coverage.</li>
+                          <li><strong>Out-of-Network:</strong> Providers without contracts. Higher costs, less coverage.</li>
+                        </ul>
+                        <p><strong>Tip:</strong> Check your EOBs for negotiated rates to get accurate cost estimates.</p>
+                      </div>
                     }
-                  }}
-                >
-                  <option value="">Select a category to add...</option>
-                  {availableCategories.map(categoryId => (
-                    <option key={categoryId} value={categoryId}>
-                      {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}{categoriesData[categoryId].name}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
+                  />
+                </div>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      ))}
+
+      {/* Add Category Section */}
+      <Row className="mb-3">
+        <Col>
+          <Form.Group>
+            <Form.Select
+              value={selectedCategoryToAdd}
+              onChange={(e) => {
+                const categoryId = e.target.value;
+                if (categoryId) {
+                  setSelectedCategoryToAdd(categoryId);
+                  const newEstimate: CategoryEstimate = {
+                    categoryId: categoryId,
+                    estimate: {
+                      quantity: 1,
+                      costPerVisit: 0,
+                      isInNetwork: true // Default to in-network
+                    },
+                    notes: ''
+                  };
+                  handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
+                  setSelectedCategoryToAdd('');
+                }
+              }}
+            >
+              <option value="">Select a category to add...</option>
+              {availableCategories.map(categoryId => (
+                <option key={categoryId} value={categoryId}>
+                  {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}{categoriesData[categoryId].name}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </Col>
+      </Row>
     </>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Form } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import BasicInfoSection from './BasicInfoSection';
 import HSAFSASection from './HSAFSASection';
 import HealthcareCategoriesSection from './HealthcareCategoriesSection';
@@ -12,6 +12,7 @@ interface CostInputFormProps {
 }
 
 const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planData }) => {
+
   return (
     <>
       <BasicInfoSection

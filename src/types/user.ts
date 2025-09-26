@@ -1,12 +1,12 @@
-export interface NetworkVisits {
+export interface CostEstimate {
   quantity: number;
   costPerVisit: number;
+  isInNetwork: boolean;
 }
 
 export interface CategoryEstimate {
   categoryId: string;
-  inNetwork: NetworkVisits;
-  outOfNetwork: NetworkVisits;
+  estimate: CostEstimate;
   notes?: string;
 }
 
