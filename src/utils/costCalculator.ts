@@ -41,17 +41,6 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
     }
   }
 
-  // Process other costs (using default plan coverage)
-  if (costs.otherCosts) {
-    // Process in-network other costs
-    for (let i = 0; i < costs.otherCosts.inNetwork.quantity; i++) {
-      execution.recordExpense('other', costs.otherCosts.inNetwork.costPerVisit, 'in_network');
-    }
-    // Process out-of-network other costs
-    for (let i = 0; i < costs.otherCosts.outOfNetwork.quantity; i++) {
-      execution.recordExpense('other', costs.otherCosts.outOfNetwork.costPerVisit, 'out_of_network');
-    }
-  }
 
   const outOfPocketCosts = execution.getTotalOutOfPocket();
 

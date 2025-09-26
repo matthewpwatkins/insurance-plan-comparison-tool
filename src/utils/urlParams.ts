@@ -22,9 +22,6 @@ export const userInputsToURLParams = (inputs: UserInputs): URLSearchParams => {
     params.set('categoryEstimates', JSON.stringify(inputs.costs.categoryEstimates));
   }
 
-  if (inputs.costs.otherCosts) {
-    params.set('otherCosts', JSON.stringify(inputs.costs.otherCosts));
-  }
 
   return params;
 };
@@ -83,46 +80,26 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
 
   // Parse costs object
   const categoryEstimatesParam = searchParams.get('categoryEstimates');
-  const otherCostsParam = searchParams.get('otherCosts');
 
-  if (categoryEstimatesParam || otherCostsParam) {
+  if (categoryEstimatesParam) {
     updates.costs = {};
 
-    if (categoryEstimatesParam) {
-      try {
-        const categoryEstimates = JSON.parse(categoryEstimatesParam);
-        if (Array.isArray(categoryEstimates)) {
-          updates.costs.categoryEstimates = categoryEstimates.filter(estimate =>
-            estimate &&
-            typeof estimate.categoryId === 'string' &&
-            estimate.inNetwork &&
-            typeof estimate.inNetwork.quantity === 'number' &&
-            typeof estimate.inNetwork.costPerVisit === 'number' &&
-            estimate.outOfNetwork &&
-            typeof estimate.outOfNetwork.quantity === 'number' &&
-            typeof estimate.outOfNetwork.costPerVisit === 'number'
-          );
-        }
-      } catch (error) {
-        console.error('Failed to parse categoryEstimates from URL:', error);
+    try {
+      const categoryEstimates = JSON.parse(categoryEstimatesParam);
+      if (Array.isArray(categoryEstimates)) {
+        updates.costs.categoryEstimates = categoryEstimates.filter(estimate =>
+          estimate &&
+          typeof estimate.categoryId === 'string' &&
+          estimate.inNetwork &&
+          typeof estimate.inNetwork.quantity === 'number' &&
+          typeof estimate.inNetwork.costPerVisit === 'number' &&
+          estimate.outOfNetwork &&
+          typeof estimate.outOfNetwork.quantity === 'number' &&
+          typeof estimate.outOfNetwork.costPerVisit === 'number'
+        );
       }
-    }
-
-    if (otherCostsParam) {
-      try {
-        const otherCosts = JSON.parse(otherCostsParam);
-        if (otherCosts &&
-            otherCosts.inNetwork &&
-            typeof otherCosts.inNetwork.quantity === 'number' &&
-            typeof otherCosts.inNetwork.costPerVisit === 'number' &&
-            otherCosts.outOfNetwork &&
-            typeof otherCosts.outOfNetwork.quantity === 'number' &&
-            typeof otherCosts.outOfNetwork.costPerVisit === 'number') {
-          updates.costs.otherCosts = otherCosts;
-        }
-      } catch (error) {
-        console.error('Failed to parse otherCosts from URL:', error);
-      }
+    } catch (error) {
+      console.error('Failed to parse categoryEstimates from URL:', error);
     }
   }
 

@@ -59,6 +59,7 @@ plans:
       wellness_exam:
         in_network_coverage:
           copay: 0
+          is_free: true
         out_of_network_coverage:
           copay: 40
       telemedicine_pcp:
@@ -89,6 +90,7 @@ plans:
       laboratory_outpatient:
         in_network_coverage:
           copay: 0
+          is_free: true
       emergency_room:
         in_network_coverage:
           copay: 150
@@ -155,6 +157,7 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+          is_free: true
         out_of_network_coverage:
           coinsurance: 0.3
       imaging_diagnostic_facility:
@@ -263,6 +266,7 @@ plans:
       wellness_exam:
         in_network_coverage:
           copay: 0
+          is_free: true
         out_of_network_coverage:
           copay: 40
       telemedicine_pcp:
@@ -293,6 +297,7 @@ plans:
       laboratory_outpatient:
         in_network_coverage:
           copay: 0
+          is_free: true
       emergency_room:
         in_network_coverage:
           copay: 150
@@ -359,6 +364,7 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+          is_free: true
         out_of_network_coverage:
           coinsurance: 0.5
       imaging_diagnostic_facility:
@@ -461,6 +467,7 @@ plans:
       wellness_exam:
         in_network_coverage:
           copay: 0
+          is_free: true
       telemedicine_urgent_care:
         in_network_coverage:
           coinsurance: 0.2
@@ -503,6 +510,7 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+          is_free: true
         out_of_network_coverage:
           coinsurance: 0.4
       imaging_diagnostic_facility:
@@ -605,6 +613,7 @@ plans:
       wellness_exam:
         in_network_coverage:
           copay: 0
+          is_free: true
       telemedicine_urgent_care:
         in_network_coverage:
           coinsurance: 0.4
@@ -647,6 +656,7 @@ plans:
       maternity_physician:
         in_network_coverage:
           copay: 0
+          is_free: true
         out_of_network_coverage:
           coinsurance: 0.6
       imaging_diagnostic_facility:

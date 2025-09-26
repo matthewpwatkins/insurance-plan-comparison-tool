@@ -11,10 +11,6 @@ export interface CategoryEstimate {
 
 export interface UserCosts {
   categoryEstimates: CategoryEstimate[];
-  otherCosts?: {
-    inNetwork: NetworkVisits;
-    outOfNetwork: NetworkVisits;
-  };
 }
 
 export interface UserInputs {

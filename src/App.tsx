@@ -21,17 +21,7 @@ function App() {
     ageGroup: 'under_55',
     taxRate: 21.7,
     costs: {
-      categoryEstimates: [],
-      otherCosts: {
-        inNetwork: {
-          quantity: 0,
-          costPerVisit: 0
-        },
-        outOfNetwork: {
-          quantity: 0,
-          costPerVisit: 0
-        }
-      }
+      categoryEstimates: []
     },
     hsaContribution: 0,
     fsaContribution: 0
