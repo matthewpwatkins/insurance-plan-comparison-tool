@@ -156,7 +156,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>HSA <small className="text-muted">(Single: ${maxEmployeeHSASingle?.toLocaleString() || 'N/A'} | Family: ${maxEmployeeHSAFamily?.toLocaleString() || 'N/A'})</small></span>
+                  <span>HSA <small className="text-muted">(Single Max: ${maxEmployeeHSASingle?.toLocaleString() || 'N/A'} | Family Max: ${maxEmployeeHSAFamily?.toLocaleString() || 'N/A'})</small></span>
                   <HelpIcon
                     title="HSA"
                     content={

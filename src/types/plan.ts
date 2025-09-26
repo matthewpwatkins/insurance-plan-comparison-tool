@@ -28,6 +28,7 @@ export interface CostStructure {
   copay?: number;
   coinsurance?: number;
   max_coinsurance?: number;
+  is_free?: boolean;
 }
 
 export interface NetworkBenefits {
