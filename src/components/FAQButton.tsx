@@ -140,7 +140,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                         <tr key={index}>
                           <td>{entry.description}</td>
                           <td className="text-success">
-                            {formatCurrency(entry.amount)}
+                            {formatCurrency(entry.amount, true)}
                           </td>
                         </tr>
                       ))}
@@ -175,7 +175,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                     <tr key={index}>
                       <td>{entry.description}</td>
                       <td className="text-danger">
-                        {formatCurrency(entry.amount)}
+                        {formatCurrency(entry.amount, true)}
                       </td>
                     </tr>
                   ))}
@@ -222,14 +222,14 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                                   <div className="text-muted small">{entry.notes}</div>
                                 )}
                               </td>
-                              <td>{formatCurrency(entry.billedAmount)}</td>
-                              {showCopayColumn && <td>{entry.copay ? formatCurrency(entry.copay) : '—'}</td>}
+                              <td>{formatCurrency(entry.billedAmount, true)}</td>
+                              {showCopayColumn && <td>{entry.copay ? formatCurrency(entry.copay, true) : '—'}</td>}
                               <td className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}>
-                                {formatCurrency(entry.employeeResponsibility)}
+                                {formatCurrency(entry.employeeResponsibility, true)}
                               </td>
-                              <td>{formatCurrency(entry.insuranceResponsibility)}</td>
-                              <td>{formatCurrency(entry.deductibleRemaining)}</td>
-                              <td>{formatCurrency(entry.outOfPocketRemaining)}</td>
+                              <td>{formatCurrency(entry.insuranceResponsibility, true)}</td>
+                              <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
+                              <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -296,14 +296,14 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                                   <div className="text-muted small">{entry.notes}</div>
                                 )}
                               </td>
-                              <td>{formatCurrency(entry.billedAmount)}</td>
-                              {showCopayColumn && <td>{entry.copay ? formatCurrency(entry.copay) : '—'}</td>}
+                              <td>{formatCurrency(entry.billedAmount, true)}</td>
+                              {showCopayColumn && <td>{entry.copay ? formatCurrency(entry.copay, true) : '—'}</td>}
                               <td className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}>
-                                {formatCurrency(entry.employeeResponsibility)}
+                                {formatCurrency(entry.employeeResponsibility, true)}
                               </td>
-                              <td>{formatCurrency(entry.insuranceResponsibility)}</td>
-                              <td>{formatCurrency(entry.deductibleRemaining)}</td>
-                              <td>{formatCurrency(entry.outOfPocketRemaining)}</td>
+                              <td>{formatCurrency(entry.insuranceResponsibility, true)}</td>
+                              <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
+                              <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -395,7 +395,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                   <tr className="table-active">
                     <td><strong>Your Total Annual Cost</strong></td>
                     <td>
-                      <strong className="fs-5">
+                      <strong className="fs-4 fw-bold text-primary">
                         {formatCurrency(
                           (ledgerData?.ledger.premiums.reduce((sum, entry) => sum + entry.amount, 0) || 0) +
                           (ledgerData?.ledger.inNetworkExpenses?.reduce((sum, entry) => sum + entry.employeeResponsibility, 0) || 0) +
