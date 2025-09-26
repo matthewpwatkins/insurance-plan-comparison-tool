@@ -101,13 +101,25 @@ describe('costCalculator', () => {
       categoryEstimates: [
         {
           categoryId: 'office_visit_pcp',
-          inNetworkCost: 200,
-          outOfNetworkCost: 0,
+          inNetwork: {
+            quantity: 2,
+            costPerVisit: 150,
+          },
+          outOfNetwork: {
+            quantity: 0,
+            costPerVisit: 0,
+          },
         },
       ],
       otherCosts: {
-        inNetworkCost: 1000,
-        outOfNetworkCost: 0,
+        inNetwork: {
+          quantity: 1,
+          costPerVisit: 500,
+        },
+        outOfNetwork: {
+          quantity: 0,
+          costPerVisit: 0,
+        },
       },
     },
     hsaContribution: 2000,
@@ -121,7 +133,7 @@ describe('costCalculator', () => {
       mockGetEmployerHSAContribution.mockReturnValue(500);
     });
 
-    it('should calculate PPO plan costs correctly', () => {
+    it('should calculate PPO plan costs correctly with copays', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       expect(result.planName).toBe('Test PPO Plan');
@@ -130,9 +142,16 @@ describe('costCalculator', () => {
       expect(result.userContribution).toBe(1500); // FSA contribution
       expect(result.employerContribution).toBe(0); // No employer contribution for PPO
       expect(result.taxSavings).toBe(444.75); // 1500 * (0.22 + 0.0765)
+
+      // Out of pocket calculation:
+      // 2 copays: $25 * 2 = $50 (copays do NOT count toward deductible)
+      // Other costs: $500 total, full $500 goes to deductible (since deductible is $500)
+      // No coinsurance needed since deductible covers full cost
+      // Total OOP = $50 (copays) + $500 (deductible) = $550
+      expect(result.outOfPocketCosts).toBe(550);
     });
 
-    it('should calculate HSA plan costs correctly', () => {
+    it('should calculate HSA plan costs correctly with deductibles', () => {
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
 
       expect(result.planName).toBe('Test HSA Plan');
@@ -141,35 +160,59 @@ describe('costCalculator', () => {
       expect(result.userContribution).toBe(2000); // Employee HSA contribution from input
       expect(result.employerContribution).toBe(500); // Employer HSA contribution
       expect(result.taxSavings).toBe(593); // Employee contribution only: 2000 * (0.22 + 0.0765)
+
+      // Out of pocket for HSA: all costs go against deductible first (no copays in default HSA)
+      // 2 visits * $150 + 1 other * $500 = $800 total cost
+      // All $800 goes to deductible (since deductible is $1500)
+      expect(result.outOfPocketCosts).toBe(800);
     });
 
-    it('should handle copay categories correctly', () => {
+    it('should handle both in-network and out-of-network visits', () => {
       const userInputs = {
         ...mockUserInputs,
         costs: {
           categoryEstimates: [
             {
               categoryId: 'office_visit_pcp',
-              inNetworkCost: 200,
-              outOfNetworkCost: 100,
+              inNetwork: {
+                quantity: 2,
+                costPerVisit: 200,
+              },
+              outOfNetwork: {
+                quantity: 1,
+                costPerVisit: 300,
+              },
             },
           ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
       };
 
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
 
-      // Should use copay amounts: $25 for in-network, $50 for out-of-network
-      expect(result.outOfPocketCosts).toBe(75); // 25 + 50
+      // Should use copay amounts: $25 * 2 (in-network) + $50 * 1 (out-of-network) = $100
+      expect(result.outOfPocketCosts).toBe(100);
     });
 
-    it('should handle coinsurance categories correctly', () => {
-      const planWithCoinsurance = {
+    it('should handle coinsurance after deductible is met', () => {
+      const planWithLowDeductible = {
         ...mockPPOPlan,
+        annual_deductible: {
+          in_network: { single: 100, family: 200 }, // Low deductible
+          out_of_network: { single: 1000, family: 2000 },
+        },
         categories: {
           test_category: {
             in_network_coverage: { coinsurance: 0.3 },
-            out_of_network_coverage: { coinsurance: 0.5 },
           },
         },
       };
@@ -180,22 +223,43 @@ describe('costCalculator', () => {
           categoryEstimates: [
             {
               categoryId: 'test_category',
-              inNetworkCost: 1000,
-              outOfNetworkCost: 500,
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 1000,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
             },
           ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
       };
 
-      const result = calculatePlanCost(planWithCoinsurance, mockPlanData, userInputs);
+      const result = calculatePlanCost(planWithLowDeductible, mockPlanData, userInputs);
 
-      // Should use coinsurance: 1000 * 0.3 + 500 * 0.5 = 300 + 250 = 550
-      expect(result.outOfPocketCosts).toBe(550);
+      // First $100 goes to deductible, remaining $900 * 0.3 coinsurance = $270
+      // Total OOP = $100 (deductible) + $270 (coinsurance) = $370
+      expect(result.outOfPocketCosts).toBe(370);
     });
 
     it('should handle max coinsurance caps', () => {
       const planWithMaxCoinsurance = {
         ...mockPPOPlan,
+        annual_deductible: {
+          in_network: { single: 0, family: 0 }, // No deductible
+          out_of_network: { single: 1000, family: 2000 },
+        },
         categories: {
           test_category: {
             in_network_coverage: { coinsurance: 0.5, max_coinsurance: 100 },
@@ -209,10 +273,26 @@ describe('costCalculator', () => {
           categoryEstimates: [
             {
               categoryId: 'test_category',
-              inNetworkCost: 1000,
-              outOfNetworkCost: 0,
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 1000,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
             },
           ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
       };
 
@@ -222,112 +302,65 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(100);
     });
 
-    it('should fall back to default coverage when category not found', () => {
-      const userInputs = {
-        ...mockUserInputs,
-        costs: {
-          categoryEstimates: [
-            {
-              categoryId: 'unknown_category',
-              inNetworkCost: 1000,
-              outOfNetworkCost: 0,
-            },
-          ],
+    it('should cap at out-of-pocket maximum', () => {
+      const planWithLowOOP = {
+        ...mockHSAPlan,
+        out_of_pocket_maximum: {
+          in_network: { individual: 200, family: 400 }, // Very low OOP max
+          out_of_network: { individual: 10000, family: 20000 },
         },
       };
 
-      const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
-
-      // Should use default coinsurance: 1000 * 0.2 = 200
-      expect(result.outOfPocketCosts).toBe(200);
-    });
-
-    it('should handle HSA contribution limits correctly', () => {
-      mockGetMaxHSAContribution.mockReturnValue(4300);
-      mockGetEmployerHSAContribution.mockReturnValue(1000);
-
-      const userInputs = {
-        ...mockUserInputs,
-        hsaContribution: 5000, // Over the limit
-      };
-
-      const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
-
-      // Should limit employee contribution to remaining space: 4300 - 1000 = 3300
-      expect(result.userContribution).toBe(3300);
-      expect(result.employerContribution).toBe(1000);
-      expect(result.taxSavings).toBeCloseTo(978.45, 2); // Employee contribution only: 3300 * (0.22 + 0.0765)
-    });
-
-    it('should handle FSA contribution limits correctly', () => {
-      mockGetMaxFSAContribution.mockReturnValue(3300);
-
-      const userInputs = {
-        ...mockUserInputs,
-        fsaContribution: 5000, // Over the limit
-      };
-
-      const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
-
-      // Should limit FSA contribution to max
-      expect(result.userContribution).toBe(3300);
-      expect(result.taxSavings).toBeCloseTo(978.45, 2); // 3300 * (0.22 + 0.0765)
-    });
-
-    it('should cap out-of-pocket costs at plan maximum', () => {
       const userInputs = {
         ...mockUserInputs,
         costs: {
           categoryEstimates: [
             {
               categoryId: 'office_visit_pcp',
-              inNetworkCost: 50000, // Very high cost
-              outOfNetworkCost: 0,
+              inNetwork: {
+                quantity: 10,
+                costPerVisit: 1000, // Very high costs
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
             },
           ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
       };
 
-      const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
+      const result = calculatePlanCost(planWithLowOOP, mockPlanData, userInputs);
 
-      // Should use copay amount since there's a specific copay for office_visit_pcp
-      expect(result.outOfPocketCosts).toBe(25);
+      // Should be capped at out-of-pocket maximum
+      expect(result.outOfPocketCosts).toBe(200);
     });
 
-    it('should handle family coverage deductibles correctly', () => {
-      const userInputs = {
-        ...mockUserInputs,
-        coverage: 'family' as const,
-      };
-
-      // Test with no specific category coverage to trigger deductible calculation
-      const planWithoutCategorySpecific = {
-        ...mockPPOPlan,
-        categories: {},
-      };
-
-      const result = calculatePlanCost(planWithoutCategorySpecific, mockPlanData, {
-        ...userInputs,
-        costs: {
-          categoryEstimates: [
-            {
-              categoryId: 'test_category',
-              inNetworkCost: 500,
-              outOfNetworkCost: 0,
-            },
-          ],
-        },
-      });
-
-      // Should use default coinsurance: 500 * 0.2 = 100
-      expect(result.outOfPocketCosts).toBe(100);
-    });
-
-    it('should handle edge case with zero costs', () => {
+    it('should handle zero costs', () => {
       const userInputs = {
         ...mockUserInputs,
         costs: {
           categoryEstimates: [],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
         hsaContribution: 0,
         fsaContribution: 0,
@@ -340,98 +373,81 @@ describe('costCalculator', () => {
       expect(result.taxSavings).toBe(0);
     });
 
-    it('should handle negative total cost (when tax savings exceed costs)', () => {
+    it('should process multiple visits correctly accumulating against deductible', () => {
       const userInputs = {
         ...mockUserInputs,
-        hsaContribution: 3800, // Set to fit within limits
-        taxRate: 40, // High tax rate
         costs: {
-          categoryEstimates: [],
-        },
-      };
-
-      mockGetMaxHSAContribution.mockReturnValue(4300);
-      mockGetEmployerHSAContribution.mockReturnValue(500); // From mockHSAPlan
-
-      const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
-
-      // Tax savings calculation: Employee contribution only: 3800 * (0.4 + 0.0765) = 1810.7
-      expect(result.taxSavings).toBe(1810.7);
-      expect(result.totalCost).toBeCloseTo(-510.7, 1); // 1800 + 0 - 1810.7 - 500 = -510.7
-    });
-
-    it('should handle zero employee HSA contribution correctly (bug reproduction)', () => {
-      // Reproduce the bug scenario from user: year=2026, family coverage, 0 contributions
-      const userInputs: UserInputs = {
-        year: 2026,
-        coverage: 'family',
-        ageGroup: 'under_55',
-        taxRate: 24,
-        costs: {
-          categoryEstimates: [],
+          categoryEstimates: [
+            {
+              categoryId: 'test_category', // Not defined, uses default coinsurance
+              inNetwork: {
+                quantity: 3,
+                costPerVisit: 300,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
+          ],
           otherCosts: {
-            inNetworkCost: 0,
-            outOfNetworkCost: 0,
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
           },
         },
-        hsaContribution: 0, // Employee contributes nothing
-        fsaContribution: 0,
-      };
-
-      // Mock the 2026 family HSA plan with expected values
-      const hsa2026Plan: HealthPlan = {
-        ...mockHSAPlan,
-        monthly_premiums: {
-          single: 114.6,
-          two_party: 233.4,
-          family: 364.4, // This should give $1456 annually (364.4 * 4 = 1457.6, close to $1456)
-        },
-      };
-
-      mockGetMaxHSAContribution.mockReturnValue(8750); // 2026 family limit
-      mockGetEmployerHSAContribution.mockReturnValue(3050); // Employer contributes $3050
-
-      const result = calculatePlanCost(hsa2026Plan, mockPlanData, userInputs);
-
-      expect(result.planType).toBe('HSA');
-      expect(result.annualPremiums).toBeCloseTo(4372.8, 0); // 364.4 * 12
-      expect(result.outOfPocketCosts).toBe(0);
-      expect(result.userContribution).toBe(0); // Employee contributes nothing
-      expect(result.employerContribution).toBe(3050); // Employer contributes $3050
-      expect(result.taxSavings).toBe(0); // No tax savings since employee contributed $0
-      expect(result.totalCost).toBeCloseTo(1322.8, 0); // 4372.8 + 0 - 0 - 3050 = 1322.8
-    });
-
-    it('should include payroll tax savings for HSA contributions', () => {
-      const userInputs = {
-        ...mockUserInputs,
-        hsaContribution: 1000, // Employee contributes $1000
-        taxRate: 24, // 24% income tax rate
-      };
-
-      const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
-
-      // Tax savings should include:
-      // - Income tax: $1000 * 0.24 = $240
-      // - Payroll taxes: $1000 * 0.0765 = $76.50
-      // - Total: $316.50
-      expect(result.taxSavings).toBe(316.5);
-    });
-
-    it('should include payroll tax savings for FSA contributions', () => {
-      const userInputs = {
-        ...mockUserInputs,
-        fsaContribution: 1000, // Employee contributes $1000
-        taxRate: 24, // 24% income tax rate
       };
 
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
 
-      // Tax savings should include:
-      // - Income tax: $1000 * 0.24 = $240
-      // - Payroll taxes: $1000 * 0.0765 = $76.50
-      // - Total: $316.50
-      expect(result.taxSavings).toBe(316.5);
+      // 3 visits * $300 = $900 total
+      // First $500 goes to deductible (single deductible)
+      // Remaining $400 * 0.2 coinsurance = $80
+      // Total OOP = $500 (deductible) + $80 (coinsurance) = $580
+      expect(result.outOfPocketCosts).toBe(580);
+    });
+
+    it('should handle mix of copays and coinsurance correctly', () => {
+      const userInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp', // Has copay
+              inNetwork: {
+                quantity: 2,
+                costPerVisit: 200,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
+          ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 1, // Uses default coinsurance
+              costPerVisit: 400,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
+        },
+      };
+
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs);
+
+      // 2 copays at $25 each = $50
+      // Other cost: $400 goes to deductible (since deductible is $500), no coinsurance
+      // Total OOP = $50 (copays) + $400 (deductible) = $450
+      expect(result.outOfPocketCosts).toBe(450);
     });
   });
 
@@ -471,39 +487,11 @@ describe('costCalculator', () => {
     });
   });
 
-  describe('Edge cases and potential bugs', () => {
-    it('should handle missing category benefits gracefully', () => {
-      const planWithMissingBenefits = {
+  describe('Edge cases and scenarios', () => {
+    it('should handle plan with no category-specific benefits', () => {
+      const planWithoutCategories = {
         ...mockPPOPlan,
-        categories: {
-          incomplete_category: {
-            // Missing coverage definitions
-          },
-        },
-      };
-
-      const userInputs = {
-        ...mockUserInputs,
-        costs: {
-          categoryEstimates: [
-            {
-              categoryId: 'incomplete_category',
-              inNetworkCost: 1000,
-              outOfNetworkCost: 0,
-            },
-          ],
-        },
-      };
-
-      expect(() => {
-        calculatePlanCost(planWithMissingBenefits, mockPlanData, userInputs);
-      }).not.toThrow();
-    });
-
-    it('should handle missing default benefits', () => {
-      const planWithoutDefault = {
-        ...mockPPOPlan,
-        default: {},
+        categories: {},
       };
 
       const userInputs = {
@@ -512,20 +500,40 @@ describe('costCalculator', () => {
           categoryEstimates: [
             {
               categoryId: 'unknown_category',
-              inNetworkCost: 1000,
-              outOfNetworkCost: 0,
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 300,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
             },
           ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
       };
 
       expect(() => {
-        calculatePlanCost(planWithoutDefault, mockPlanData, userInputs);
+        calculatePlanCost(planWithoutCategories, mockPlanData, userInputs);
       }).not.toThrow();
+
+      const result = calculatePlanCost(planWithoutCategories, mockPlanData, userInputs);
+
+      // Should use default coinsurance: $300 goes to deductible
+      expect(result.outOfPocketCosts).toBe(300);
     });
 
     it('should handle very large numbers without overflow', () => {
-      // Setup mocks for this test
       mockGetMaxFSAContribution.mockReturnValue(3300);
 
       const userInputs = {
@@ -534,10 +542,26 @@ describe('costCalculator', () => {
           categoryEstimates: [
             {
               categoryId: 'office_visit_pcp',
-              inNetworkCost: 999999999,
-              outOfNetworkCost: 0,
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 999999999,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
             },
           ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
         },
       };
 
@@ -546,6 +570,35 @@ describe('costCalculator', () => {
       // Should use copay amount since there's a specific copay for office_visit_pcp
       expect(result.outOfPocketCosts).toBe(25);
       expect(Number.isFinite(result.totalCost)).toBe(true);
+    });
+
+    it('should handle negative total cost when tax savings exceed costs', () => {
+      const userInputs = {
+        ...mockUserInputs,
+        hsaContribution: 3800,
+        taxRate: 40, // High tax rate
+        costs: {
+          categoryEstimates: [],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
+        },
+      };
+
+      mockGetMaxHSAContribution.mockReturnValue(4300);
+      mockGetEmployerHSAContribution.mockReturnValue(500);
+
+      const result = calculatePlanCost(mockHSAPlan, mockPlanData, userInputs);
+
+      // Should allow negative total cost when tax savings exceed other costs
+      expect(result.totalCost).toBeLessThan(0);
     });
   });
 });

@@ -26,8 +26,34 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
     plan, planData, userInputs, taxRateDecimal
   );
 
-  // Calculate out-of-pocket healthcare costs
-  const outOfPocketCosts = calculateOutOfPocketCosts(plan, costs, coverage);
+  // Create plan execution to track expenses
+  const execution = new PlanExecution(plan, coverage);
+
+  // Process all category expenses
+  for (const estimate of costs.categoryEstimates) {
+    // Process in-network visits
+    for (let i = 0; i < estimate.inNetwork.quantity; i++) {
+      execution.recordExpense(estimate.categoryId, estimate.inNetwork.costPerVisit, 'in_network');
+    }
+    // Process out-of-network visits
+    for (let i = 0; i < estimate.outOfNetwork.quantity; i++) {
+      execution.recordExpense(estimate.categoryId, estimate.outOfNetwork.costPerVisit, 'out_of_network');
+    }
+  }
+
+  // Process other costs (using default plan coverage)
+  if (costs.otherCosts) {
+    // Process in-network other costs
+    for (let i = 0; i < costs.otherCosts.inNetwork.quantity; i++) {
+      execution.recordExpense('other', costs.otherCosts.inNetwork.costPerVisit, 'in_network');
+    }
+    // Process out-of-network other costs
+    for (let i = 0; i < costs.otherCosts.outOfNetwork.quantity; i++) {
+      execution.recordExpense('other', costs.otherCosts.outOfNetwork.costPerVisit, 'out_of_network');
+    }
+  }
+
+  const outOfPocketCosts = execution.getTotalOutOfPocket();
 
   // Calculate total cost (employer contributions reduce total cost as they're free money)
   const totalCost = annualPremiums + outOfPocketCosts - taxSavings - employerContribution;
@@ -98,192 +124,119 @@ const calculateContributionsAndTaxSavings = (
 };
 
 /**
- * Calculate out-of-pocket healthcare costs based on plan rules
- * Uses category-specific costs and default rates for "other" costs
+ * Plan execution class to track expenses and calculate out-of-pocket costs
+ * Based on the prototype implementation from v2025.01 branch
  */
-const calculateOutOfPocketCosts = (
-  plan: HealthPlan,
-  costs: UserCosts,
-  coverage: 'single' | 'two_party' | 'family'
-): number => {
-  let totalOutOfPocket = 0;
+class PlanExecution {
+  private plan: HealthPlan;
+  private coverage: 'single' | 'two_party' | 'family';
+  private outOfPocketSpent: number = 0;
+  private deductibleSpent: number = 0;
 
-  // Process each category estimate
-  for (const estimate of costs.categoryEstimates) {
-    const categoryOutOfPocket = calculateCategoryOutOfPocketCosts(
-      plan,
-      estimate.categoryId,
-      estimate.inNetworkCost,
-      estimate.outOfNetworkCost,
-      coverage
-    );
-    totalOutOfPocket += categoryOutOfPocket;
+  constructor(plan: HealthPlan, coverage: 'single' | 'two_party' | 'family') {
+    this.plan = plan;
+    this.coverage = coverage;
   }
 
-  // Process "other" costs using default plan coverage
-  if (costs.otherCosts && (costs.otherCosts.inNetworkCost > 0 || costs.otherCosts.outOfNetworkCost > 0)) {
-    const otherOutOfPocket = calculateOtherOutOfPocketCosts(
-      plan,
-      costs.otherCosts.inNetworkCost,
-      costs.otherCosts.outOfNetworkCost,
-      coverage
-    );
-    totalOutOfPocket += otherOutOfPocket;
-  }
-
-  // Cap at plan's out-of-pocket maximum (simplified - in reality this is more complex)
-  const oopMaxInNetwork = getOOPMaxForCoverage(plan, coverage, 'in_network');
-  return Math.min(totalOutOfPocket, oopMaxInNetwork);
-};
-
-
-/**
- * Calculate out-of-pocket costs for a specific category
- */
-const calculateCategoryOutOfPocketCosts = (
-  plan: HealthPlan,
-  categoryId: string,
-  inNetworkCost: number,
-  outOfNetworkCost: number,
-  coverage: 'single' | 'two_party' | 'family'
-): number => {
-  let outOfPocket = 0;
-
-  // Get category-specific coverage or fall back to default
-  const categoryBenefits = plan.categories[categoryId] || plan.default;
-
-  // Calculate in-network costs
-  if (inNetworkCost > 0 && categoryBenefits.in_network_coverage) {
-    outOfPocket += calculateCostWithBenefits(
-      inNetworkCost,
-      categoryBenefits.in_network_coverage,
-      plan,
-      coverage,
-      'in_network'
-    );
-  }
-
-  // Calculate out-of-network costs
-  if (outOfNetworkCost > 0 && categoryBenefits.out_of_network_coverage) {
-    outOfPocket += calculateCostWithBenefits(
-      outOfNetworkCost,
-      categoryBenefits.out_of_network_coverage,
-      plan,
-      coverage,
-      'out_of_network'
-    );
-  }
-
-  return outOfPocket;
-};
-
-/**
- * Calculate out-of-pocket costs for "other" costs using default plan coverage
- */
-const calculateOtherOutOfPocketCosts = (
-  plan: HealthPlan,
-  inNetworkCost: number,
-  outOfNetworkCost: number,
-  coverage: 'single' | 'two_party' | 'family'
-): number => {
-  let outOfPocket = 0;
-
-  // Use default plan coverage
-  const defaultBenefits = plan.default;
-
-  // Calculate in-network costs
-  if (inNetworkCost > 0 && defaultBenefits.in_network_coverage) {
-    outOfPocket += calculateCostWithBenefits(
-      inNetworkCost,
-      defaultBenefits.in_network_coverage,
-      plan,
-      coverage,
-      'in_network'
-    );
-  }
-
-  // Calculate out-of-network costs
-  if (outOfNetworkCost > 0 && defaultBenefits.out_of_network_coverage) {
-    outOfPocket += calculateCostWithBenefits(
-      outOfNetworkCost,
-      defaultBenefits.out_of_network_coverage,
-      plan,
-      coverage,
-      'out_of_network'
-    );
-  }
-
-  return outOfPocket;
-};
-
-/**
- * Calculate cost with specific benefit structure (copay, coinsurance, etc.)
- */
-const calculateCostWithBenefits = (
-  totalCost: number,
-  benefits: { copay?: number; coinsurance?: number; max_coinsurance?: number },
-  plan: HealthPlan,
-  coverage: 'single' | 'two_party' | 'family',
-  network: 'in_network' | 'out_of_network'
-): number => {
-  // If there's a copay, that's the out-of-pocket cost (simplified)
-  if (benefits.copay !== undefined) {
-    return benefits.copay;
-  }
-
-  // If there's coinsurance, calculate based on that
-  if (benefits.coinsurance !== undefined) {
-    let outOfPocket = totalCost * benefits.coinsurance;
-
-    // Apply max coinsurance cap if specified
-    if (benefits.max_coinsurance !== undefined) {
-      outOfPocket = Math.min(outOfPocket, benefits.max_coinsurance);
+  /**
+   * Record a single expense and calculate the out-of-pocket cost
+   * This is where the proper deductible and OOP logic happens
+   */
+  recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network'): void {
+    if (this.oopRemaining() <= 0) {
+      return; // Already hit out-of-pocket maximum
     }
 
-    return outOfPocket;
+    const benefits = this.getCategoryBenefits(categoryId, network);
+    if (!benefits) {
+      return; // No coverage
+    }
+
+    // If there's a copay, that's the full out-of-pocket cost for this visit
+    const copay = benefits.copay || 0;
+    if (copay > 0) {
+      const applicableCopay = Math.min(copay, this.oopRemaining());
+      this.outOfPocketSpent += applicableCopay;
+      return; // Copay covers the visit, no deductible or coinsurance applies
+    }
+
+    let remainingCost = cost;
+
+    // Apply deductible first
+    const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
+    this.outOfPocketSpent += applicableDeductible;
+    this.deductibleSpent += applicableDeductible; // Track deductible separately
+    remainingCost -= applicableDeductible;
+
+    // Apply coinsurance to remaining cost after deductible
+    const coinsurance = benefits.coinsurance || 0;
+    if (coinsurance > 0 && remainingCost > 0) {
+      let coinsuranceAmount = remainingCost * coinsurance;
+
+      // Apply max coinsurance cap if specified
+      if (benefits.max_coinsurance !== undefined) {
+        coinsuranceAmount = Math.min(coinsuranceAmount, benefits.max_coinsurance);
+      }
+
+      const applicableCoinsurance = Math.min(coinsuranceAmount, this.oopRemaining());
+      this.outOfPocketSpent += applicableCoinsurance;
+    }
+
+    // Insurance covers the rest
   }
 
-  // If no specific benefits, assume full deductible + coinsurance (simplified)
-  const deductible = getDeductibleForCoverage(plan, coverage, network);
-  const deductiblePortion = Math.min(totalCost, deductible);
-  const remainingCost = Math.max(0, totalCost - deductible);
-
-  // Assume 20% coinsurance after deductible as fallback
-  const coinsurancePortion = remainingCost * 0.2;
-
-  return deductiblePortion + coinsurancePortion;
-};
-
-/**
- * Helper function to get deductible for coverage type
- */
-const getDeductibleForCoverage = (
-  plan: HealthPlan,
-  coverage: 'single' | 'two_party' | 'family',
-  network: 'in_network' | 'out_of_network'
-): number => {
-  const deductible = plan.annual_deductible[network];
-  if (coverage === 'single') {
-    return deductible.single;
-  } else {
-    // Both two_party and family use the family deductible
-    return deductible.family;
+  getTotalOutOfPocket(): number {
+    return this.outOfPocketSpent;
   }
-};
 
-/**
- * Helper function to get out-of-pocket maximum for coverage type
- */
-const getOOPMaxForCoverage = (
-  plan: HealthPlan,
-  coverage: 'single' | 'two_party' | 'family',
-  network: 'in_network' | 'out_of_network'
-): number => {
-  const oopMax = plan.out_of_pocket_maximum[network];
-  if (coverage === 'single') {
-    return oopMax.individual;
-  } else {
-    // Both two_party and family use the family out-of-pocket maximum
-    return oopMax.family;
+  private oopRemaining(): number {
+    const oopMax = this.getOOPMaxForCoverage();
+    return Math.max(0, oopMax - this.outOfPocketSpent);
   }
-};
+
+  private deductibleRemaining(): number {
+    const deductible = this.getDeductibleForCoverage();
+    // Only count non-copay expenses toward deductible
+    // This is more complex than the current implementation allows
+    // For now, use a simple approach - track deductible separately
+    return Math.max(0, deductible - this.deductibleSpent);
+  }
+
+  private getCategoryBenefits(categoryId: string, network: 'in_network' | 'out_of_network') {
+    // Check if this category has specific benefits
+    if (categoryId !== 'other' && this.plan.categories[categoryId]) {
+      if (network === 'in_network') {
+        return this.plan.categories[categoryId].in_network_coverage;
+      } else {
+        return this.plan.categories[categoryId].out_of_network_coverage;
+      }
+    }
+
+    // Fall back to default plan coverage (for "other" costs or unknown categories)
+    if (network === 'in_network') {
+      return this.plan.default.in_network_coverage;
+    } else {
+      return this.plan.default.out_of_network_coverage;
+    }
+  }
+
+  private getDeductibleForCoverage(): number {
+    const deductible = this.plan.annual_deductible.in_network;
+    if (this.coverage === 'single') {
+      return deductible.single;
+    } else {
+      // Both two_party and family use the family deductible
+      return deductible.family;
+    }
+  }
+
+  private getOOPMaxForCoverage(): number {
+    const oopMax = this.plan.out_of_pocket_maximum.in_network;
+    if (this.coverage === 'single') {
+      return oopMax.individual;
+    } else {
+      // Both two_party and family use the family out-of-pocket maximum
+      return oopMax.family;
+    }
+  }
+}

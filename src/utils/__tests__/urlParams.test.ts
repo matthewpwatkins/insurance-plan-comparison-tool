@@ -281,7 +281,7 @@ describe('urlParams', () => {
       const url = getShareableURL(mockUserInputs);
 
       expect(url).toBe(
-        'https://example.com/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
+        'https://example.com/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500&showResults=true'
       );
     });
   });
@@ -294,7 +294,7 @@ describe('urlParams', () => {
 
       expect(result).toBe(true);
       expect(mockNavigator.clipboard.writeText).toHaveBeenCalledWith(
-        'https://example.com/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
+        'https://example.com/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500&showResults=true'
       );
     });
 
@@ -352,6 +352,19 @@ describe('urlParams', () => {
         taxRate: 32.5,
         hsaContribution: 4000,
         fsaContribution: 0,
+        costs: {
+          categoryEstimates: [],
+          otherCosts: {
+            inNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
+        },
       };
 
       // Convert to URL params and back

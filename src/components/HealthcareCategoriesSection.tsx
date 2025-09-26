@@ -3,7 +3,7 @@ import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { getCategoriesData } from '../generated/dataHelpers';
-import CostInputRow from './CostInputRow';
+import NetworkVisitsInputRow from './NetworkVisitsInputRow';
 import HelpIcon from './HelpIcon';
 import { UserInputs, CategoryEstimate } from '../types';
 
@@ -31,10 +31,10 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
-  const updateCategoryEstimate = (categoryId: string, field: 'inNetworkCost' | 'outOfNetworkCost', value: number) => {
+  const updateCategoryEstimate = (categoryId: string, network: 'inNetwork' | 'outOfNetwork', value: any) => {
     const updatedEstimates = inputs.costs.categoryEstimates.map(est =>
       est.categoryId === categoryId
-        ? { ...est, [field]: value }
+        ? { ...est, [network]: value }
         : est
     );
     handleCostChange('categoryEstimates', updatedEstimates);
@@ -80,44 +80,46 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     />
                   )}
                 </div>
-                <CostInputRow
-                  inNetworkValue={estimate.inNetworkCost}
-                  outOfNetworkValue={estimate.outOfNetworkCost}
-                  onInNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'inNetworkCost', value)}
-                  onOutOfNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'outOfNetworkCost', value)}
-                  inNetworkHelpTitle="Category In-Network Cost"
-                  outOfNetworkHelpTitle="Category Out-of-Network Cost"
+                <NetworkVisitsInputRow
+                  inNetworkValue={estimate.inNetwork}
+                  outOfNetworkValue={estimate.outOfNetwork}
+                  onInNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'inNetwork', value)}
+                  onOutOfNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'outOfNetwork', value)}
+                  inNetworkHelpTitle="In-Network Visits"
+                  outOfNetworkHelpTitle="Out-of-Network Visits"
                   inNetworkHelpContent={
                     <div>
-                      <p>Estimate your annual spending for this healthcare category using <strong>in-network</strong> providers.</p>
-                      <p><strong>This category has specific coverage rules:</strong></p>
+                      <p>Estimate your visits using <strong>in-network</strong> providers for this category.</p>
+                      <p><strong>In-network providers:</strong></p>
                       <ul>
-                        <li>May have fixed copays instead of coinsurance</li>
-                        <li>Some services may be covered at 100%</li>
-                        <li>Coverage details vary by plan type</li>
+                        <li>Have contracts with your insurance plan</li>
+                        <li>Offer lower costs and better coverage</li>
+                        <li>May have copays instead of coinsurance</li>
+                        <li>Count toward your deductible and out-of-pocket maximum</li>
                       </ul>
-                      <p><strong>Examples for this category:</strong></p>
+                      <p><strong>Cost should be the full amount charged:</strong></p>
                       <ul>
-                        <li>Total cost of all visits/services in this category</li>
-                        <li>Multiply: visits per year × average cost per visit</li>
-                        <li>Consider both routine and unexpected needs</li>
+                        <li>Not your copay - the provider's full charge</li>
+                        <li>Check your EOBs for negotiated rates</li>
+                        <li>The calculator will apply copays/coinsurance</li>
                       </ul>
                     </div>
                   }
                   outOfNetworkHelpContent={
                     <div>
-                      <p>Estimate your annual spending for this healthcare category using <strong>out-of-network</strong> providers.</p>
-                      <p><strong>Important notes:</strong></p>
+                      <p>Estimate your visits using <strong>out-of-network</strong> providers for this category.</p>
+                      <p><strong>Out-of-network providers:</strong></p>
                       <ul>
-                        <li>Out-of-network costs are significantly higher</li>
-                        <li>Some categories may have limited or no out-of-network coverage</li>
-                        <li>You may need to pay upfront and seek reimbursement</li>
+                        <li>Don't have contracts with your insurance plan</li>
+                        <li>Result in higher costs and less coverage</li>
+                        <li>May have separate deductibles and maximums</li>
+                        <li>You might pay upfront and get reimbursed</li>
                       </ul>
-                      <p><strong>Consider:</strong></p>
+                      <p><strong>Important:</strong></p>
                       <ul>
+                        <li>Some plans don't cover out-of-network care at all</li>
                         <li>Emergency care is usually covered at in-network rates</li>
-                        <li>Some specialists may not be available in-network</li>
-                        <li>Leave at $0 if you plan to stay in-network</li>
+                        <li>Leave at 0 if you plan to stay in-network</li>
                       </ul>
                     </div>
                   }
@@ -138,8 +140,14 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                       setSelectedCategoryToAdd(categoryId);
                       const newEstimate: CategoryEstimate = {
                         categoryId: categoryId,
-                        inNetworkCost: 0,
-                        outOfNetworkCost: 0
+                        inNetwork: {
+                          quantity: 0,
+                          costPerVisit: 0
+                        },
+                        outOfNetwork: {
+                          quantity: 0,
+                          costPerVisit: 0
+                        }
                       };
                       handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
                       setSelectedCategoryToAdd('');

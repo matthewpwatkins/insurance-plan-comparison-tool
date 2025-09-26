@@ -146,11 +146,12 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>HSA Employee Contribution <small className="text-muted">(Max: ${maxEmployeeHSAContribution?.toLocaleString()})</small></span>
+                  <span>HSA Employee Contribution <small className="text-muted">(Single: ${planData ? getMaxHSAContribution(planData, 'single', inputs.ageGroup).toLocaleString() : 'N/A'} | Family: ${planData ? getMaxHSAContribution(planData, 'family', inputs.ageGroup).toLocaleString() : 'N/A'})</small></span>
                   <HelpIcon
                     title="HSA Employee Contribution"
                     content={
                       <div>
+                        <p><strong>If I went with an HSA plan, I'd put up to this amount in my HSA</strong> (do not include the employer match in this number).</p>
                         <p>Enter the maximum amount you're willing to contribute from your paycheck to an HSA account.</p>
                         <p><strong>Max: ${maxEmployeeHSAContribution?.toLocaleString()}</strong> - This is the IRS limit (${maxTotalHSAContribution?.toLocaleString()}) minus the minimum employer contribution (${minEmployerHSAContribution?.toLocaleString()})</p>
                         <p>Your employer will contribute an additional <strong>${minEmployerHSAContribution?.toLocaleString()}</strong> to <strong>${maxEmployerHSAContribution?.toLocaleString()}</strong> depending on your plan choice.</p>
@@ -159,11 +160,6 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     }
                   />
                 </Form.Label>
-                <div className="mb-2">
-                  <small className="text-muted">
-                    If I went with an HSA plan, I'd put <strong>up to</strong> this amount in my HSA (do not include the employer match in this number).
-                  </small>
-                </div>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput
@@ -185,6 +181,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     title="FSA Employee Contribution"
                     content={
                       <div>
+                        <p><strong>If I went with a PPO plan, I'd put this amount in DMBA's FSA.</strong></p>
                         <p>Enter the maximum amount you're willing to contribute from your paycheck to an FSA account.</p>
                         <p><strong>Max: ${maxFSAContribution?.toLocaleString()}</strong> - IRS annual limit for FSA contributions</p>
                         <p>FSAs typically have no employer contributions - this is your personal contribution only.</p>
@@ -194,11 +191,6 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     }
                   />
                 </Form.Label>
-                <div className="mb-2">
-                  <small className="text-muted">
-                    If I went with a PPO plan, I'd put this amount in DMBA's FSA.
-                  </small>
-                </div>
                 <InputGroup>
                   <InputGroup.Text>$</InputGroup.Text>
                   <FormattedNumberInput

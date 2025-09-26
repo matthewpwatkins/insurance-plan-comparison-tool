@@ -1,14 +1,19 @@
+export interface NetworkVisits {
+  quantity: number;
+  costPerVisit: number;
+}
+
 export interface CategoryEstimate {
   categoryId: string;
-  inNetworkCost: number;
-  outOfNetworkCost: number;
+  inNetwork: NetworkVisits;
+  outOfNetwork: NetworkVisits;
 }
 
 export interface UserCosts {
   categoryEstimates: CategoryEstimate[];
   otherCosts?: {
-    inNetworkCost: number;
-    outOfNetworkCost: number;
+    inNetwork: NetworkVisits;
+    outOfNetwork: NetworkVisits;
   };
 }
 

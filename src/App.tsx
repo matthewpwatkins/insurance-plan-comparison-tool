@@ -23,8 +23,14 @@ function App() {
     costs: {
       categoryEstimates: [],
       otherCosts: {
-        inNetworkCost: 0,
-        outOfNetworkCost: 0
+        inNetwork: {
+          quantity: 0,
+          costPerVisit: 0
+        },
+        outOfNetwork: {
+          quantity: 0,
+          costPerVisit: 0
+        }
       }
     },
     hsaContribution: 0,
