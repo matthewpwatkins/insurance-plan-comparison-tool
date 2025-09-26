@@ -21,11 +21,15 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   const isCategoryFree = (categoryId: string, network: 'in_network' | 'out_of_network'): boolean => {
     if (!planData) return false;
 
-    // Check if ANY plan has this category marked as free for the specified network
-    return planData.plans.some(plan => {
-      const categoryConfig = plan.categories[categoryId];
-      if (!categoryConfig) return false;
+    // Get plans that have this category defined
+    const plansWithCategory = planData.plans.filter(plan => plan.categories[categoryId]);
 
+    // If no plans have this category, it's not free
+    if (plansWithCategory.length === 0) return false;
+
+    // Check if ALL plans with this category have it marked as free for the specified network
+    return plansWithCategory.every(plan => {
+      const categoryConfig = plan.categories[categoryId];
       const coverage = network === 'in_network'
         ? categoryConfig.in_network_coverage
         : categoryConfig.out_of_network_coverage;
@@ -61,10 +65,14 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   // Get categories already added
   const addedCategoryIds = inputs.costs.categoryEstimates.map(est => est.categoryId);
 
-  // Get available categories to add (not already added), sorted alphabetically
+  // Get available categories to add (not already added), sorted alphabetically by display name
   const availableCategories = Object.keys(categoriesData)
     .filter(categoryId => !addedCategoryIds.includes(categoryId))
-    .sort((a, b) => categoriesData[a].name.localeCompare(categoriesData[b].name));
+    .sort((a, b) => {
+      const displayNameA = `${categoriesData[a].preventive ? '[Preventive] ' : ''}${categoriesData[a].name}`;
+      const displayNameB = `${categoriesData[b].preventive ? '[Preventive] ' : ''}${categoriesData[b].name}`;
+      return displayNameA.localeCompare(displayNameB);
+    });
 
   return (
     <>

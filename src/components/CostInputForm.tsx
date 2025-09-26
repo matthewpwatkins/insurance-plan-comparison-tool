@@ -26,20 +26,19 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
         planData={planData}
       />
 
-      <Card className="mb-4">
-        <Card.Header>
-          <h3>Annual Cost Estimates</h3>
-        </Card.Header>
-        <Card.Body>
-          <Form>
-            <HealthcareCategoriesSection
-              inputs={inputs}
-              onChange={onChange}
-              planData={planData}
-            />
-          </Form>
-        </Card.Body>
-      </Card>
+      <div className="mb-4">
+        <h3>Annual Cost Estimates</h3>
+        <p className="text-muted mb-4">
+          No way around it, you have to use your magic ball now. Don't fret about getting it exact, just take a guess and use your previous health history and EOBs to estimate how many times you'll need each service and how much is the DMBA-negotiated rate on average.
+        </p>
+        <Form>
+          <HealthcareCategoriesSection
+            inputs={inputs}
+            onChange={onChange}
+            planData={planData}
+          />
+        </Form>
+      </div>
     </>
   );
 };
