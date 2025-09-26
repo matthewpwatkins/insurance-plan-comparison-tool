@@ -1,0 +1,80 @@
+Scraped from https://www.dmba.com/sc/enrollment/PlanComparison.aspx
+
+| Plan Benefits | DMBA PPO 90 Plan | DMBA PPO 70 Plan | DMBA HSA 80 Plan | DMBA HSA 60 Plan |
+| --- | --- | --- | --- | --- |
+| Monthly Premiums - Single | $302.00 | $109.20 | $114.60 | $62.40 |
+| Monthly Premiums - Two Party | $615.10 | $221.80 | $230.00 | $103.30 |
+| Monthly Premiums - Family | $976.90 | $346.40 | $274.20 | $121.30 |
+| Annual Deductible - In-network Single | $0 | $0 | $1,700 | $3,050 |
+| Annual Deductible - In-network Family | $0 | $0 | $3,400 | $6,100 |
+| Annual Deductible - Out-of-network Single | $250 | $750 | $3,400 | $6,100 |
+| Annual Deductible - Out-of-network Family | $500 | $1,500 | $6,800 | $12,200 |
+| Office Visit (your cost) - In-network PCP | $25 | $25 | 20% | 40% |
+| Office Visit (your cost) - In-network Specialist | $50 | $50 | 20% | 40% |
+| Office Visit (your cost) - Out-of-network PCP | $40 | $40 | 40% | 60% |
+| Office Visit (your cost) - Out-of-network Specialist | $60 | $60 | 40% | 60% |
+| Wellness Exam (your cost) - In-network | $0 | $0 | $0 | $0 |
+| Wellness Exam (your cost) - Out-of-network PCP | $40 | $40 | 40% | 60% |
+| Wellness Exam (your cost) - Out-of-network Specialist (frequency limitations apply) | $60 | $60 | 40% | 60% |
+| Telemedicine (your cost) - In-network PCP | $25 | $25 | 20% | 40% |
+| Telemedicine (your cost) - In-network Specialist | $50 | $50 | 20% | 40% |
+| Telemedicine (your cost) - Out-of-network PCP | $40 | $40 | 40% | 60% |
+| Telemedicine (your cost) - Out-of-network Specialist | $60 | $60 | 40% | 60% |
+| Telemedicine (your cost) - Urgent Care | $60 | $60 | 20% | 40% |
+| Eye Exams (your cost) - In-network (one per year) | $50 | $50 | 20% | 40% |
+| Eye Exams (your cost) - Out-of-network (one per year) | $60 | $60 | 40% | 60% |
+| Behavioral/Mental Health - Outpatient (your cost) - In-network (diagnostic evaluation, individual and group counseling, and medication evaluation and management) | $25 | $25 | 20% | 40% |
+| Behavioral/Mental Health - Outpatient (your cost) - Out-of-network (diagnostic evaluation, individual and group counseling, and medication evaluation and management) | $25 | $25 | 20% | 40% |
+| Laboratory - Outpatient (your cost) | $0 | $0 | 20% | 40% |
+| Emergency Room Services (your cost) | $150 + 10% | $150 + 30% | 20% | 40% |
+| Pharmacy (your cost)* - Tier 1 30-day Retail | $10 | $10 | $10 | $15 |
+| Pharmacy (your cost)* - Tier 1 Retail 90 | $20 | $25 | $25 | $30 |
+| Pharmacy (your cost)* - Tier 1 90-day Mail Order | $15 | $20 | $20 | $25 |
+| Pharmacy (your cost)* - Tier 2 30-day Retail | 20% up to $60 | 30% up to $75 | $45 | $90 |
+| Pharmacy (your cost)* - Tier 2 Retail 90 | 20% up to $150 | 30% up to $200 | $115 | $230 |
+| Pharmacy (your cost)* - Tier 2 90-day Mail Order | 20% up to $120 | 30% up to $150 | $90 | $180 |
+| Pharmacy (your cost)* - Tier 3 30-day Retail | 40% up to $100 | 50% up to $125 | $90 | $140 |
+| Pharmacy (your cost)* - Tier 3 Retail 90 | 40% up to $240 | 50% up to $300 | $230 | $310 |
+| Pharmacy (your cost)* - Tier 3 90-day Mail Order | 40% up to $200 | 50% up to $250 | $180 | $280 |
+| Pharmacy (your cost)* - Specialty Tier 1 | $5 | $5 | $5 | $5 |
+| Pharmacy (your cost)* - Specialty Tier 2 | $120 | $170 | $100 | $200 |
+| Imaging Services - Diagnostic (your cost) - In-network Facility (X-rays, mammograms) | 10% | 30% | 20% | 40% |
+| Imaging Services - Diagnostic (your cost) - In-network Professional (X-rays, mammograms) | 10% | 30% | 20% | 40% |
+| Imaging Services - Diagnostic (your cost) - Out-of-network Facility (X-rays, mammograms) | 30% | 50% | 40% | 60% |
+| Imaging Services - Diagnostic (your cost) - Out-of-network Professional (X-rays, mammograms) | 10% | 30% | 20% | 40% |
+| Hospital - Inpatient (your cost)* - In-network | 10% | 30% | 20% | 40% |
+| Hospital - Inpatient (your cost)* - Out-of-network | 30% | 50% | 40% | 60% |
+| Maternity - Inpatient (your cost)* - In-network | 10% | 30% | 20% | 40% |
+| Maternity - Inpatient (your cost)* - Out-of-network | 30% | 50% | 40% | 60% |
+| Behavioral/Mental Health - Inpatient (your cost)* - In-network (acute inpatient hospital, residential treatment services, partial hospital programs [PHP], intensive outpatient programs [IOP], and outpatient testing) | 10% | 30% | 20% | 40% |
+| Behavioral/Mental Health - Inpatient (your cost)* - Out-of-network (acute inpatient hospital, residential treatment services, partial hospital programs [PHP], intensive outpatient programs [IOP], and outpatient testing) | 30% | 50% | 40% | 60% |
+| Imaging Services - Advanced (your cost)* - In-network Facility (CT scans, MRIs) | 10% | 30% | 20% | 40% |
+| Imaging Services - Advanced (your cost)* - In-network Professional (CT scans, MRIs) | 10% | 30% | 20% | 40% |
+| Imaging Services - Advanced (your cost)* - Out-of-network Facility (CT scans, MRIs) | 30% | 50% | 40% | 60% |
+| Imaging Services - Advanced (your cost)* - Out-of-network Professional (CT scans, MRIs) | 10% | 30% | 20% | 40% |
+| Surgery (your cost)* - In-network | 10% | 30% | 20% | 40% |
+| Surgery (your cost)* - Out-of-network | 30% | 50% | 40% | 60% |
+| Maternity - Physician (your cost) - In-network | $0 | $0 | $0 | $0 |
+| Maternity - Physician (your cost) - Out-of-network | 30% | 50% | 40% | 60% |
+| Applied Behavior Analysis (ABA) Therapy (your cost)* - In-network | 10% | 30% | 20% | 40% |
+| Applied Behavior Analysis (ABA) Therapy (your cost)* - Out-of-network | 30% | 50% | 40% | 60% |
+| Physical Therapy (your cost) - In-network Outpatient | $50 | $50 | 20% | 40% |
+| Physical Therapy (your cost) - In-network Inpatient | 10% | 30% | 20% | 40% |
+| Physical Therapy (your cost) - Out-of-network Outpatient | $60 | $60 | 40% | 60% |
+| Physical Therapy (your cost) - Out-of-network Inpatient | 30% | 50% | 40% | 60% |
+| Occupational Therapy (your cost) - In-network Outpatient | $50 | $50 | 20% | 40% |
+| Occupational Therapy (your cost) - In-network Inpatient | 10% | 30% | 20% | 40% |
+| Occupational Therapy (your cost) - Out-of-network Outpatient | $60 | $60 | 40% | 60% |
+| Occupational Therapy (your cost) - Out-of-network Inpatient | 30% | 50% | 40% | 60% |
+| Chiropractic Therapy (your cost) - In-network | $50 | $50 | 20% | 40% |
+| Chiropractic Therapy (your cost) - Out-of-network | $60 | $60 | 40% | 60% |
+| Speech Therapy (your cost) - In-network Outpatient* | $50 | $50 | 20% | 40% |
+| Speech Therapy (your cost) - In-network Inpatient/Evaluation | 10% | 30% | 20% | 40% |
+| Speech Therapy (your cost) - Out-of-network Outpatient* | $60 | $60 | 40% | 60% |
+| Speech Therapy (your cost) - Out-of-network Inpatient/Evaluation | 30% | 50% | 40% | 60% |
+| Durable Medical Equipment (your cost)* - In-network | 10% | 30% | 20% | 40% |
+| Durable Medical Equipment (your cost)* - Out-of-network | 30% | 50% | 40% | 60% |
+| Out-of-pocket Maximum - In-network Individual | $3,500 | $5,100 | $5,100 | $7,600 |
+| Out-of-pocket Maximum - In-network Family | $7,000 | $9,000 | $9,000 | $15,200 |
+| Out-of-pocket Maximum - Out-of-network Individual | $6,200 | $7,200 | $8,200 | $10,200 |
+| Out-of-pocket Maximum - Out-of-network Family | $12,300 | $12,300 | $14,400 | $17,400 |
