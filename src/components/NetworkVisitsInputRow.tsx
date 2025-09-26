@@ -54,7 +54,6 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
                 min={0}
                 step={1}
                 decimalPlaces={0}
-                disabled={inNetworkIsFree}
               />
             </Form.Group>
           </Col>
@@ -64,8 +63,8 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
               <InputGroup>
                 <InputGroup.Text>$</InputGroup.Text>
                 <FormattedNumberInput
-                  value={inNetworkValue.costPerVisit}
-                  onChange={(value) => onInNetworkChange({ ...inNetworkValue, costPerVisit: value })}
+                  value={inNetworkIsFree ? 0 : inNetworkValue.costPerVisit}
+                  onChange={(value) => onInNetworkChange({ ...inNetworkValue, costPerVisit: inNetworkIsFree ? 0 : value })}
                   min={0}
                   step={10}
                   disabled={inNetworkIsFree}
@@ -99,7 +98,6 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
                 min={0}
                 step={1}
                 decimalPlaces={0}
-                disabled={outOfNetworkIsFree}
               />
             </Form.Group>
           </Col>
@@ -109,8 +107,8 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
               <InputGroup>
                 <InputGroup.Text>$</InputGroup.Text>
                 <FormattedNumberInput
-                  value={outOfNetworkValue.costPerVisit}
-                  onChange={(value) => onOutOfNetworkChange({ ...outOfNetworkValue, costPerVisit: value })}
+                  value={outOfNetworkIsFree ? 0 : outOfNetworkValue.costPerVisit}
+                  onChange={(value) => onOutOfNetworkChange({ ...outOfNetworkValue, costPerVisit: outOfNetworkIsFree ? 0 : value })}
                   min={0}
                   step={10}
                   disabled={outOfNetworkIsFree}
