@@ -209,10 +209,39 @@ class PlanExecution {
       // Free care - no cost to employee
       employeeResponsibility = 0;
     } else if (benefits.copay && benefits.copay > 0) {
-      // Copay applies
-      actualCopay = benefits.copay;
-      employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
-      this.outOfPocketSpent += employeeResponsibility;
+      // For HSA plans, prescription copays only apply AFTER deductible is met
+      const isPrescription = categoryId.startsWith('pharmacy_');
+      const isHSAPlan = this.plan.type === 'HSA';
+
+      if (isHSAPlan && isPrescription && this.deductibleRemaining() > 0) {
+        // HSA plan with prescriptions: apply deductible first, then copay
+        let remainingCost = cost;
+        let deductiblePortion = 0;
+
+        // Apply deductible first
+        const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
+        if (applicableDeductible > 0) {
+          this.outOfPocketSpent += applicableDeductible;
+          this.deductibleSpent += applicableDeductible;
+          remainingCost -= applicableDeductible;
+          deductiblePortion = applicableDeductible;
+        }
+
+        // After deductible is applied, any remaining cost uses copay
+        let copayPortion = 0;
+        if (remainingCost > 0 && this.deductibleRemaining() === 0) {
+          actualCopay = Math.min(benefits.copay, remainingCost);
+          copayPortion = Math.min(actualCopay, this.oopRemaining());
+          this.outOfPocketSpent += copayPortion;
+        }
+
+        employeeResponsibility = deductiblePortion + copayPortion;
+      } else {
+        // Non-HSA plans or non-prescription items: copay applies immediately
+        actualCopay = benefits.copay;
+        employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
+        this.outOfPocketSpent += employeeResponsibility;
+      }
     } else {
       // Deductible and coinsurance apply
       let remainingCost = cost;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, Card, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faListAlt } from '@fortawesome/free-regular-svg-icons';
+import { faList } from '@fortawesome/free-solid-svg-icons';
 import { formatCurrency } from '../utils/formatters';
 import { PlanResult } from '../types';
 
@@ -46,7 +46,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
             style={{ cursor: 'pointer' }}
             onClick={() => onShowWork(result)}
           >
-            <FontAwesomeIcon icon={faListAlt} />
+            <FontAwesomeIcon icon={faList} />
           </Badge>
           <Badge bg={result.planType === 'HSA' ? 'primary' : 'secondary'} className="fs-6">
             {result.planType}

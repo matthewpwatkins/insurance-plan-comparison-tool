@@ -48,26 +48,22 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   };
 
 
-  const removeCategory = (categoryId: string) => {
-    const updatedEstimates = inputs.costs.categoryEstimates.filter(est => est.categoryId !== categoryId);
+  const removeCategory = (index: number) => {
+    const updatedEstimates = inputs.costs.categoryEstimates.filter((_, i) => i !== index);
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
-  const updateCategoryEstimate = (categoryId: string, network: 'inNetwork' | 'outOfNetwork', value: any) => {
-    const updatedEstimates = inputs.costs.categoryEstimates.map(est =>
-      est.categoryId === categoryId
+  const updateCategoryEstimate = (index: number, network: 'inNetwork' | 'outOfNetwork', value: any) => {
+    const updatedEstimates = inputs.costs.categoryEstimates.map((est, i) =>
+      i === index
         ? { ...est, [network]: value }
         : est
     );
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
-  // Get categories already added
-  const addedCategoryIds = inputs.costs.categoryEstimates.map(est => est.categoryId);
-
-  // Get available categories to add (not already added), sorted alphabetically by display name
+  // Get all available categories, sorted alphabetically by display name (allows multiple instances)
   const availableCategories = Object.keys(categoriesData)
-    .filter(categoryId => !addedCategoryIds.includes(categoryId))
     .sort((a, b) => {
       const displayNameA = `${categoriesData[a].preventive ? '[Preventive] ' : ''}${categoriesData[a].name}`;
       const displayNameB = `${categoriesData[b].preventive ? '[Preventive] ' : ''}${categoriesData[b].name}`;
@@ -77,22 +73,35 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   return (
     <>
           {/* Category Estimates */}
-          {inputs.costs.categoryEstimates.map((estimate) => (
-            <Card key={estimate.categoryId} className="mb-3">
+          {inputs.costs.categoryEstimates.map((estimate, index) => (
+            <Card key={index} className="mb-3">
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <div className="d-flex align-items-center">
                     <Button
                       variant="danger"
                       size="sm"
-                      onClick={() => removeCategory(estimate.categoryId)}
+                      onClick={() => removeCategory(index)}
                       title="Remove category"
                       className="me-2"
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </Button>
                     <h6 className="mb-0 d-flex align-items-center">
-                      {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
+                      {(() => {
+                        // Calculate instance number when there are multiple instances of same category
+                        const allCategories = inputs.costs.categoryEstimates;
+                        const sameCategoryIndices = allCategories
+                          .map((est, i) => ({ est, originalIndex: i }))
+                          .filter(item => item.est.categoryId === estimate.categoryId);
+
+                        const instanceNumber = sameCategoryIndices.length > 1 ?
+                          sameCategoryIndices.findIndex(item => item.originalIndex === index) + 1 :
+                          null;
+
+                        const baseName = categoriesData[estimate.categoryId]?.name || estimate.categoryId;
+                        return instanceNumber ? `${baseName} #${instanceNumber}` : baseName;
+                      })()}
                       {categoriesData[estimate.categoryId]?.preventive && (
                         <Badge bg="success" className="ms-2">Preventive</Badge>
                       )}
@@ -112,8 +121,8 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                 <NetworkVisitsInputRow
                   inNetworkValue={estimate.inNetwork}
                   outOfNetworkValue={estimate.outOfNetwork}
-                  onInNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'inNetwork', value)}
-                  onOutOfNetworkChange={(value) => updateCategoryEstimate(estimate.categoryId, 'outOfNetwork', value)}
+                  onInNetworkChange={(value) => updateCategoryEstimate(index, 'inNetwork', value)}
+                  onOutOfNetworkChange={(value) => updateCategoryEstimate(index, 'outOfNetwork', value)}
                   inNetworkHelpTitle="In-Network Visits"
                   outOfNetworkHelpTitle="Out-of-Network Visits"
                   inNetworkHelpContent={
@@ -172,7 +181,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                       const newEstimate: CategoryEstimate = {
                         categoryId: categoryId,
                         inNetwork: {
-                          quantity: 0,
+                          quantity: 1,
                           costPerVisit: 0
                         },
                         outOfNetwork: {
