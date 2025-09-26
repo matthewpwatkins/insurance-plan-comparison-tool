@@ -95,8 +95,12 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
           updates.costs.categoryEstimates = categoryEstimates.filter(estimate =>
             estimate &&
             typeof estimate.categoryId === 'string' &&
-            typeof estimate.inNetworkCost === 'number' &&
-            typeof estimate.outOfNetworkCost === 'number'
+            estimate.inNetwork &&
+            typeof estimate.inNetwork.quantity === 'number' &&
+            typeof estimate.inNetwork.costPerVisit === 'number' &&
+            estimate.outOfNetwork &&
+            typeof estimate.outOfNetwork.quantity === 'number' &&
+            typeof estimate.outOfNetwork.costPerVisit === 'number'
           );
         }
       } catch (error) {
@@ -108,8 +112,12 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
       try {
         const otherCosts = JSON.parse(otherCostsParam);
         if (otherCosts &&
-            typeof otherCosts.inNetworkCost === 'number' &&
-            typeof otherCosts.outOfNetworkCost === 'number') {
+            otherCosts.inNetwork &&
+            typeof otherCosts.inNetwork.quantity === 'number' &&
+            typeof otherCosts.inNetwork.costPerVisit === 'number' &&
+            otherCosts.outOfNetwork &&
+            typeof otherCosts.outOfNetwork.quantity === 'number' &&
+            typeof otherCosts.outOfNetwork.costPerVisit === 'number') {
           updates.costs.otherCosts = otherCosts;
         }
       } catch (error) {

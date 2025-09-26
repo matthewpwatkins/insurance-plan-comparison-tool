@@ -50,7 +50,7 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
           </Col>
           <Col xs={6}>
             <Form.Group>
-              <Form.Label className="small text-muted">Cost Per Visit</Form.Label>
+              <Form.Label className="small text-muted">Avg Cost Per Visit</Form.Label>
               <InputGroup>
                 <InputGroup.Text>$</InputGroup.Text>
                 <FormattedNumberInput
@@ -88,7 +88,7 @@ const NetworkVisitsInputRow: React.FC<NetworkVisitsInputRowProps> = ({
           </Col>
           <Col xs={6}>
             <Form.Group>
-              <Form.Label className="small text-muted">Cost Per Visit</Form.Label>
+              <Form.Label className="small text-muted">Avg Cost Per Visit</Form.Label>
               <InputGroup>
                 <InputGroup.Text>$</InputGroup.Text>
                 <FormattedNumberInput

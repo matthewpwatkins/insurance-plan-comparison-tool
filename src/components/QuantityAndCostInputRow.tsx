@@ -47,7 +47,7 @@ const QuantityAndCostInputRow: React.FC<QuantityAndCostInputRowProps> = ({
       <Col md={6}>
         <Form.Group>
           <Form.Label className="d-flex justify-content-between">
-            <span>Cost Per Visit</span>
+            <span>Avg Cost Per Visit</span>
             <HelpIcon
               title={costHelpTitle}
               content={costHelpContent}

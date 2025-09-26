@@ -378,5 +378,90 @@ describe('urlParams', () => {
       expect(parsedInputs.hsaContribution).toBe(originalInputs.hsaContribution);
       expect(parsedInputs.fsaContribution).toBe(originalInputs.fsaContribution);
     });
+
+    it('should maintain categoryEstimates data integrity through URL conversion cycle', () => {
+      const originalInputs = {
+        year: 2025,
+        coverage: 'single' as const,
+        ageGroup: 'under_55' as const,
+        taxRate: 22,
+        hsaContribution: 2000,
+        fsaContribution: 0,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'primary_care',
+              inNetwork: {
+                quantity: 3,
+                costPerVisit: 200,
+              },
+              outOfNetwork: {
+                quantity: 1,
+                costPerVisit: 400,
+              },
+            },
+            {
+              categoryId: 'specialist',
+              inNetwork: {
+                quantity: 2,
+                costPerVisit: 350,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
+          ],
+          otherCosts: {
+            inNetwork: {
+              quantity: 1,
+              costPerVisit: 150,
+            },
+            outOfNetwork: {
+              quantity: 0,
+              costPerVisit: 0,
+            },
+          },
+        },
+      };
+
+      // Convert to URL params and back
+      const params = userInputsToURLParams(originalInputs as UserInputs);
+      const parsedInputs = urlParamsToUserInputs(params);
+
+      // Verify basic fields
+      expect(parsedInputs.year).toBe(originalInputs.year);
+      expect(parsedInputs.coverage).toBe(originalInputs.coverage);
+      expect(parsedInputs.ageGroup).toBe(originalInputs.ageGroup);
+      expect(parsedInputs.taxRate).toBe(originalInputs.taxRate);
+      expect(parsedInputs.hsaContribution).toBe(originalInputs.hsaContribution);
+      expect(parsedInputs.fsaContribution).toBe(originalInputs.fsaContribution);
+
+      // Verify categoryEstimates structure and data
+      expect(parsedInputs.costs).toBeDefined();
+      expect(parsedInputs.costs!.categoryEstimates).toBeDefined();
+      expect(parsedInputs.costs!.categoryEstimates).toHaveLength(2);
+      
+      const firstCategory = parsedInputs.costs!.categoryEstimates![0];
+      expect(firstCategory.categoryId).toBe('primary_care');
+      expect(firstCategory.inNetwork.quantity).toBe(3);
+      expect(firstCategory.inNetwork.costPerVisit).toBe(200);
+      expect(firstCategory.outOfNetwork.quantity).toBe(1);
+      expect(firstCategory.outOfNetwork.costPerVisit).toBe(400);
+
+      const secondCategory = parsedInputs.costs!.categoryEstimates![1];
+      expect(secondCategory.categoryId).toBe('specialist');
+      expect(secondCategory.inNetwork.quantity).toBe(2);
+      expect(secondCategory.inNetwork.costPerVisit).toBe(350);
+      expect(secondCategory.outOfNetwork.quantity).toBe(0);
+      expect(secondCategory.outOfNetwork.costPerVisit).toBe(0);
+
+      // Verify otherCosts structure
+      expect(parsedInputs.costs!.otherCosts).toBeDefined();
+      expect(parsedInputs.costs!.otherCosts!.inNetwork.quantity).toBe(1);
+      expect(parsedInputs.costs!.otherCosts!.inNetwork.costPerVisit).toBe(150);
+      expect(parsedInputs.costs!.otherCosts!.outOfNetwork.quantity).toBe(0);
+      expect(parsedInputs.costs!.otherCosts!.outOfNetwork.costPerVisit).toBe(0);
+    });
   });
 });
