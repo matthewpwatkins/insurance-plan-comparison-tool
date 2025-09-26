@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Alert, Button, Toast, ToastContainer } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,6 +8,7 @@ import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
 import NavigationHeader from './components/NavigationHeader';
+import { FAQButtonRef } from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL, copyURLToClipboard } from './utils/urlParams';
@@ -39,6 +40,7 @@ function App() {
   const [showShareToast, setShowShareToast] = useState(false);
   const [shareToastMessage, setShareToastMessage] = useState('');
   const [shouldAutoShowResults, setShouldAutoShowResults] = useState(false);
+  const faqButtonRef = useRef<FAQButtonRef | null>(null);
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -110,6 +112,12 @@ function App() {
     setShowShareToast(true);
   };
 
+  const handleShowWork = (result: PlanResult) => {
+    if (faqButtonRef.current) {
+      faqButtonRef.current.openLedger(result.planName, result.ledger);
+    }
+  };
+
   const handleComparePlans = () => {
     if (planData && userInputs) {
       try {
@@ -139,7 +147,7 @@ function App() {
       <Container className="mt-4 flex-grow-1">
       <Row>
         <Col>
-          <NavigationHeader />
+          <NavigationHeader onFAQRef={(ref) => faqButtonRef.current = ref} />
 
           {!isHelpTextDismissed && (
             <div className="mb-4 p-3 bg-light rounded position-relative">
@@ -209,7 +217,7 @@ function App() {
                   <strong>💰 Great news!</strong> You could save at least <strong>${Math.round(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing {results[0].planName}.
                 </Alert>
               )}
-              <ResultsTable results={results} />
+              <ResultsTable results={results} onShowWork={handleShowWork} />
             </div>
           )}
         </Col>

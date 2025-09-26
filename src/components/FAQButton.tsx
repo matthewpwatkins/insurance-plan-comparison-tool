@@ -1,8 +1,11 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { Modal, Button, Accordion } from 'react-bootstrap';
+import { Modal, Button, Accordion, Table } from 'react-bootstrap';
+import { formatCurrency } from '../utils/formatters';
+import { LedgerEntry } from '../types';
 
 export interface FAQButtonRef {
   openFAQ: (sectionIndex?: number) => void;
+  openLedger: (planName: string, ledger: LedgerEntry[]) => void;
 }
 
 interface FAQButtonProps {
@@ -12,13 +15,21 @@ interface FAQButtonProps {
 const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true }, ref) => {
   const [showModal, setShowModal] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<'faq' | 'ledger'>('faq');
+  const [ledgerData, setLedgerData] = useState<{ planName: string; ledger: LedgerEntry[] } | null>(null);
 
   useImperativeHandle(ref, () => ({
     openFAQ: (sectionIndex?: number) => {
+      setModalMode('faq');
       setShowModal(true);
       if (sectionIndex !== undefined) {
         setActiveKey(sectionIndex.toString());
       }
+    },
+    openLedger: (planName: string, ledger: LedgerEntry[]) => {
+      setModalMode('ledger');
+      setLedgerData({ planName, ledger });
+      setShowModal(true);
     }
   }));
 
@@ -88,22 +99,55 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Frequently Asked Questions</Modal.Title>
+          <Modal.Title>
+            {modalMode === 'faq' ? 'Frequently Asked Questions' : `Cost Calculation Details - ${ledgerData?.planName}`}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Accordion
-            activeKey={activeKey}
-            onSelect={(eventKey) => setActiveKey(typeof eventKey === 'string' ? eventKey : null)}
-          >
-            {faqData.map((faq, index) => (
-              <Accordion.Item eventKey={index.toString()} key={index}>
-                <Accordion.Header>{faq.question}</Accordion.Header>
-                <Accordion.Body>
-                  {faq.answer}
-                </Accordion.Body>
-              </Accordion.Item>
-            ))}
-          </Accordion>
+          {modalMode === 'faq' ? (
+            <Accordion
+              activeKey={activeKey}
+              onSelect={(eventKey) => setActiveKey(typeof eventKey === 'string' ? eventKey : null)}
+            >
+              {faqData.map((faq, index) => (
+                <Accordion.Item eventKey={index.toString()} key={index}>
+                  <Accordion.Header>{faq.question}</Accordion.Header>
+                  <Accordion.Body>
+                    {faq.answer}
+                  </Accordion.Body>
+                </Accordion.Item>
+              ))}
+            </Accordion>
+          ) : (
+            <div>
+              <p className="mb-3">
+                This ledger shows all the events that contribute to your total annual cost for <strong>{ledgerData?.planName}</strong>.
+                Positive amounts are money you receive or save, negative amounts are costs you pay.
+              </p>
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr>
+                    <th>Event Description</th>
+                    <th style={{ width: '120px' }}>Amount</th>
+                    <th style={{ width: '120px' }}>Deductible Remaining</th>
+                    <th style={{ width: '120px' }}>Out-of-Pocket Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledgerData?.ledger.map((entry, index) => (
+                    <tr key={index}>
+                      <td>{entry.description}</td>
+                      <td className={entry.amount >= 0 ? 'text-success' : 'text-danger'}>
+                        {entry.amount >= 0 ? '+' : ''}{formatCurrency(entry.amount)}
+                      </td>
+                      <td>{formatCurrency(entry.deductibleRemaining)}</td>
+                      <td>{formatCurrency(entry.outOfPocketRemaining)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={() => setShowModal(false)}>

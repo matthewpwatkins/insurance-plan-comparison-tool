@@ -1,13 +1,14 @@
 import React from 'react';
-import { Badge, Card, Row, Col } from 'react-bootstrap';
+import { Badge, Card, Row, Col, Button } from 'react-bootstrap';
 import { formatCurrency } from '../utils/formatters';
 import { PlanResult } from '../types';
 
 interface ResultsTableProps {
   results: PlanResult[];
+  onShowWork: (result: PlanResult) => void;
 }
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
   if (!results || results.length === 0) {
     return null;
   }
@@ -87,6 +88,15 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results }) => {
             </div>
           </Col>
         </Row>
+        <div className="mt-3 text-center">
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={() => onShowWork(result)}
+          >
+            📋 Show Work
+          </Button>
+        </div>
       </Card.Body>
       </Card>
     </div>
