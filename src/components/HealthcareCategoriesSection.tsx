@@ -34,12 +34,48 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     // Check if ALL plans with this category have it marked as free for the specified network
     return plansWithCategory.every(plan => {
       const categoryConfig = plan.categories[categoryId];
+      if (!categoryConfig) return false;
+
       const coverage = network === 'in_network'
         ? categoryConfig.in_network_coverage
         : categoryConfig.out_of_network_coverage;
 
       return coverage?.is_free === true;
     });
+  };
+
+  // Helper function to get the quantity cap for a category
+  const getCategoryQuantityCap = (categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined => {
+    if (!planData) return undefined;
+
+    // Find the minimum quantity cap across all plans that have this category
+    // This ensures we cap at the most restrictive plan's limit
+    const plansWithCategory = planData.plans.filter(plan => plan.categories[categoryId]);
+    if (plansWithCategory.length === 0) return undefined;
+
+    let minQuantityCap: number | undefined = undefined;
+
+    for (const plan of plansWithCategory) {
+      const categoryConfig = plan.categories[categoryId];
+      if (!categoryConfig) continue;
+
+      // Check category-level cap first
+      if (categoryConfig.qty_cap !== undefined) {
+        minQuantityCap = minQuantityCap === undefined ? categoryConfig.qty_cap : Math.min(minQuantityCap, categoryConfig.qty_cap);
+        continue;
+      }
+
+      // Check network-specific cap
+      const coverage = network === 'in_network'
+        ? categoryConfig.in_network_coverage
+        : categoryConfig.out_of_network_coverage;
+
+      if (coverage?.qty_cap !== undefined) {
+        minQuantityCap = minQuantityCap === undefined ? coverage.qty_cap : Math.min(minQuantityCap, coverage.qty_cap);
+      }
+    }
+
+    return minQuantityCap;
   };
 
   const handleCostChange = (field: keyof UserInputs['costs'], value: any) => {
@@ -92,6 +128,9 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                 </Button>
                 <h6 className="mb-0 d-flex align-items-center">
                   {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
+                  {categoriesData[estimate.categoryId]?.notes && (
+                    <span className="text-primary">*</span>
+                  )}
                   {categoriesData[estimate.categoryId]?.preventive && (
                     <Badge bg="success" className="ms-2">Preventive</Badge>
                   )}
@@ -103,6 +142,16 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   content={
                     <div>
                       {categoriesData[estimate.categoryId].description}
+                      {categoriesData[estimate.categoryId]?.notes && (
+                        <div className="mt-3 pt-2 border-top">
+                          <p className="mb-1"><strong>* Important Notes:</strong></p>
+                          <ul className="mb-0">
+                            {categoriesData[estimate.categoryId].notes?.map((note, noteIndex) => (
+                              <li key={noteIndex}>{note}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   }
                 />
@@ -161,8 +210,14 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     value={estimate.estimate.quantity}
                     onChange={(value: number) => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, quantity: value })}
                     min={0}
+                    max={getCategoryQuantityCap(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network')}
                     step={1}
                   />
+                  {getCategoryQuantityCap(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network') && (
+                    <Form.Text className="text-muted small">
+                      Max {getCategoryQuantityCap(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network')} visits per year
+                    </Form.Text>
+                  )}
                 </Form.Group>
               </Col>
 
@@ -230,7 +285,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
               <option value="">Select a category to add...</option>
               {availableCategories.map(categoryId => (
                 <option key={categoryId} value={categoryId}>
-                  {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}{categoriesData[categoryId].name}
+                  {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}{categoriesData[categoryId].name}{categoriesData[categoryId]?.notes ? '*' : ''}
                 </option>
               ))}
             </Form.Select>

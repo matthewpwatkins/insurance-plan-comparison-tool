@@ -79,10 +79,12 @@ pharmacy_tier_3_mail_90:
 pharmacy_specialty_tier_1:
   name: "Pharmacy - Specialty Tier 1"
   description: "Lower-cost specialty medications that require special handling, administration, or monitoring. Includes complex drugs for conditions like cancer, multiple sclerosis, or rheumatoid arthritis. Often requires coordination with specialty pharmacies and healthcare providers."
+  notes: ["Most require preauthorization"]
 
 pharmacy_specialty_tier_2:
   name: "Pharmacy - Specialty Tier 2"
   description: "Higher-cost specialty medications for complex conditions requiring specialized care and monitoring. Includes advanced biologics and specialized treatments for serious medical conditions. Typically requires preauthorization and coordination with specialty healthcare providers."
+  notes: ["Most require preauthorization"]
 
 imaging_diagnostic_facility:
   name: "Imaging Diagnostic - Facility"
@@ -111,6 +113,7 @@ imaging_advanced_facility:
 imaging_advanced_professional:
   name: "Imaging Advanced - Professional"
   description: "Professional fees for specialists who interpret advanced imaging studies like MRI and CT scans. Covers specialized radiologist expertise in reading complex imaging results. Essential for accurate diagnosis and treatment planning using advanced imaging technology."
+  notes: ["Preauthorization required for most services"]
 
 surgery:
   name: "Surgery"
@@ -147,6 +150,7 @@ chiropractic_therapy:
 speech_therapy_outpatient:
   name: "Speech Therapy - Outpatient"
   description: "Outpatient speech-language pathology services to address communication and swallowing disorders. Helps with speech development, language skills, voice disorders, and swallowing difficulties. Typically limited to a specific number of visits per calendar year."
+  notes: ["Preauthorization required after initial evaluation"]
 
 speech_therapy_inpatient_eval:
   name: "Speech Therapy - Inpatient Evaluation"
@@ -191,6 +195,7 @@ genetic_counseling:
 genetic_testing:
   name: "Genetic Testing"
   description: "Laboratory tests that analyze DNA, chromosomes, or proteins to detect genetic disorders or predisposition to certain diseases. May require preauthorization and genetic counseling prior to testing. Not all genetic testing is covered - medical necessity must be established."
+  notes: ["May require preauthorization"]
 
 hearing_aids:
   name: "Hearing Aids"

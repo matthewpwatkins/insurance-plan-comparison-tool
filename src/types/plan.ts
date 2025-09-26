@@ -29,17 +29,22 @@ export interface CostStructure {
   coinsurance?: number;
   max_coinsurance?: number;
   is_free?: boolean;
+  qty_cap?: number;
+  cost_cap?: number;
 }
 
 export interface NetworkBenefits {
   in_network_coverage?: CostStructure;
   out_of_network_coverage?: CostStructure;
+  qty_cap?: number;
+  cost_cap?: number;
 }
 
 export interface Category {
   name: string;
   description?: string;
   preventive?: boolean;
+  notes?: string[];
 }
 
 export interface HealthPlan {
@@ -49,7 +54,7 @@ export interface HealthPlan {
   annual_deductible: PlanDeductible;
   out_of_pocket_maximum: PlanOutOfPocket;
   default: NetworkBenefits;
-  categories: Record<string, NetworkBenefits>;
+  categories: Record<string, NetworkBenefits | undefined>;
   employer_hsa_contribution?: PlanPremiums;
 }
 

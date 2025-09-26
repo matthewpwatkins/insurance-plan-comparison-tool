@@ -614,12 +614,32 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-      telemedicine_urgent_care:
-        in_network_coverage:
+      behavioral_mental_health_outpatient:
+        out_of_network_coverage:
           coinsurance: 0.4
-      emergency_room:
-        in_network_coverage:
+      laboratory_outpatient:
+        out_of_network_coverage:
           coinsurance: 0.4
+      emergency_room_physician:
+        out_of_network_coverage:
+          coinsurance: 0.4
+      colonoscopy_colorectal_screening:
+        in_network_coverage:
+          copay: 0
+          is_free: true
+        qty_cap: 1
+      mammograms:
+        in_network_coverage:
+          copay: 0
+          is_free: true
+        qty_cap: 1
+      immunizations:
+        in_network_coverage:
+          copay: 0
+          is_free: true
+        out_of_network_coverage:
+          copay: 0
+          is_free: true
       pharmacy_tier_1_retail_30:
         in_network_coverage:
           copay: 10
@@ -657,70 +677,28 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-        out_of_network_coverage:
-          coinsurance: 0.6
-      imaging_diagnostic_facility:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
       imaging_diagnostic_professional:
-        in_network_coverage:
-          coinsurance: 0.4
         out_of_network_coverage:
           coinsurance: 0.4
-      hospital_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      maternity_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      behavioral_mental_health_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      imaging_advanced_facility:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
       imaging_advanced_professional:
-        in_network_coverage:
-          coinsurance: 0.4
         out_of_network_coverage:
           coinsurance: 0.4
-      surgery:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      aba_therapy:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      physical_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      occupational_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      speech_therapy_inpatient_eval:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      durable_medical_equipment:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
+      acupuncture:
+        qty_cap: 12
+      chiropractic_therapy:
+        qty_cap: 25
+      physical_therapy_outpatient:
+        qty_cap: 25
+      occupational_therapy_outpatient:
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
+      obesity_surgery:
+        qty_cap: 1
+      lifestyle_screenings:
+        cost_cap: 100
+      infertility_ivf:
+        cost_cap: 10000
+      hearing_aids:
+        cost_cap: 1200
+        qty_cap: 2

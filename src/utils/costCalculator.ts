@@ -46,9 +46,19 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
     const { estimate } = categoryEstimate;
     const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
 
-    // Process all visits for this category
-    for (let i = 0; i < estimate.quantity; i++) {
+    // Check for quantity cap for this category
+    const quantityCap = execution.getCategoryQuantityCap(categoryEstimate.categoryId, network);
+    const effectiveQuantity = quantityCap ? Math.min(estimate.quantity, quantityCap) : estimate.quantity;
+    const cappedVisits = quantityCap ? estimate.quantity - effectiveQuantity : 0;
+
+    // Process covered visits
+    for (let i = 0; i < effectiveQuantity; i++) {
       execution.recordExpense(categoryEstimate.categoryId, estimate.costPerVisit, network, categoryEstimate.notes);
+    }
+
+    // Process capped visits (user pays 100% out of pocket)
+    for (let i = 0; i < cappedVisits; i++) {
+      execution.recordCappedExpense(categoryEstimate.categoryId, estimate.costPerVisit, network, categoryEstimate.notes, 'quantity');
     }
   }
 
@@ -139,6 +149,8 @@ class PlanExecution {
   private inNetworkExpenses: ExpenseEntry[] = [];
   private outOfNetworkExpenses: ExpenseEntry[] = [];
   private categoriesData = getCategoriesData();
+  private costCapSpent: Record<string, number> = {}; // Track spending against cost caps
+  private quantityUsed: Record<string, number> = {}; // Track visits used against quantity caps
 
   constructor(plan: HealthPlan, coverage: 'single' | 'two_party' | 'family') {
     this.plan = plan;
@@ -193,6 +205,43 @@ class PlanExecution {
       return; // No coverage
     }
 
+    // Check for cost cap
+    const costCap = this.getCategoryCostCap(categoryId, network);
+    const categoryKey = `${categoryId}_${network}`;
+    const alreadySpent = this.costCapSpent[categoryKey] || 0;
+
+    if (costCap !== undefined) {
+      const remainingCap = Math.max(0, costCap - alreadySpent);
+
+      if (remainingCap <= 0) {
+        // Already hit cost cap, user pays 100%
+        this.recordCappedExpense(categoryId, cost, network, notes, 'cost');
+        return;
+      } else if (cost > remainingCap) {
+        // Expense exceeds remaining cap - split it
+        // Process the covered portion
+        this._recordExpenseInternal(categoryId, remainingCap, network, notes, benefits);
+        this.costCapSpent[categoryKey] = costCap; // Mark cap as fully used
+
+        // Process the over-cap portion
+        const overCapAmount = cost - remainingCap;
+        this.recordCappedExpense(categoryId, overCapAmount, network, notes, 'cost');
+        return;
+      } else {
+        // Expense is within cap - track spending and process normally
+        this.costCapSpent[categoryKey] = alreadySpent + cost;
+      }
+    }
+
+    // No cost cap or expense is within cap - process normally
+    this._recordExpenseInternal(categoryId, cost, network, notes, benefits);
+  }
+
+  /**
+   * Internal method to record expense with normal benefit processing
+   */
+  private _recordExpenseInternal(categoryId: string, cost: number, network: 'in_network' | 'out_of_network', notes: string | undefined, benefits: any): void {
+
     // Get category information
     const categoryInfo = this.categoriesData[categoryId];
     const categoryDisplayName = categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
@@ -240,8 +289,10 @@ class PlanExecution {
       } else {
         // Non-HSA plans or non-prescription items: copay applies immediately
         actualCopay = benefits.copay;
-        employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
-        this.outOfPocketSpent += employeeResponsibility;
+        if (actualCopay !== undefined) {
+          employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
+          this.outOfPocketSpent += employeeResponsibility;
+        }
       }
     } else {
       // Deductible and coinsurance apply
@@ -325,6 +376,86 @@ class PlanExecution {
     };
   }
 
+  /**
+   * Get the quantity cap for a category and network
+   */
+  getCategoryQuantityCap(categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined {
+    // Check category-specific caps first
+    const categoryBenefits = this.plan.categories[categoryId];
+    if (categoryBenefits?.qty_cap !== undefined) {
+      return categoryBenefits.qty_cap;
+    }
+
+    // Check network-specific caps
+    const networkBenefits = categoryBenefits?.[`${network}_coverage`];
+    if (networkBenefits?.qty_cap !== undefined) {
+      return networkBenefits.qty_cap;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Get the cost cap for a category and network
+   */
+  getCategoryCostCap(categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined {
+    // Check category-specific caps first
+    const categoryBenefits = this.plan.categories[categoryId];
+    if (categoryBenefits?.cost_cap !== undefined) {
+      return categoryBenefits.cost_cap;
+    }
+
+    // Check network-specific caps
+    const networkBenefits = categoryBenefits?.[`${network}_coverage`];
+    if (networkBenefits?.cost_cap !== undefined) {
+      return networkBenefits.cost_cap;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Record an expense that exceeds caps (user pays 100% out of pocket)
+   */
+  recordCappedExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network', notes?: string, capType?: 'quantity' | 'cost'): void {
+    // Get category information
+    const categoryInfo = this.categoriesData[categoryId];
+    const categoryDisplayName = categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
+    const isPreventive = categoryInfo?.preventive || false;
+
+    // User pays full cost for capped expenses
+    const employeeResponsibility = cost;
+    const insuranceResponsibility = 0;
+
+    // Add to out-of-pocket spending (these still count toward OOP max)
+    const applicableOOP = Math.min(employeeResponsibility, this.oopRemaining());
+    this.outOfPocketSpent += applicableOOP;
+
+    // Create expense entry with cap indication
+    const capNote = capType === 'quantity' ? '[Over visit limit]' : capType === 'cost' ? '[Over cost limit]' : '[Over limit]';
+    const expenseEntry: ExpenseEntry = {
+      type: 'expense',
+      network,
+      category: categoryId,
+      categoryDisplayName: `${capNote} ${categoryDisplayName}`,
+      isPreventive,
+      isFree: false,
+      billedAmount: cost,
+      employeeResponsibility,
+      insuranceResponsibility,
+      deductibleRemaining: this.deductibleRemaining(),
+      outOfPocketRemaining: this.oopRemaining(),
+      notes: notes ? `${capNote} ${notes}` : capNote
+    };
+
+    // Add to appropriate network expenses array
+    if (network === 'in_network') {
+      this.inNetworkExpenses.push(expenseEntry);
+    } else {
+      this.outOfNetworkExpenses.push(expenseEntry);
+    }
+  }
+
   private oopRemaining(): number {
     const oopMax = this.getOOPMaxForCoverage();
     return Math.max(0, oopMax - this.outOfPocketSpent);
@@ -337,11 +468,12 @@ class PlanExecution {
 
   private getCategoryBenefits(categoryId: string, network: 'in_network' | 'out_of_network') {
     // Check if this category has specific benefits
-    if (categoryId !== 'other' && this.plan.categories[categoryId]) {
+    const categoryBenefits = categoryId !== 'other' ? this.plan.categories[categoryId] : undefined;
+    if (categoryBenefits) {
       if (network === 'in_network') {
-        return this.plan.categories[categoryId].in_network_coverage;
+        return categoryBenefits.in_network_coverage;
       } else {
-        return this.plan.categories[categoryId].out_of_network_coverage;
+        return categoryBenefits.out_of_network_coverage;
       }
     }
 
