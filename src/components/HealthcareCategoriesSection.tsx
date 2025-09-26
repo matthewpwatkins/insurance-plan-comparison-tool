@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Form, Row, Col, Button, Badge } from 'react-bootstrap';
+import { Card, Form, Row, Col, Button, Badge, InputGroup } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencil } from '@fortawesome/free-solid-svg-icons';
 import { getCategoriesData } from '../generated/dataHelpers';
 import NetworkVisitsInputRow from './NetworkVisitsInputRow';
 import HelpIcon from './HelpIcon';
@@ -108,14 +108,19 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
 
                 {/* Notes Field */}
                 <Form.Group className="mb-3">
-                  <Form.Control
-                    type="text"
-                    placeholder="Optional notes: ex. Jill's allergy medicine"
-                    value={estimate.notes || ''}
-                    maxLength={100}
-                    onChange={(e) => updateCategoryEstimate(index, 'notes', e.target.value)}
-                    style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
-                  />
+                  <InputGroup>
+                    <InputGroup.Text>
+                      <FontAwesomeIcon icon={faPencil} className="text-muted" />
+                    </InputGroup.Text>
+                    <Form.Control
+                      type="text"
+                      placeholder="Optional notes: ex. Jill's allergy medicine"
+                      value={estimate.notes || ''}
+                      maxLength={100}
+                      onChange={(e) => updateCategoryEstimate(index, 'notes', e.target.value)}
+                      style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
+                    />
+                  </InputGroup>
                 </Form.Group>
 
                 <NetworkVisitsInputRow
