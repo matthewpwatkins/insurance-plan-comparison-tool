@@ -110,17 +110,18 @@ describe('costCalculator', () => {
             costPerVisit: 0,
           },
         },
+        {
+          categoryId: 'other', // Add as a category estimate instead of separate otherCosts
+          inNetwork: {
+            quantity: 1,
+            costPerVisit: 500,
+          },
+          outOfNetwork: {
+            quantity: 0,
+            costPerVisit: 0,
+          },
+        },
       ],
-      otherCosts: {
-        inNetwork: {
-          quantity: 1,
-          costPerVisit: 500,
-        },
-        outOfNetwork: {
-          quantity: 0,
-          costPerVisit: 0,
-        },
-      },
     },
     hsaContribution: 2000,
     fsaContribution: 1500,
@@ -184,16 +185,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -233,16 +224,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -283,16 +264,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -327,16 +298,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -351,16 +312,6 @@ describe('costCalculator', () => {
         ...mockUserInputs,
         costs: {
           categoryEstimates: [],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
         hsaContribution: 0,
         fsaContribution: 0,
@@ -390,16 +341,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -428,17 +369,18 @@ describe('costCalculator', () => {
                 costPerVisit: 0,
               },
             },
+            {
+              categoryId: 'other', // Uses default coinsurance
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 400,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 1, // Uses default coinsurance
-              costPerVisit: 400,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -510,16 +452,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -552,16 +484,6 @@ describe('costCalculator', () => {
               },
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -579,16 +501,6 @@ describe('costCalculator', () => {
         taxRate: 40, // High tax rate
         costs: {
           categoryEstimates: [],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
@@ -599,6 +511,243 @@ describe('costCalculator', () => {
 
       // Should allow negative total cost when tax savings exceed other costs
       expect(result.totalCost).toBeLessThan(0);
+    });
+  });
+
+  describe('Ledger functionality', () => {
+    beforeEach(() => {
+      mockGetMaxFSAContribution.mockReturnValue(3300);
+      mockGetMaxHSAContribution.mockReturnValue(4300);
+      mockGetEmployerHSAContribution.mockReturnValue(500);
+    });
+
+    it('should include ledger in PlanResult', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      expect(result.ledger).toBeDefined();
+      expect(Array.isArray(result.ledger)).toBe(true);
+      expect(result.ledger.length).toBeGreaterThan(0);
+    });
+
+    it('should start ledger with initial state entry', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      const firstEntry = result.ledger[0];
+      expect(firstEntry.description).toBe('Initial state');
+      expect(firstEntry.amount).toBe(0);
+      expect(firstEntry.deductibleRemaining).toBe(500); // Single deductible
+      expect(firstEntry.outOfPocketRemaining).toBe(5000); // Single OOP
+    });
+
+    it('should track monthly premiums correctly', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      // Should have 12 monthly premium entries
+      const premiumEntries = result.ledger.filter(entry =>
+        entry.description.startsWith('Monthly premium - Month'));
+      expect(premiumEntries).toHaveLength(12);
+
+      // Each premium should be negative (cost)
+      premiumEntries.forEach((entry, index) => {
+        expect(entry.description).toBe(`Monthly premium - Month ${index + 1}`);
+        expect(entry.amount).toBe(-200); // Single coverage premium
+      });
+    });
+
+    it('should track employer HSA contribution for HSA plans', () => {
+      const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
+
+      const employerContribEntry = result.ledger.find(entry =>
+        entry.description === 'Employer HSA contribution');
+      expect(employerContribEntry).toBeDefined();
+      expect(employerContribEntry!.amount).toBe(500);
+    });
+
+    it('should not track employer contribution for PPO plans', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      const employerContribEntry = result.ledger.find(entry =>
+        entry.description.includes('Employer HSA contribution'));
+      expect(employerContribEntry).toBeUndefined();
+    });
+
+    it('should track tax savings for FSA plans', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      const taxSavingsEntry = result.ledger.find(entry =>
+        entry.description === 'Tax savings from FSA contributions');
+      expect(taxSavingsEntry).toBeDefined();
+      expect(taxSavingsEntry!.amount).toBeGreaterThan(0);
+    });
+
+    it('should track tax savings for HSA plans', () => {
+      const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
+
+      const taxSavingsEntry = result.ledger.find(entry =>
+        entry.description === 'Tax savings from HSA contributions');
+      expect(taxSavingsEntry).toBeDefined();
+      expect(taxSavingsEntry!.amount).toBeGreaterThan(0);
+    });
+
+    it('should track service visits with copays correctly', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      // Should have entries for office visits (copay)
+      const visitEntries = result.ledger.filter(entry =>
+        entry.description.includes('service visit (office_visit_pcp)'));
+      expect(visitEntries.length).toBe(2); // 2 visits in mockUserInputs
+
+      visitEntries.forEach(entry => {
+        expect(entry.description).toContain('copay');
+        expect(entry.amount).toBe(-25); // Copay amount
+      });
+    });
+
+    it('should track deductible remaining correctly through visits', () => {
+      const userInputsForDeductible = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'test_category', // Uses default coinsurance, not copay
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 300,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputsForDeductible);
+
+      // Find the service visit entry
+      const visitEntry = result.ledger.find(entry =>
+        entry.description.includes('service visit (test_category)'));
+      expect(visitEntry).toBeDefined();
+
+      // Deductible should be reduced by the visit cost
+      expect(visitEntry!.deductibleRemaining).toBe(200); // 500 - 300
+    });
+
+    it('should track out-of-pocket remaining correctly', () => {
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
+
+      // Find visit entries and check OOP remaining decreases
+      const visitEntries = result.ledger.filter(entry =>
+        entry.description.includes('service visit'));
+
+      if (visitEntries.length > 0) {
+        const firstVisit = visitEntries[0];
+        expect(firstVisit.outOfPocketRemaining).toBeLessThan(5000);
+      }
+    });
+
+    it('should track mixed copay and deductible scenarios', () => {
+      const mixedUserInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp', // Has copay
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 200,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, mixedUserInputs);
+
+      // Should have copay entry
+      const copayEntry = result.ledger.find(entry =>
+        entry.description.includes('copay'));
+      expect(copayEntry).toBeDefined();
+      expect(copayEntry!.amount).toBe(-25);
+
+      // Deductible should remain unchanged for copay visits
+      expect(copayEntry!.deductibleRemaining).toBe(500);
+    });
+
+    it('should track coinsurance visits correctly', () => {
+      const coinsuranceUserInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'test_category', // Uses default coinsurance
+              inNetwork: {
+                quantity: 1,
+                costPerVisit: 1000,
+              },
+              outOfNetwork: {
+                quantity: 0,
+                costPerVisit: 0,
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, coinsuranceUserInputs);
+
+      const visitEntry = result.ledger.find(entry =>
+        entry.description.includes('service visit (test_category)'));
+      expect(visitEntry).toBeDefined();
+
+      // Should show deductible and coinsurance
+      expect(visitEntry!.description).toContain('deductible and coinsurance');
+
+      // Cost should be deductible + coinsurance: $500 + ($500 * 0.2) = $600
+      expect(visitEntry!.amount).toBe(-600);
+    });
+
+    it('should maintain ledger order correctly', () => {
+      const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
+
+      // Check that entries appear in expected order
+      expect(result.ledger[0].description).toBe('Initial state');
+
+      // Monthly premiums should come next
+      expect(result.ledger[1].description).toBe('Monthly premium - Month 1');
+      expect(result.ledger[12].description).toBe('Monthly premium - Month 12');
+
+      // Employer contribution should come after premiums
+      const employerEntry = result.ledger.find(entry =>
+        entry.description === 'Employer HSA contribution');
+      const employerIndex = result.ledger.indexOf(employerEntry!);
+      expect(employerIndex).toBeGreaterThan(12);
+    });
+
+    it('should handle zero-cost scenarios in ledger', () => {
+      const zeroCostInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [],
+        },
+        hsaContribution: 0,
+        fsaContribution: 0,
+      };
+
+      const result = calculatePlanCost(mockPPOPlan, mockPlanData, zeroCostInputs);
+
+      // Should still have initial state + premiums
+      expect(result.ledger.length).toBeGreaterThanOrEqual(13); // Initial + 12 premiums
+
+      // Should not have service visit entries
+      const visitEntries = result.ledger.filter(entry =>
+        entry.description.includes('service visit'));
+      expect(visitEntries).toHaveLength(0);
     });
   });
 });
