@@ -1,5 +1,6 @@
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
-import { PlanData, HealthPlan, UserInputs, PlanResult, UserCosts, LedgerEntry } from '../types';
+import { getCategoriesData } from '../generated/dataHelpers';
+import { PlanData, HealthPlan, UserInputs, PlanResult, UserCosts, OrganizedLedger, ContributionEntry, PremiumEntry, ExpenseEntry } from '../types';
 
 /**
  * Calculate costs for all plans given user inputs and plan data
@@ -125,33 +126,22 @@ const calculateContributionsAndTaxSavings = (
 
 /**
  * Plan execution class to track expenses and calculate out-of-pocket costs
- * Based on the prototype implementation from v2025.01 branch
+ * Generates organized ledger with separate tables for different cost types
  */
 class PlanExecution {
   private plan: HealthPlan;
   private coverage: 'single' | 'two_party' | 'family';
   private outOfPocketSpent: number = 0;
   private deductibleSpent: number = 0;
-  private ledger: LedgerEntry[] = [];
+  private contributionsAndSavings: ContributionEntry[] = [];
+  private premiums: PremiumEntry[] = [];
+  private inNetworkExpenses: ExpenseEntry[] = [];
+  private outOfNetworkExpenses: ExpenseEntry[] = [];
+  private categoriesData = getCategoriesData();
 
   constructor(plan: HealthPlan, coverage: 'single' | 'two_party' | 'family') {
     this.plan = plan;
     this.coverage = coverage;
-
-    // Add initial state entry
-    this.addLedgerEntry('Initial state', 0);
-  }
-
-  /**
-   * Add a new entry to the ledger
-   */
-  private addLedgerEntry(description: string, amount: number): void {
-    this.ledger.push({
-      description,
-      amount,
-      deductibleRemaining: this.deductibleRemaining(),
-      outOfPocketRemaining: this.oopRemaining()
-    });
   }
 
   /**
@@ -159,7 +149,11 @@ class PlanExecution {
    */
   addMonthlyPremiums(monthlyPremium: number): void {
     for (let month = 1; month <= 12; month++) {
-      this.addLedgerEntry(`Monthly premium - Month ${month}`, -monthlyPremium);
+      this.premiums.push({
+        type: 'premium',
+        description: `Month ${month}`,
+        amount: monthlyPremium
+      });
     }
   }
 
@@ -168,7 +162,11 @@ class PlanExecution {
    */
   addEmployerContribution(amount: number): void {
     if (amount > 0) {
-      this.addLedgerEntry('Employer HSA contribution', amount);
+      this.contributionsAndSavings.push({
+        type: 'contribution',
+        description: 'Employer HSA contribution',
+        amount: amount
+      });
     }
   }
 
@@ -177,95 +175,123 @@ class PlanExecution {
    */
   addTaxSavings(amount: number, contributionType: 'HSA' | 'FSA'): void {
     if (amount > 0) {
-      this.addLedgerEntry(`Tax savings from ${contributionType} contributions`, amount);
+      this.contributionsAndSavings.push({
+        type: 'savings',
+        description: `Tax savings from ${contributionType} contributions`,
+        amount: amount
+      });
     }
   }
 
   /**
    * Record a single expense and calculate the out-of-pocket cost
-   * This is where the proper deductible and OOP logic happens
    */
   recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network'): void {
-    if (this.oopRemaining() <= 0) {
-      // Add ledger entry for fully covered visit
-      const networkLabel = network === 'in_network' ? 'In-network' : 'Out-of-network';
-      this.addLedgerEntry(`${networkLabel} service visit (${categoryId}) - fully covered`, 0);
-      return; // Already hit out-of-pocket maximum
-    }
-
     const benefits = this.getCategoryBenefits(categoryId, network);
     if (!benefits) {
       return; // No coverage
     }
 
-    const networkLabel = network === 'in_network' ? 'In-network' : 'Out-of-network';
-    let totalOutOfPocket = 0;
+    // Get category information
+    const categoryInfo = this.categoriesData[categoryId];
+    const categoryDisplayName = categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
+    const isPreventive = categoryInfo?.preventive || false;
+    const isFree = benefits.is_free || false;
 
-    // If there's a copay, that's the full out-of-pocket cost for this visit
-    const copay = benefits.copay || 0;
-    if (copay > 0) {
-      const applicableCopay = Math.min(copay, this.oopRemaining());
-      this.outOfPocketSpent += applicableCopay;
-      totalOutOfPocket = applicableCopay;
+    let employeeResponsibility = 0;
+    let actualCopay: number | undefined;
 
-      this.addLedgerEntry(
-        `${networkLabel} service visit (${categoryId}) - copay`,
-        -totalOutOfPocket
-      );
-      return; // Copay covers the visit, no deductible or coinsurance applies
-    }
+    // Check if already hit out-of-pocket maximum
+    if (this.oopRemaining() <= 0) {
+      // Fully covered
+      employeeResponsibility = 0;
+    } else if (isFree) {
+      // Free care - no cost to employee
+      employeeResponsibility = 0;
+    } else if (benefits.copay && benefits.copay > 0) {
+      // Copay applies
+      actualCopay = benefits.copay;
+      employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
+      this.outOfPocketSpent += employeeResponsibility;
+    } else {
+      // Deductible and coinsurance apply
+      let remainingCost = cost;
+      let deductiblePortion = 0;
+      let coinsurancePortion = 0;
 
-    let remainingCost = cost;
-    let deductiblePortion = 0;
-    let coinsurancePortion = 0;
-
-    // Apply deductible first
-    const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
-    if (applicableDeductible > 0) {
-      this.outOfPocketSpent += applicableDeductible;
-      this.deductibleSpent += applicableDeductible; // Track deductible separately
-      remainingCost -= applicableDeductible;
-      deductiblePortion = applicableDeductible;
-    }
-
-    // Apply coinsurance to remaining cost after deductible
-    const coinsurance = benefits.coinsurance || 0;
-    if (coinsurance > 0 && remainingCost > 0) {
-      let coinsuranceAmount = remainingCost * coinsurance;
-
-      // Apply max coinsurance cap if specified
-      if (benefits.max_coinsurance !== undefined) {
-        coinsuranceAmount = Math.min(coinsuranceAmount, benefits.max_coinsurance);
+      // Apply deductible first
+      const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
+      if (applicableDeductible > 0) {
+        this.outOfPocketSpent += applicableDeductible;
+        this.deductibleSpent += applicableDeductible;
+        remainingCost -= applicableDeductible;
+        deductiblePortion = applicableDeductible;
       }
 
-      const applicableCoinsurance = Math.min(coinsuranceAmount, this.oopRemaining());
-      this.outOfPocketSpent += applicableCoinsurance;
-      coinsurancePortion = applicableCoinsurance;
+      // Apply coinsurance to remaining cost after deductible
+      const coinsurance = benefits.coinsurance || 0;
+      if (coinsurance > 0 && remainingCost > 0) {
+        let coinsuranceAmount = remainingCost * coinsurance;
+
+        // Apply max coinsurance cap if specified
+        if (benefits.max_coinsurance !== undefined) {
+          coinsuranceAmount = Math.min(coinsuranceAmount, benefits.max_coinsurance);
+        }
+
+        const applicableCoinsurance = Math.min(coinsuranceAmount, this.oopRemaining());
+        this.outOfPocketSpent += applicableCoinsurance;
+        coinsurancePortion = applicableCoinsurance;
+      }
+
+      employeeResponsibility = deductiblePortion + coinsurancePortion;
     }
 
-    totalOutOfPocket = deductiblePortion + coinsurancePortion;
+    const insuranceResponsibility = cost - employeeResponsibility;
 
-    // Create descriptive ledger entry
-    let description = `${networkLabel} service visit (${categoryId})`;
-    if (deductiblePortion > 0 && coinsurancePortion > 0) {
-      description += ` - deductible and coinsurance`;
-    } else if (deductiblePortion > 0) {
-      description += ` - deductible`;
-    } else if (coinsurancePortion > 0) {
-      description += ` - coinsurance`;
+    // Create expense entry
+    const expenseEntry: ExpenseEntry = {
+      type: 'expense',
+      network,
+      category: categoryId,
+      categoryDisplayName: isPreventive ? `[Preventive] ${categoryDisplayName}` : categoryDisplayName,
+      isPreventive,
+      isFree,
+      billedAmount: cost,
+      copay: actualCopay,
+      employeeResponsibility,
+      insuranceResponsibility,
+      deductibleRemaining: this.deductibleRemaining(),
+      outOfPocketRemaining: this.oopRemaining()
+    };
+
+    // Add to appropriate network expenses array
+    if (network === 'in_network') {
+      this.inNetworkExpenses.push(expenseEntry);
+    } else {
+      this.outOfNetworkExpenses.push(expenseEntry);
     }
-
-    this.addLedgerEntry(description, -totalOutOfPocket);
-
-    // Insurance covers the rest
   }
 
   getTotalOutOfPocket(): number {
     return this.outOfPocketSpent;
   }
 
-  getLedger(): LedgerEntry[] {
-    return [...this.ledger]; // Return a copy
+  getLedger(): OrganizedLedger {
+    // Sort expenses: free care first, then rest
+    const sortExpenses = (expenses: ExpenseEntry[]) => {
+      return [...expenses].sort((a, b) => {
+        if (a.isFree && !b.isFree) return -1;
+        if (!a.isFree && b.isFree) return 1;
+        return 0;
+      });
+    };
+
+    return {
+      contributionsAndSavings: [...this.contributionsAndSavings],
+      premiums: [...this.premiums],
+      inNetworkExpenses: sortExpenses(this.inNetworkExpenses),
+      outOfNetworkExpenses: sortExpenses(this.outOfNetworkExpenses)
+    };
   }
 
   private oopRemaining(): number {
@@ -275,9 +301,6 @@ class PlanExecution {
 
   private deductibleRemaining(): number {
     const deductible = this.getDeductibleForCoverage();
-    // Only count non-copay expenses toward deductible
-    // This is more complex than the current implementation allows
-    // For now, use a simple approach - track deductible separately
     return Math.max(0, deductible - this.deductibleSpent);
   }
 

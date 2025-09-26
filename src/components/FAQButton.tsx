@@ -1,11 +1,11 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { Modal, Button, Accordion, Table } from 'react-bootstrap';
 import { formatCurrency } from '../utils/formatters';
-import { LedgerEntry } from '../types';
+import { OrganizedLedger, ContributionEntry, PremiumEntry, ExpenseEntry } from '../types';
 
 export interface FAQButtonRef {
   openFAQ: (sectionIndex?: number) => void;
-  openLedger: (planName: string, ledger: LedgerEntry[]) => void;
+  openLedger: (planName: string, ledger: OrganizedLedger) => void;
 }
 
 interface FAQButtonProps {
@@ -16,7 +16,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
   const [showModal, setShowModal] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<'faq' | 'ledger'>('faq');
-  const [ledgerData, setLedgerData] = useState<{ planName: string; ledger: LedgerEntry[] } | null>(null);
+  const [ledgerData, setLedgerData] = useState<{ planName: string; ledger: OrganizedLedger } | null>(null);
 
   useImperativeHandle(ref, () => ({
     openFAQ: (sectionIndex?: number) => {
@@ -26,7 +26,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
         setActiveKey(sectionIndex.toString());
       }
     },
-    openLedger: (planName: string, ledger: LedgerEntry[]) => {
+    openLedger: (planName: string, ledger: OrganizedLedger) => {
       setModalMode('ledger');
       setLedgerData({ planName, ledger });
       setShowModal(true);
@@ -120,31 +120,272 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
             </Accordion>
           ) : (
             <div>
-              <p className="mb-3">
-                This ledger shows all the events that contribute to your total annual cost for <strong>{ledgerData?.planName}</strong>.
-                Positive amounts are money you receive or save, negative amounts are costs you pay.
+              <p className="mb-4">
+                This breakdown shows all the components that contribute to your total annual cost for <strong>{ledgerData?.planName}</strong>.
               </p>
-              <Table striped bordered hover responsive>
+
+              {/* Contributions and Savings Table */}
+              {ledgerData?.ledger.contributionsAndSavings && ledgerData.ledger.contributionsAndSavings.length > 0 && (
+                <>
+                  <h5 className="mb-3">Contributions and Savings</h5>
+                  <Table striped bordered hover responsive className="mb-4">
+                    <thead>
+                      <tr>
+                        <th>Description</th>
+                        <th style={{ width: '120px' }}>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ledgerData.ledger.contributionsAndSavings.map((entry, index) => (
+                        <tr key={index}>
+                          <td>{entry.description}</td>
+                          <td className="text-success">
+                            {formatCurrency(entry.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-active">
+                        <td><strong>Total Contributions and Savings</strong></td>
+                        <td className="text-success">
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.contributionsAndSavings.reduce((sum, entry) => sum + entry.amount, 0)
+                            )}
+                          </strong>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </Table>
+                </>
+              )}
+
+              {/* Premiums Table */}
+              <h5 className="mb-3">Premiums</h5>
+              <Table striped bordered hover responsive className="mb-4">
                 <thead>
                   <tr>
-                    <th>Event Description</th>
+                    <th>Description</th>
                     <th style={{ width: '120px' }}>Amount</th>
-                    <th style={{ width: '120px' }}>Deductible Remaining</th>
-                    <th style={{ width: '120px' }}>Out-of-Pocket Remaining</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ledgerData?.ledger.map((entry, index) => (
+                  {ledgerData?.ledger.premiums.map((entry, index) => (
                     <tr key={index}>
                       <td>{entry.description}</td>
-                      <td className={entry.amount >= 0 ? 'text-success' : 'text-danger'}>
-                        {entry.amount >= 0 ? '+' : ''}{formatCurrency(entry.amount)}
+                      <td className="text-danger">
+                        {formatCurrency(entry.amount)}
                       </td>
-                      <td>{formatCurrency(entry.deductibleRemaining)}</td>
-                      <td>{formatCurrency(entry.outOfPocketRemaining)}</td>
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="table-active">
+                    <td><strong>Total Premiums</strong></td>
+                    <td className="text-danger">
+                      <strong>
+                        {formatCurrency(
+                          ledgerData?.ledger.premiums.reduce((sum, entry) => sum + entry.amount, 0) || 0
+                        )}
+                      </strong>
+                    </td>
+                  </tr>
+                </tfoot>
+              </Table>
+
+              {/* In Network Expenses Table */}
+              {ledgerData?.ledger.inNetworkExpenses && ledgerData.ledger.inNetworkExpenses.length > 0 && (
+                <>
+                  <h5 className="mb-3">In-Network Expenses</h5>
+                  <Table striped bordered hover responsive className="mb-4">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th style={{ width: '100px' }}>Billed Amount</th>
+                        <th style={{ width: '80px' }}>Copay</th>
+                        <th style={{ width: '100px' }}>Employee Responsibility</th>
+                        <th style={{ width: '100px' }}>Insurance Responsibility</th>
+                        <th style={{ width: '100px' }}>Deductible Remaining</th>
+                        <th style={{ width: '100px' }}>Out-of-Pocket Remaining</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ledgerData.ledger.inNetworkExpenses.map((entry, index) => (
+                        <tr key={index}>
+                          <td>{entry.categoryDisplayName}</td>
+                          <td>{formatCurrency(entry.billedAmount)}</td>
+                          <td>{entry.copay ? formatCurrency(entry.copay) : '—'}</td>
+                          <td className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}>
+                            {formatCurrency(entry.employeeResponsibility)}
+                          </td>
+                          <td>{formatCurrency(entry.insuranceResponsibility)}</td>
+                          <td>{formatCurrency(entry.deductibleRemaining)}</td>
+                          <td>{formatCurrency(entry.outOfPocketRemaining)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-active">
+                        <td><strong>Total In-Network</strong></td>
+                        <td>
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.inNetworkExpenses.reduce((sum, entry) => sum + entry.billedAmount, 0)
+                            )}
+                          </strong>
+                        </td>
+                        <td>—</td>
+                        <td className="text-danger">
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.inNetworkExpenses.reduce((sum, entry) => sum + entry.employeeResponsibility, 0)
+                            )}
+                          </strong>
+                        </td>
+                        <td>
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.inNetworkExpenses.reduce((sum, entry) => sum + entry.insuranceResponsibility, 0)
+                            )}
+                          </strong>
+                        </td>
+                        <td>—</td>
+                        <td>—</td>
+                      </tr>
+                    </tfoot>
+                  </Table>
+                </>
+              )}
+
+              {/* Out of Network Expenses Table */}
+              {ledgerData?.ledger.outOfNetworkExpenses && ledgerData.ledger.outOfNetworkExpenses.length > 0 && (
+                <>
+                  <h5 className="mb-3">Out-of-Network Expenses</h5>
+                  <Table striped bordered hover responsive className="mb-4">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th style={{ width: '100px' }}>Billed Amount</th>
+                        <th style={{ width: '80px' }}>Copay</th>
+                        <th style={{ width: '100px' }}>Employee Responsibility</th>
+                        <th style={{ width: '100px' }}>Insurance Responsibility</th>
+                        <th style={{ width: '100px' }}>Deductible Remaining</th>
+                        <th style={{ width: '100px' }}>Out-of-Pocket Remaining</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ledgerData.ledger.outOfNetworkExpenses.map((entry, index) => (
+                        <tr key={index}>
+                          <td>{entry.categoryDisplayName}</td>
+                          <td>{formatCurrency(entry.billedAmount)}</td>
+                          <td>{entry.copay ? formatCurrency(entry.copay) : '—'}</td>
+                          <td className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}>
+                            {formatCurrency(entry.employeeResponsibility)}
+                          </td>
+                          <td>{formatCurrency(entry.insuranceResponsibility)}</td>
+                          <td>{formatCurrency(entry.deductibleRemaining)}</td>
+                          <td>{formatCurrency(entry.outOfPocketRemaining)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-active">
+                        <td><strong>Total Out-of-Network</strong></td>
+                        <td>
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.outOfNetworkExpenses.reduce((sum, entry) => sum + entry.billedAmount, 0)
+                            )}
+                          </strong>
+                        </td>
+                        <td>—</td>
+                        <td className="text-danger">
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.outOfNetworkExpenses.reduce((sum, entry) => sum + entry.employeeResponsibility, 0)
+                            )}
+                          </strong>
+                        </td>
+                        <td>
+                          <strong>
+                            {formatCurrency(
+                              ledgerData.ledger.outOfNetworkExpenses.reduce((sum, entry) => sum + entry.insuranceResponsibility, 0)
+                            )}
+                          </strong>
+                        </td>
+                        <td>—</td>
+                        <td>—</td>
+                      </tr>
+                    </tfoot>
+                  </Table>
+                </>
+              )}
+
+              {/* Final Summary Table */}
+              <h5 className="mb-3">Summary</h5>
+              <Table striped bordered hover responsive>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th style={{ width: '120px' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Annual Premiums</td>
+                    <td className="text-danger">
+                      {formatCurrency(
+                        ledgerData?.ledger.premiums.reduce((sum, entry) => sum + entry.amount, 0) || 0
+                      )}
+                    </td>
+                  </tr>
+                  {ledgerData?.ledger.inNetworkExpenses && ledgerData.ledger.inNetworkExpenses.length > 0 && (
+                    <tr>
+                      <td>In-Network Out-of-Pocket Costs</td>
+                      <td className="text-danger">
+                        {formatCurrency(
+                          ledgerData.ledger.inNetworkExpenses.reduce((sum, entry) => sum + entry.employeeResponsibility, 0)
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  {ledgerData?.ledger.outOfNetworkExpenses && ledgerData.ledger.outOfNetworkExpenses.length > 0 && (
+                    <tr>
+                      <td>Out-of-Network Out-of-Pocket Costs</td>
+                      <td className="text-danger">
+                        {formatCurrency(
+                          ledgerData.ledger.outOfNetworkExpenses.reduce((sum, entry) => sum + entry.employeeResponsibility, 0)
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  {ledgerData?.ledger.contributionsAndSavings && ledgerData.ledger.contributionsAndSavings.length > 0 && (
+                    <tr>
+                      <td>Total Contributions and Savings</td>
+                      <td className="text-success">
+                        -{formatCurrency(
+                          ledgerData.ledger.contributionsAndSavings.reduce((sum, entry) => sum + entry.amount, 0)
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr className="table-active">
+                    <td><strong>Your Total Annual Cost</strong></td>
+                    <td>
+                      <strong className="fs-5">
+                        {formatCurrency(
+                          (ledgerData?.ledger.premiums.reduce((sum, entry) => sum + entry.amount, 0) || 0) +
+                          (ledgerData?.ledger.inNetworkExpenses?.reduce((sum, entry) => sum + entry.employeeResponsibility, 0) || 0) +
+                          (ledgerData?.ledger.outOfNetworkExpenses?.reduce((sum, entry) => sum + entry.employeeResponsibility, 0) || 0) -
+                          (ledgerData?.ledger.contributionsAndSavings?.reduce((sum, entry) => sum + entry.amount, 0) || 0)
+                        )}
+                      </strong>
+                    </td>
+                  </tr>
+                </tfoot>
               </Table>
             </div>
           )}

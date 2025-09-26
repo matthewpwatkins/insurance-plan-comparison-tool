@@ -1,5 +1,7 @@
 import React from 'react';
-import { Badge, Card, Row, Col, Button } from 'react-bootstrap';
+import { Badge, Card, Row, Col } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faListAlt } from '@fortawesome/free-regular-svg-icons';
 import { formatCurrency } from '../utils/formatters';
 import { PlanResult } from '../types';
 
@@ -37,9 +39,19 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
             </Badge>
           )}
         </div>
-        <Badge bg={result.planType === 'HSA' ? 'primary' : 'secondary'} className="fs-6">
-          {result.planType}
-        </Badge>
+        <div className="d-flex align-items-center gap-2">
+          <Badge
+            bg="info"
+            className="fs-6"
+            style={{ cursor: 'pointer' }}
+            onClick={() => onShowWork(result)}
+          >
+            <FontAwesomeIcon icon={faListAlt} />
+          </Badge>
+          <Badge bg={result.planType === 'HSA' ? 'primary' : 'secondary'} className="fs-6">
+            {result.planType}
+          </Badge>
+        </div>
       </Card.Header>
       <Card.Body>
         <Row className="g-3">
@@ -88,15 +100,6 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
             </div>
           </Col>
         </Row>
-        <div className="mt-3 text-center">
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={() => onShowWork(result)}
-          >
-            📋 Show Work
-          </Button>
-        </div>
       </Card.Body>
       </Card>
     </div>
