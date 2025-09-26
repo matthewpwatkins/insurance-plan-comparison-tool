@@ -1,5 +1,5 @@
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
-import { PlanData, HealthPlan, UserInputs, PlanResult, UserCosts } from '../types';
+import { PlanData, HealthPlan, UserInputs, PlanResult, UserCosts, LedgerEntry } from '../types';
 
 /**
  * Calculate costs for all plans given user inputs and plan data
@@ -29,6 +29,16 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
   // Create plan execution to track expenses
   const execution = new PlanExecution(plan, coverage);
 
+  // Add monthly premiums to ledger
+  execution.addMonthlyPremiums(plan.monthly_premiums[coverage]);
+
+  // Add employer contribution to ledger
+  execution.addEmployerContribution(employerContribution);
+
+  // Add tax savings to ledger
+  const contributionType = plan.type === 'HSA' ? 'HSA' : 'FSA';
+  execution.addTaxSavings(taxSavings, contributionType);
+
   // Process all category expenses
   for (const estimate of costs.categoryEstimates) {
     // Process in-network visits
@@ -41,8 +51,8 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
     }
   }
 
-
   const outOfPocketCosts = execution.getTotalOutOfPocket();
+  const ledger = execution.getLedger();
 
   // Calculate total cost (employer contributions reduce total cost as they're free money)
   const totalCost = annualPremiums + outOfPocketCosts - taxSavings - employerContribution;
@@ -63,7 +73,8 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
       employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
       net: totalCost
-    }
+    },
+    ledger
   };
 };
 
@@ -121,10 +132,53 @@ class PlanExecution {
   private coverage: 'single' | 'two_party' | 'family';
   private outOfPocketSpent: number = 0;
   private deductibleSpent: number = 0;
+  private ledger: LedgerEntry[] = [];
 
   constructor(plan: HealthPlan, coverage: 'single' | 'two_party' | 'family') {
     this.plan = plan;
     this.coverage = coverage;
+
+    // Add initial state entry
+    this.addLedgerEntry('Initial state', 0);
+  }
+
+  /**
+   * Add a new entry to the ledger
+   */
+  private addLedgerEntry(description: string, amount: number): void {
+    this.ledger.push({
+      description,
+      amount,
+      deductibleRemaining: this.deductibleRemaining(),
+      outOfPocketRemaining: this.oopRemaining()
+    });
+  }
+
+  /**
+   * Add monthly premium entries to the ledger
+   */
+  addMonthlyPremiums(monthlyPremium: number): void {
+    for (let month = 1; month <= 12; month++) {
+      this.addLedgerEntry(`Monthly premium - Month ${month}`, -monthlyPremium);
+    }
+  }
+
+  /**
+   * Add employer HSA contribution entry to the ledger
+   */
+  addEmployerContribution(amount: number): void {
+    if (amount > 0) {
+      this.addLedgerEntry('Employer HSA contribution', amount);
+    }
+  }
+
+  /**
+   * Add tax savings entry to the ledger
+   */
+  addTaxSavings(amount: number, contributionType: 'HSA' | 'FSA'): void {
+    if (amount > 0) {
+      this.addLedgerEntry(`Tax savings from ${contributionType} contributions`, amount);
+    }
   }
 
   /**
@@ -133,6 +187,9 @@ class PlanExecution {
    */
   recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network'): void {
     if (this.oopRemaining() <= 0) {
+      // Add ledger entry for fully covered visit
+      const networkLabel = network === 'in_network' ? 'In-network' : 'Out-of-network';
+      this.addLedgerEntry(`${networkLabel} service visit (${categoryId}) - fully covered`, 0);
       return; // Already hit out-of-pocket maximum
     }
 
@@ -141,21 +198,35 @@ class PlanExecution {
       return; // No coverage
     }
 
+    const networkLabel = network === 'in_network' ? 'In-network' : 'Out-of-network';
+    let totalOutOfPocket = 0;
+
     // If there's a copay, that's the full out-of-pocket cost for this visit
     const copay = benefits.copay || 0;
     if (copay > 0) {
       const applicableCopay = Math.min(copay, this.oopRemaining());
       this.outOfPocketSpent += applicableCopay;
+      totalOutOfPocket = applicableCopay;
+
+      this.addLedgerEntry(
+        `${networkLabel} service visit (${categoryId}) - copay`,
+        -totalOutOfPocket
+      );
       return; // Copay covers the visit, no deductible or coinsurance applies
     }
 
     let remainingCost = cost;
+    let deductiblePortion = 0;
+    let coinsurancePortion = 0;
 
     // Apply deductible first
     const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
-    this.outOfPocketSpent += applicableDeductible;
-    this.deductibleSpent += applicableDeductible; // Track deductible separately
-    remainingCost -= applicableDeductible;
+    if (applicableDeductible > 0) {
+      this.outOfPocketSpent += applicableDeductible;
+      this.deductibleSpent += applicableDeductible; // Track deductible separately
+      remainingCost -= applicableDeductible;
+      deductiblePortion = applicableDeductible;
+    }
 
     // Apply coinsurance to remaining cost after deductible
     const coinsurance = benefits.coinsurance || 0;
@@ -169,13 +240,32 @@ class PlanExecution {
 
       const applicableCoinsurance = Math.min(coinsuranceAmount, this.oopRemaining());
       this.outOfPocketSpent += applicableCoinsurance;
+      coinsurancePortion = applicableCoinsurance;
     }
+
+    totalOutOfPocket = deductiblePortion + coinsurancePortion;
+
+    // Create descriptive ledger entry
+    let description = `${networkLabel} service visit (${categoryId})`;
+    if (deductiblePortion > 0 && coinsurancePortion > 0) {
+      description += ` - deductible and coinsurance`;
+    } else if (deductiblePortion > 0) {
+      description += ` - deductible`;
+    } else if (coinsurancePortion > 0) {
+      description += ` - coinsurance`;
+    }
+
+    this.addLedgerEntry(description, -totalOutOfPocket);
 
     // Insurance covers the rest
   }
 
   getTotalOutOfPocket(): number {
     return this.outOfPocketSpent;
+  }
+
+  getLedger(): LedgerEntry[] {
+    return [...this.ledger]; // Return a copy
   }
 
   private oopRemaining(): number {

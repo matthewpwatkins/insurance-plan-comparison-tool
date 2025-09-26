@@ -1,3 +1,10 @@
+export interface LedgerEntry {
+  description: string;
+  amount: number; // Positive for income/credits, negative for expenses
+  deductibleRemaining: number;
+  outOfPocketRemaining: number;
+}
+
 export interface PlanResult {
   planName: string;
   planType: 'PPO' | 'HSA';
@@ -15,4 +22,5 @@ export interface PlanResult {
     outOfPocket: number;
     net: number;
   };
+  ledger: LedgerEntry[];
 }
