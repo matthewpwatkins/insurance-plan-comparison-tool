@@ -7,6 +7,7 @@ export interface CategoryEstimate {
   categoryId: string;
   inNetwork: NetworkVisits;
   outOfNetwork: NetworkVisits;
+  notes?: string;
 }
 
 export interface UserCosts {

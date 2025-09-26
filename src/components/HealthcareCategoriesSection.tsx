@@ -53,10 +53,10 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
-  const updateCategoryEstimate = (index: number, network: 'inNetwork' | 'outOfNetwork', value: any) => {
+  const updateCategoryEstimate = (index: number, field: 'inNetwork' | 'outOfNetwork' | 'notes', value: any) => {
     const updatedEstimates = inputs.costs.categoryEstimates.map((est, i) =>
       i === index
-        ? { ...est, [network]: value }
+        ? { ...est, [field]: value }
         : est
     );
     handleCostChange('categoryEstimates', updatedEstimates);
@@ -88,20 +88,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                       <FontAwesomeIcon icon={faTrash} />
                     </Button>
                     <h6 className="mb-0 d-flex align-items-center">
-                      {(() => {
-                        // Calculate instance number when there are multiple instances of same category
-                        const allCategories = inputs.costs.categoryEstimates;
-                        const sameCategoryIndices = allCategories
-                          .map((est, i) => ({ est, originalIndex: i }))
-                          .filter(item => item.est.categoryId === estimate.categoryId);
-
-                        const instanceNumber = sameCategoryIndices.length > 1 ?
-                          sameCategoryIndices.findIndex(item => item.originalIndex === index) + 1 :
-                          null;
-
-                        const baseName = categoriesData[estimate.categoryId]?.name || estimate.categoryId;
-                        return instanceNumber ? `${baseName} #${instanceNumber}` : baseName;
-                      })()}
+                      {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
                       {categoriesData[estimate.categoryId]?.preventive && (
                         <Badge bg="success" className="ms-2">Preventive</Badge>
                       )}
@@ -118,6 +105,19 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     />
                   )}
                 </div>
+
+                {/* Notes Field */}
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    type="text"
+                    placeholder="Optional notes: ex. Jill's allergy medicine"
+                    value={estimate.notes || ''}
+                    maxLength={100}
+                    onChange={(e) => updateCategoryEstimate(index, 'notes', e.target.value)}
+                    style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
+                  />
+                </Form.Group>
+
                 <NetworkVisitsInputRow
                   inNetworkValue={estimate.inNetwork}
                   outOfNetworkValue={estimate.outOfNetwork}
@@ -187,7 +187,8 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                         outOfNetwork: {
                           quantity: 0,
                           costPerVisit: 0
-                        }
+                        },
+                        notes: ''
                       };
                       handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
                       setSelectedCategoryToAdd('');

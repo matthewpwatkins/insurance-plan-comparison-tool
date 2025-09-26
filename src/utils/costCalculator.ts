@@ -44,11 +44,11 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
   for (const estimate of costs.categoryEstimates) {
     // Process in-network visits
     for (let i = 0; i < estimate.inNetwork.quantity; i++) {
-      execution.recordExpense(estimate.categoryId, estimate.inNetwork.costPerVisit, 'in_network');
+      execution.recordExpense(estimate.categoryId, estimate.inNetwork.costPerVisit, 'in_network', estimate.notes);
     }
     // Process out-of-network visits
     for (let i = 0; i < estimate.outOfNetwork.quantity; i++) {
-      execution.recordExpense(estimate.categoryId, estimate.outOfNetwork.costPerVisit, 'out_of_network');
+      execution.recordExpense(estimate.categoryId, estimate.outOfNetwork.costPerVisit, 'out_of_network', estimate.notes);
     }
   }
 
@@ -186,7 +186,7 @@ class PlanExecution {
   /**
    * Record a single expense and calculate the out-of-pocket cost
    */
-  recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network'): void {
+  recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network', notes?: string): void {
     const benefits = this.getCategoryBenefits(categoryId, network);
     if (!benefits) {
       return; // No coverage
@@ -290,7 +290,8 @@ class PlanExecution {
       employeeResponsibility,
       insuranceResponsibility,
       deductibleRemaining: this.deductibleRemaining(),
-      outOfPocketRemaining: this.oopRemaining()
+      outOfPocketRemaining: this.oopRemaining(),
+      notes
     };
 
     // Add to appropriate network expenses array

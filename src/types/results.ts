@@ -23,6 +23,7 @@ export interface ExpenseEntry {
   insuranceResponsibility: number;
   deductibleRemaining: number;
   outOfPocketRemaining: number;
+  notes?: string;
 }
 
 export interface OrganizedLedger {

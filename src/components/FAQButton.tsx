@@ -216,7 +216,12 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                         <tbody>
                           {ledgerData.ledger.inNetworkExpenses.map((entry, index) => (
                             <tr key={index}>
-                              <td>{entry.categoryDisplayName}</td>
+                              <td>
+                                {entry.categoryDisplayName}
+                                {entry.notes && (
+                                  <div className="text-muted small">{entry.notes}</div>
+                                )}
+                              </td>
                               <td>{formatCurrency(entry.billedAmount)}</td>
                               {showCopayColumn && <td>{entry.copay ? formatCurrency(entry.copay) : '—'}</td>}
                               <td className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}>
@@ -285,7 +290,12 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                         <tbody>
                           {ledgerData.ledger.outOfNetworkExpenses.map((entry, index) => (
                             <tr key={index}>
-                              <td>{entry.categoryDisplayName}</td>
+                              <td>
+                                {entry.categoryDisplayName}
+                                {entry.notes && (
+                                  <div className="text-muted small">{entry.notes}</div>
+                                )}
+                              </td>
                               <td>{formatCurrency(entry.billedAmount)}</td>
                               {showCopayColumn && <td>{entry.copay ? formatCurrency(entry.copay) : '—'}</td>}
                               <td className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}>
