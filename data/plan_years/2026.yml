@@ -156,73 +156,12 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-        out_of_network_coverage:
-          coinsurance: 0.3
-      imaging_diagnostic_facility:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
       imaging_diagnostic_professional:
-        in_network_coverage:
-          coinsurance: 0.1
         out_of_network_coverage:
           coinsurance: 0.1
-      hospital_inpatient:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      maternity_inpatient:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      behavioral_mental_health_inpatient:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      imaging_advanced_facility:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
       imaging_advanced_professional:
-        in_network_coverage:
-          coinsurance: 0.1
         out_of_network_coverage:
           coinsurance: 0.1
-      surgery:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      aba_therapy:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      physical_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      occupational_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      speech_therapy_inpatient_eval:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
-      durable_medical_equipment:
-        in_network_coverage:
-          coinsurance: 0.1
-        out_of_network_coverage:
-          coinsurance: 0.3
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   - name: "DMBA PPO 70"
@@ -363,73 +302,12 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-        out_of_network_coverage:
-          coinsurance: 0.5
-      imaging_diagnostic_facility:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
       imaging_diagnostic_professional:
-        in_network_coverage:
-          coinsurance: 0.3
         out_of_network_coverage:
           coinsurance: 0.3
-      hospital_inpatient:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      maternity_inpatient:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      behavioral_mental_health_inpatient:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      imaging_advanced_facility:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
       imaging_advanced_professional:
-        in_network_coverage:
-          coinsurance: 0.3
         out_of_network_coverage:
           coinsurance: 0.3
-      surgery:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      aba_therapy:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      physical_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      occupational_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      speech_therapy_inpatient_eval:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
-      durable_medical_equipment:
-        in_network_coverage:
-          coinsurance: 0.3
-        out_of_network_coverage:
-          coinsurance: 0.5
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   - name: "DMBA HSA 80"
@@ -466,12 +344,6 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-      telemedicine_urgent_care:
-        in_network_coverage:
-          coinsurance: 0.2
-      emergency_room:
-        in_network_coverage:
-          coinsurance: 0.2
       pharmacy_tier_1_retail_30:
         in_network_coverage:
           copay: 10
@@ -509,73 +381,12 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-        out_of_network_coverage:
-          coinsurance: 0.4
-      imaging_diagnostic_facility:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
       imaging_diagnostic_professional:
-        in_network_coverage:
-          coinsurance: 0.2
         out_of_network_coverage:
           coinsurance: 0.2
-      hospital_inpatient:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      maternity_inpatient:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      behavioral_mental_health_inpatient:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      imaging_advanced_facility:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
       imaging_advanced_professional:
-        in_network_coverage:
-          coinsurance: 0.2
         out_of_network_coverage:
           coinsurance: 0.2
-      surgery:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      aba_therapy:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      physical_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      occupational_therapy_inpatient:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      speech_therapy_inpatient_eval:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
-      durable_medical_equipment:
-        in_network_coverage:
-          coinsurance: 0.2
-        out_of_network_coverage:
-          coinsurance: 0.4
 
   # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
   - name: "DMBA HSA 60"
@@ -612,12 +423,6 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-      telemedicine_urgent_care:
-        in_network_coverage:
-          coinsurance: 0.4
-      emergency_room:
-        in_network_coverage:
-          coinsurance: 0.4
       pharmacy_tier_1_retail_30:
         in_network_coverage:
           copay: 15
@@ -655,70 +460,54 @@ plans:
         in_network_coverage:
           copay: 0
           is_free: true
-        out_of_network_coverage:
-          coinsurance: 0.6
-      imaging_diagnostic_facility:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
       imaging_diagnostic_professional:
-        in_network_coverage:
-          coinsurance: 0.4
         out_of_network_coverage:
           coinsurance: 0.4
-      hospital_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      maternity_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      behavioral_mental_health_inpatient:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      imaging_advanced_facility:
-        in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
       imaging_advanced_professional:
-        in_network_coverage:
-          coinsurance: 0.4
         out_of_network_coverage:
           coinsurance: 0.4
-      surgery:
-        in_network_coverage:
-          coinsurance: 0.4
+      behavioral_mental_health_outpatient:
         out_of_network_coverage:
-          coinsurance: 0.6
-      aba_therapy:
-        in_network_coverage:
           coinsurance: 0.4
+      laboratory_outpatient:
         out_of_network_coverage:
-          coinsurance: 0.6
-      physical_therapy_inpatient:
-        in_network_coverage:
           coinsurance: 0.4
+      emergency_room_physician:
         out_of_network_coverage:
-          coinsurance: 0.6
-      occupational_therapy_inpatient:
-        in_network_coverage:
           coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      speech_therapy_inpatient_eval:
+      colonoscopy_colorectal_screening:
         in_network_coverage:
-          coinsurance: 0.4
-        out_of_network_coverage:
-          coinsurance: 0.6
-      durable_medical_equipment:
+          copay: 0
+          is_free: true
+        qty_cap: 1
+      mammograms:
         in_network_coverage:
-          coinsurance: 0.4
+          copay: 0
+          is_free: true
+        qty_cap: 1
+      immunizations:
+        in_network_coverage:
+          copay: 0
+          is_free: true
         out_of_network_coverage:
-          coinsurance: 0.6
+          copay: 0
+          is_free: true
+      acupuncture:
+        qty_cap: 12
+      chiropractic_therapy:
+        qty_cap: 25
+      physical_therapy_outpatient:
+        qty_cap: 25
+      occupational_therapy_outpatient:
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
+      obesity_surgery:
+        qty_cap: 1
+      lifestyle_screenings:
+        cost_cap: 100
+      infertility_ivf:
+        cost_cap: 10000
+      hearing_aids:
+        cost_cap: 1200
+        qty_cap: 2
