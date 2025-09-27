@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
+import { getCompanyTexts, getCompanyData } from '../generated/dataHelpers';
+import { PlanType } from '../types/enums';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
 import { UserInputs, PlanData } from '../types';
@@ -19,7 +21,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   const getEmployerHSAContributionForDisplay = (): number => {
     if (!planData) return 0;
 
-    const hsaPlans = planData.plans.filter(plan => plan.type === 'HSA');
+    const hsaPlans = planData.plans.filter(plan => plan.type === PlanType.HSA);
     if (hsaPlans.length === 0) return 0;
 
     // Get the minimum employer contribution across HSA plans (most conservative)
@@ -33,7 +35,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   const getMaxEmployerHSAContribution = (): number => {
     if (!planData) return 0;
 
-    const hsaPlans = planData.plans.filter(plan => plan.type === 'HSA');
+    const hsaPlans = planData.plans.filter(plan => plan.type === PlanType.HSA);
     if (hsaPlans.length === 0) return 0;
 
     // Get the maximum employer contribution across HSA plans
@@ -53,7 +55,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   
   // Calculate max employee contribution for each HSA plan based on current coverage
   const hsaPlansWithEmployeeMax = planData
-    ? planData.plans.filter(plan => plan.type === 'HSA').map(plan => {
+    ? planData.plans.filter(plan => plan.type === PlanType.HSA).map(plan => {
         const employerContribution = getEmployerHSAContribution(plan, inputs.coverage);
         const employeeMax = Math.max(0, maxTotalHSAContribution - employerContribution);
         return { name: plan.name, employeeMax };
@@ -106,7 +108,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
 
                 <h6><strong>Employer HSA Contributions by Plan:</strong></h6>
                 <ul>
-                  {planData?.plans.filter(plan => plan.type === 'HSA').map(plan => (
+                  {planData?.plans.filter(plan => plan.type === PlanType.HSA).map(plan => (
                     <li key={plan.name}>
                       <strong>{plan.name}:</strong>
                       <ul>
@@ -159,7 +161,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
             <Col md={6} className="mb-3 mb-md-0">
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>HSA <small className="text-muted">({hsaPlansWithEmployeeMax.map(p => `${p.name.replace('DMBA ', '')} Max: $${p.employeeMax.toLocaleString()}`).join(' | ')})</small></span>
+                  <span>HSA <small className="text-muted">({hsaPlansWithEmployeeMax.map(p => `${p.name.replace(`${getCompanyData().company.shortName} `, '')} Max: $${p.employeeMax.toLocaleString()}`).join(' | ')})</small></span>
                   <HelpIcon
                     title="HSA"
                     content={
@@ -194,7 +196,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     title="FSA"
                     content={
                       <div>
-                        <p><strong>If I went with a PPO plan, I'd put this amount in DMBA's FSA.</strong></p>
+                        <p><strong>If I went with a PPO plan, I'd put this amount in {getCompanyTexts().fsaText}.</strong></p>
                         <p>Enter the maximum amount you're willing to contribute from your paycheck to an FSA account.</p>
                         <p><strong>Max: ${maxFSAContribution?.toLocaleString()}</strong> - IRS annual limit for FSA contributions</p>
                         <p>FSAs typically have no employer contributions - this is your personal contribution only.</p>

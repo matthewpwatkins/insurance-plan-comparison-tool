@@ -3,3 +3,5 @@ export * from './plan';
 export * from './user';
 export * from './results';
 export * from './data';
+export * from './company';
+export * from './enums';

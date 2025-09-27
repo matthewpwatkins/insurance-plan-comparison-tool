@@ -10,9 +10,11 @@ export interface PremiumEntry {
   amount: number;
 }
 
+import { NetworkType, PlanType } from './enums';
+
 export interface ExpenseEntry {
   type: 'expense';
-  network: 'in_network' | 'out_of_network';
+  network: NetworkType;
   category: string;
   categoryDisplayName: string;
   isPreventive: boolean;
@@ -35,7 +37,7 @@ export interface OrganizedLedger {
 
 export interface PlanResult {
   planName: string;
-  planType: 'PPO' | 'HSA';
+  planType: PlanType;
   annualPremiums: number;
   userContribution: number;
   employerContribution: number;

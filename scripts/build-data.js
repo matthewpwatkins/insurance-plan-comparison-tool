@@ -48,9 +48,19 @@ if (fs.existsSync(categoriesPath)) {
   console.log('Loaded categories.yml');
 }
 
+// Load company configuration if it exists
+let companyData = {};
+const companyPath = path.join(DATA_DIR, 'company.yml');
+if (fs.existsSync(companyPath)) {
+  const companyContent = fs.readFileSync(companyPath, 'utf8');
+  companyData = yaml.load(companyContent);
+  console.log('Loaded company.yml');
+}
+
 // Generate JSON files
 const planDataFile = path.join(OUTPUT_DIR, 'planDataByYear.json');
 const categoriesFile = path.join(OUTPUT_DIR, 'categoriesData.json');
+const companyFile = path.join(OUTPUT_DIR, 'companyData.json');
 const helpersFile = path.join(OUTPUT_DIR, 'dataHelpers.ts');
 
 // Write JSON files
@@ -60,13 +70,29 @@ console.log(`Generated ${planDataFile}`);
 fs.writeFileSync(categoriesFile, JSON.stringify(categoriesData, null, 2));
 console.log(`Generated ${categoriesFile}`);
 
+fs.writeFileSync(companyFile, JSON.stringify(companyData, null, 2));
+console.log(`Generated ${companyFile}`);
+
+// Process company text templates if they exist
+let processedCompanyTexts = {};
+if (companyData.text && companyData.company) {
+  processedCompanyTexts = {};
+  for (const [key, template] of Object.entries(companyData.text)) {
+    processedCompanyTexts[key] = template
+      .replace(/\{company\.name\}/g, companyData.company.fullName || companyData.company.name)
+      .replace(/\{company\.shortName\}/g, companyData.company.shortName)
+      .replace(/\{company\.fullName\}/g, companyData.company.fullName || companyData.company.name);
+  }
+}
+
 // Generate TypeScript helper functions
 const helpersContent = `// Auto-generated from YAML files - DO NOT EDIT MANUALLY
 // Run 'npm run build-data' to regenerate
 
-import { PlanData, CategoriesData } from '../types';
+import { PlanData, CategoriesData, CompanyData } from '../types';
 import planDataByYear from './planDataByYear.json';
 import categoriesData from './categoriesData.json';
+import companyData from './companyData.json';
 
 /**
  * Get all available years (dynamically discovered from data)
@@ -101,8 +127,22 @@ export const getLatestYear = (): number => {
   return years[0]; // Already sorted descending
 };
 
+/**
+ * Get company configuration data
+ */
+export const getCompanyData = (): CompanyData => {
+  return companyData as CompanyData;
+};
+
+/**
+ * Get processed company text
+ */
+export const getCompanyTexts = (): Record<string, string> => {
+  return ${JSON.stringify(processedCompanyTexts, null, 2)};
+};
+
 // Re-export the data
-export { planDataByYear, categoriesData };
+export { planDataByYear, categoriesData, companyData };
 `;
 
 fs.writeFileSync(helpersFile, helpersContent);

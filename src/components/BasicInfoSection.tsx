@@ -3,7 +3,7 @@ import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { getAvailableDataYears } from '../services/planDataService';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
-import { UserInputs, PlanData } from '../types';
+import { UserInputs, PlanData, CoverageType, AgeGroup, COVERAGE_TYPE_DISPLAY, AGE_GROUP_DISPLAY } from '../types';
 
 interface BasicInfoSectionProps {
   inputs: UserInputs;
@@ -46,9 +46,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                   value={inputs.coverage}
                   onChange={(e) => handleChange('coverage', e.target.value)}
                 >
-                  <option value="single">Single</option>
-                  <option value="two_party">Two Party</option>
-                  <option value="family">Family</option>
+                  <option value={CoverageType.SINGLE}>{COVERAGE_TYPE_DISPLAY[CoverageType.SINGLE]}</option>
+                  <option value={CoverageType.TWO_PARTY}>{COVERAGE_TYPE_DISPLAY[CoverageType.TWO_PARTY]}</option>
+                  <option value={CoverageType.FAMILY}>{COVERAGE_TYPE_DISPLAY[CoverageType.FAMILY]}</option>
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -77,8 +77,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                   value={inputs.ageGroup}
                   onChange={(e) => handleChange('ageGroup', e.target.value)}
                 >
-                  <option value="under_55">Under 55</option>
-                  <option value="55_plus">55+</option>
+                  <option value={AgeGroup.UNDER_55}>{AGE_GROUP_DISPLAY[AgeGroup.UNDER_55]}</option>
+                  <option value={AgeGroup.FIFTY_FIVE_PLUS}>{AGE_GROUP_DISPLAY[AgeGroup.FIFTY_FIVE_PLUS]}</option>
                 </Form.Select>
               </Form.Group>
             </Col>

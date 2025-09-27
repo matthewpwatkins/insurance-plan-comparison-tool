@@ -20,7 +20,7 @@ payroll_tax_rates:
 # Available Health Plans
 plans:
   # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
-  - name: "DMBA HSA 60"
+  - name: "HSA 60"
     type: "HSA"
     employer_hsa_contribution:
       single: 1_525
@@ -138,7 +138,7 @@ plans:
         qty_cap: 50
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
-  - name: "DMBA HSA 80"
+  - name: "HSA 80"
     type: "HSA"
     employer_hsa_contribution:
       single: 850
@@ -215,7 +215,7 @@ plans:
           copay: 230
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
-  - name: "DMBA PPO 70"
+  - name: "PPO 70"
     type: "PPO"
     monthly_premiums:
       single: 109.20
@@ -358,7 +358,7 @@ plans:
           copay: 60
 
   # PPO 90 Plan - High premium, low out-of-pocket costs
-  - name: "DMBA PPO 90"
+  - name: "PPO 90"
     type: "PPO"
     monthly_premiums:
       single: 302.00

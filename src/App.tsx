@@ -10,16 +10,17 @@ import ResultsTable from './components/ResultsTable';
 import NavigationHeader from './components/NavigationHeader';
 import { FAQButtonRef } from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
+import { getCompanyTexts } from './generated/dataHelpers';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL, copyURLToClipboard } from './utils/urlParams';
-import { PlanData, UserInputs, PlanResult } from './types';
+import { PlanData, UserInputs, PlanResult, CoverageType, AgeGroup } from './types';
 
 function App() {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [userInputs, setUserInputs] = useState<UserInputs>({
     year: getDefaultYear(),
-    coverage: 'family',
-    ageGroup: 'under_55',
+    coverage: CoverageType.FAMILY,
+    ageGroup: AgeGroup.UNDER_55,
     taxRate: 21.7,
     costs: {
       categoryEstimates: []
@@ -162,7 +163,7 @@ function App() {
               </Button>
               <p className="mb-0 text-muted pe-5">
                 <strong>Welcome to open enrollment!</strong> Finding the perfect health plan doesn't have to be overwhelming.
-                This tool makes it easy to compare all your DMBA health plan options and see which one could save you the most money.
+                {getCompanyTexts().welcomeMessage}
                 Just enter your expected healthcare costs, and we'll crunch the numbers for you - including premiums, deductibles,
                 tax savings, and employer contributions. Let's find your perfect plan!
               </p>

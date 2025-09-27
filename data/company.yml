@@ -1,0 +1,31 @@
+# Company Configuration
+# This file contains company-specific settings that can be customized
+# for different insurance providers without modifying the source code
+
+company:
+  name: "DMBA"
+  fullName: "Delta Mutual Benefits Association"
+  shortName: "DMBA"
+  website: "https://www.dmba.com"
+
+  # Links to company-specific resources
+  links:
+    claimsPortal: "https://www.dmba.com/sc/medical/HealthClaims.aspx?type=medical"
+    memberPortal: "https://www.dmba.com"
+    customerService: "https://www.dmba.com/contact"
+
+  # FSA provider information
+  fsaProvider:
+    name: "DMBA"
+
+  # Branding (optional)
+  branding:
+    primaryColor: "#0066cc"
+
+# Application-specific text that references the company
+text:
+  appTitle: "{company.name} Health Plan Comparison Tool"
+  welcomeMessage: "Welcome to open enrollment! Finding the perfect health plan doesn't have to be overwhelming. This tool makes it easy to compare all your {company.name} health plan options and see which one could save you the most money."
+  negotiatedRateText: "{company.shortName}-negotiated rate"
+  fsaText: "{company.name}'s FSA"
+  hsaRetainedBenefitText: "even when you're no longer on {company.name}'s plans"

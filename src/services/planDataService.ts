@@ -1,4 +1,4 @@
-import { getPlanData, getAvailableYears, getLatestYear } from '../generated/dataHelpers';
+import { getPlanData, getAvailableYears, getLatestYear, getCompanyData } from '../generated/dataHelpers';
 import { PlanData, HealthPlan } from '../types';
 
 /**
@@ -11,6 +11,17 @@ export const loadPlanData = (year: number): PlanData => {
     // Validate the structure
     if (!planData || !planData.plans || !Array.isArray(planData.plans)) {
       throw new Error('Invalid plan data structure');
+    }
+
+    // Add company prefix to plan names if not already present
+    const companyData = getCompanyData();
+    const companyPrefix = companyData.company?.shortName;
+
+    if (companyPrefix) {
+      planData.plans = planData.plans.map(plan => ({
+        ...plan,
+        name: plan.name.startsWith(companyPrefix) ? plan.name : `${companyPrefix} ${plan.name}`
+      }));
     }
 
     return planData;

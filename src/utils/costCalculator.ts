@@ -1,4 +1,5 @@
 import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
+import { PlanType, NetworkType, ContributionType } from '../types/enums';
 import { getCategoriesData } from '../generated/dataHelpers';
 import { PlanData, HealthPlan, UserInputs, PlanResult, OrganizedLedger, ContributionEntry, PremiumEntry, ExpenseEntry } from '../types';
 
@@ -38,13 +39,13 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
   execution.addEmployerContribution(employerContribution);
 
   // Add tax savings to ledger
-  const contributionType = plan.type === 'HSA' ? 'HSA' : 'FSA';
+  const contributionType = plan.type === PlanType.HSA ? ContributionType.HSA : ContributionType.FSA;
   execution.addTaxSavings(taxSavings, contributionType);
 
   // Process all category expenses
   for (const categoryEstimate of costs.categoryEstimates) {
     const { estimate } = categoryEstimate;
-    const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
+    const network = estimate.isInNetwork ? NetworkType.IN_NETWORK : NetworkType.OUT_OF_NETWORK;
 
     // Check for quantity cap for this category
     const quantityCap = execution.getCategoryQuantityCap(categoryEstimate.categoryId, network);
@@ -111,7 +112,7 @@ const calculateContributionsAndTaxSavings = (
   let employerContribution = 0;
   let taxSavings = 0;
 
-  if (plan.type === 'HSA') {
+  if (plan.type === PlanType.HSA) {
     // HSA plans
     employerContribution = getEmployerHSAContribution(plan, coverage);
     const maxHSAContribution = getMaxHSAContribution(planData, coverage, ageGroup);
@@ -186,7 +187,7 @@ class PlanExecution {
   /**
    * Add tax savings entry to the ledger
    */
-  addTaxSavings(amount: number, contributionType: 'HSA' | 'FSA'): void {
+  addTaxSavings(amount: number, contributionType: ContributionType): void {
     if (amount > 0) {
       this.contributionsAndSavings.push({
         type: 'savings',
@@ -199,7 +200,7 @@ class PlanExecution {
   /**
    * Record a single expense and calculate the out-of-pocket cost
    */
-  recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network', notes?: string): void {
+  recordExpense(categoryId: string, cost: number, network: NetworkType = NetworkType.IN_NETWORK, notes?: string): void {
     const benefits = this.getCategoryBenefits(categoryId, network);
     if (!benefits) {
       return; // No coverage
@@ -240,7 +241,7 @@ class PlanExecution {
   /**
    * Internal method to record expense with normal benefit processing
    */
-  private _recordExpenseInternal(categoryId: string, cost: number, network: 'in_network' | 'out_of_network', notes: string | undefined, benefits: any): void {
+  private _recordExpenseInternal(categoryId: string, cost: number, network: NetworkType, notes: string | undefined, benefits: any): void {
 
     // Get category information
     const categoryInfo = this.categoriesData[categoryId];
@@ -261,7 +262,7 @@ class PlanExecution {
     } else if (benefits.copay && benefits.copay > 0) {
       // For HSA plans, prescription copays only apply AFTER deductible is met
       const isPrescription = categoryId.startsWith('pharmacy_');
-      const isHSAPlan = this.plan.type === 'HSA';
+      const isHSAPlan = this.plan.type === PlanType.HSA;
 
       if (isHSAPlan && isPrescription && this.deductibleRemaining() > 0) {
         // HSA plan with prescriptions: apply deductible first, then copay
@@ -347,7 +348,7 @@ class PlanExecution {
     };
 
     // Add to appropriate network expenses array
-    if (network === 'in_network') {
+    if (network === NetworkType.IN_NETWORK) {
       this.inNetworkExpenses.push(expenseEntry);
     } else {
       this.outOfNetworkExpenses.push(expenseEntry);
@@ -379,7 +380,7 @@ class PlanExecution {
   /**
    * Get the quantity cap for a category and network
    */
-  getCategoryQuantityCap(categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined {
+  getCategoryQuantityCap(categoryId: string, network: NetworkType): number | undefined {
     // Check category-specific caps first
     const categoryBenefits = this.plan.categories[categoryId];
     if (categoryBenefits?.qty_cap !== undefined) {
@@ -398,7 +399,7 @@ class PlanExecution {
   /**
    * Get the cost cap for a category and network
    */
-  getCategoryCostCap(categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined {
+  getCategoryCostCap(categoryId: string, network: NetworkType): number | undefined {
     // Check category-specific caps first
     const categoryBenefits = this.plan.categories[categoryId];
     if (categoryBenefits?.cost_cap !== undefined) {
@@ -417,7 +418,7 @@ class PlanExecution {
   /**
    * Record an expense that exceeds caps (user pays 100% out of pocket)
    */
-  recordCappedExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network', notes?: string, capType?: 'quantity' | 'cost'): void {
+  recordCappedExpense(categoryId: string, cost: number, network: NetworkType = NetworkType.IN_NETWORK, notes?: string, capType?: 'quantity' | 'cost'): void {
     // Get category information
     const categoryInfo = this.categoriesData[categoryId];
     const categoryDisplayName = categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
@@ -449,7 +450,7 @@ class PlanExecution {
     };
 
     // Add to appropriate network expenses array
-    if (network === 'in_network') {
+    if (network === NetworkType.IN_NETWORK) {
       this.inNetworkExpenses.push(expenseEntry);
     } else {
       this.outOfNetworkExpenses.push(expenseEntry);
@@ -470,7 +471,7 @@ class PlanExecution {
     // Check if this category has specific benefits
     const categoryBenefits = categoryId !== 'other' ? this.plan.categories[categoryId] : undefined;
     if (categoryBenefits) {
-      if (network === 'in_network') {
+      if (network === NetworkType.IN_NETWORK) {
         return categoryBenefits.in_network_coverage;
       } else {
         return categoryBenefits.out_of_network_coverage;
@@ -478,7 +479,7 @@ class PlanExecution {
     }
 
     // Fall back to default plan coverage (for "other" costs or unknown categories)
-    if (network === 'in_network') {
+    if (network === NetworkType.IN_NETWORK) {
       return this.plan.default.in_network_coverage;
     } else {
       return this.plan.default.out_of_network_coverage;

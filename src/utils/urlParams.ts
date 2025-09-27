@@ -1,4 +1,4 @@
-import { UserInputs, PartialUserInputs } from '../types';
+import { UserInputs, PartialUserInputs, CoverageType, AgeGroup } from '../types';
 
 interface URLParamsResult extends PartialUserInputs {
   showResults?: boolean;
@@ -40,14 +40,14 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
 
   // Parse coverage
   const coverage = searchParams.get('coverage');
-  if (coverage && ['single', 'two_party', 'family'].includes(coverage)) {
-    updates.coverage = coverage as 'single' | 'two_party' | 'family';
+  if (coverage && Object.values(CoverageType).includes(coverage as CoverageType)) {
+    updates.coverage = coverage as CoverageType;
   }
 
   // Parse age group
   const ageGroup = searchParams.get('ageGroup');
-  if (ageGroup && ['under_55', '55_plus'].includes(ageGroup)) {
-    updates.ageGroup = ageGroup as 'under_55' | '55_plus';
+  if (ageGroup && Object.values(AgeGroup).includes(ageGroup as AgeGroup)) {
+    updates.ageGroup = ageGroup as AgeGroup;
   }
 
   // Parse tax rate

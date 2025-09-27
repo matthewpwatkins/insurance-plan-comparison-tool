@@ -4,6 +4,7 @@ import BasicInfoSection from './BasicInfoSection';
 import HSAFSASection from './HSAFSASection';
 import HealthcareCategoriesSection from './HealthcareCategoriesSection';
 import { UserInputs, PlanData } from '../types';
+import { getCompanyTexts } from '../generated/dataHelpers';
 
 interface CostInputFormProps {
   inputs: UserInputs;
@@ -30,7 +31,7 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
       <div className="mb-4">
         <h3>Annual Cost Estimates</h3>
         <p className="text-muted mb-4">
-          No way around it, you have to use your magic ball now. Don't fret about getting it exact, just take a guess and use your previous health history and EOBs to estimate how many times you'll need each service and how much is the DMBA-negotiated rate on average.
+          No way around it, you have to use your magic ball now. Don't fret about getting it exact, just take a guess and use your previous health history and EOBs to estimate how many times you'll need each service and how much is the {getCompanyTexts().negotiatedRateText} on average.
         </p>
         <Form>
           <HealthcareCategoriesSection

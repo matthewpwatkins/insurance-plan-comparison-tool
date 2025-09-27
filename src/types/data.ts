@@ -1,4 +1,5 @@
 import { HealthPlan } from './plan';
+import { CompanyData } from './company';
 
 export interface HSAContributionLimits {
   single_coverage: number;
@@ -21,4 +22,5 @@ export interface PlanData {
   fsa_contribution_limits: FSAContributionLimits;
   payroll_tax_rates: PayrollTaxRates;
   plans: HealthPlan[];
+  company?: CompanyData;
 }

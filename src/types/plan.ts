@@ -47,9 +47,11 @@ export interface Category {
   notes?: string[];
 }
 
+import { PlanType } from './enums';
+
 export interface HealthPlan {
   name: string;
-  type: 'PPO' | 'HSA';
+  type: PlanType;
   monthly_premiums: PlanPremiums;
   annual_deductible: PlanDeductible;
   out_of_pocket_maximum: PlanOutOfPocket;

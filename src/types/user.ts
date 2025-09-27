@@ -14,10 +14,12 @@ export interface UserCosts {
   categoryEstimates: CategoryEstimate[];
 }
 
+import { CoverageType, AgeGroup } from './enums';
+
 export interface UserInputs {
   year: number;
-  coverage: 'single' | 'two_party' | 'family';
-  ageGroup: 'under_55' | '55_plus';
+  coverage: CoverageType;
+  ageGroup: AgeGroup;
   taxRate: number;
   costs: UserCosts;
   hsaContribution: number;

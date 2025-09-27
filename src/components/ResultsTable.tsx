@@ -3,7 +3,7 @@ import { Badge, Card, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faList } from '@fortawesome/free-solid-svg-icons';
 import { formatCurrency } from '../utils/formatters';
-import { PlanResult } from '../types';
+import { PlanResult, PlanType, PLAN_TYPE_DISPLAY } from '../types';
 
 interface ResultsTableProps {
   results: PlanResult[];
@@ -48,7 +48,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
           >
             <FontAwesomeIcon icon={faList} />
           </Badge>
-          <Badge bg={result.planType === 'HSA' ? 'primary' : 'secondary'} className="fs-6">
+          <Badge bg={PLAN_TYPE_DISPLAY[result.planType].badgeColor} className="fs-6">
             {result.planType}
           </Badge>
         </div>
@@ -65,7 +65,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
           </Col>
           <Col xs={6} md={4} lg={3}>
             <small className="text-muted d-block">
-              Your {result.planType === 'HSA' ? 'HSA' : 'FSA'} Contribution
+              Your {result.planType === PlanType.HSA ? 'HSA' : 'FSA'} Contribution
             </small>
             <div className="fw-semibold text-success fs-6">
               {result.userContribution > 0 ? (
