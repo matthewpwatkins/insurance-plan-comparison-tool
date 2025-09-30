@@ -92,7 +92,8 @@ function App() {
     if (hasCalculatedOnce && isInitialized) {
       setResultsOutOfDate(true);
     }
-  }, [userInputs, isInitialized, hasCalculatedOnce]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInputs, isInitialized]); // Don't include hasCalculatedOnce to avoid marking as out-of-date immediately after calculation
 
   const handleInputChange = (newInputs: Partial<UserInputs>) => {
     setUserInputs(prev => ({ ...prev, ...newInputs }));
