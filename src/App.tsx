@@ -22,10 +22,10 @@ function App() {
     ageGroup: 'under_55',
     taxRate: 21.7,
     costs: {
-      categoryEstimates: []
+      categoryEstimates: [],
     },
     hsaContribution: 0,
-    fsaContribution: 0
+    fsaContribution: 0,
   });
   const [results, setResults] = useState<PlanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +54,10 @@ function App() {
         if (urlParams.coverage !== undefined) merged.coverage = urlParams.coverage;
         if (urlParams.ageGroup !== undefined) merged.ageGroup = urlParams.ageGroup;
         if (urlParams.taxRate !== undefined) merged.taxRate = urlParams.taxRate;
-        if (urlParams.hsaContribution !== undefined) merged.hsaContribution = urlParams.hsaContribution;
-        if (urlParams.fsaContribution !== undefined) merged.fsaContribution = urlParams.fsaContribution;
+        if (urlParams.hsaContribution !== undefined)
+          merged.hsaContribution = urlParams.hsaContribution;
+        if (urlParams.fsaContribution !== undefined)
+          merged.fsaContribution = urlParams.fsaContribution;
 
         // Handle nested costs object properly
         if (urlParams.costs) {
@@ -74,7 +76,6 @@ function App() {
     setIsInitialized(true);
   }, []);
 
-
   // Load plan data on component mount and when year changes
   useEffect(() => {
     try {
@@ -91,7 +92,7 @@ function App() {
     if (hasCalculatedOnce && isInitialized) {
       setResultsOutOfDate(true);
     }
-  }, [userInputs, isInitialized]);
+  }, [userInputs, isInitialized, hasCalculatedOnce]);
 
   const handleInputChange = (newInputs: Partial<UserInputs>) => {
     setUserInputs(prev => ({ ...prev, ...newInputs }));
@@ -140,88 +141,93 @@ function App() {
       handleComparePlans();
       setShouldAutoShowResults(false); // Reset flag after triggering
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoShowResults, planData, isInitialized, hasCalculatedOnce]);
 
   return (
     <div className="d-flex flex-column min-vh-100">
       <Container className="mt-4 flex-grow-1">
-      <Row>
-        <Col>
-          <NavigationHeader onFAQRef={(ref) => faqButtonRef.current = ref} />
+        <Row>
+          <Col>
+            <NavigationHeader onFAQRef={ref => (faqButtonRef.current = ref)} />
 
-          {!isHelpTextDismissed && (
-            <div className="mb-4 p-3 bg-light rounded position-relative">
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                className="position-absolute top-0 end-0 mt-2 me-2"
-                onClick={handleDismissHelpText}
-                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-              >
-                ×
-              </Button>
-              <p className="mb-0 text-muted pe-5">
-                <strong>Welcome to open enrollment!</strong> Finding the perfect health plan doesn't have to be overwhelming.
-                This tool makes it easy to compare all your DMBA health plan options and see which one could save you the most money.
-                Just enter your expected healthcare costs, and we'll crunch the numbers for you - including premiums, deductibles,
-                tax savings, and employer contributions. Let's find your perfect plan!
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <Alert variant="danger" className="mb-4">
-              {error}
-            </Alert>
-          )}
-
-          <CostInputForm
-            inputs={userInputs}
-            onChange={handleInputChange}
-            planData={planData}
-          />
-
-          <div className="mt-4">
-            <Button
-              variant="success"
-              size="lg"
-              onClick={handleComparePlans}
-              disabled={!planData}
-              className="w-100 mb-3"
-            >Compare <FontAwesomeIcon icon={faArrowDown} /></Button>
-            {resultsOutOfDate && hasCalculatedOnce && (
-              <div className="text-center">
-                <span className="text-warning">
-                  ⚠️ Results are out of date. Click the Compare button to recalculate
-                </span>
+            {!isHelpTextDismissed && (
+              <div className="mb-4 p-3 bg-light rounded position-relative">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  className="position-absolute top-0 end-0 mt-2 me-2"
+                  onClick={handleDismissHelpText}
+                  style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                >
+                  ×
+                </Button>
+                <p className="mb-0 text-muted pe-5">
+                  <strong>Welcome to open enrollment!</strong> Finding the perfect health plan
+                  doesn't have to be overwhelming. This tool makes it easy to compare all your DMBA
+                  health plan options and see which one could save you the most money. Just enter
+                  your expected healthcare costs, and we'll crunch the numbers for you - including
+                  premiums, deductibles, tax savings, and employer contributions. Let's find your
+                  perfect plan!
+                </p>
               </div>
             )}
-          </div>
 
-          {results.length > 0 && (
-            <div className="mt-4" style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2 className="mb-0">Plan Comparison Results</h2>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={handleShare}
-                  className="d-flex align-items-center gap-2"
-                >
-                  <FontAwesomeIcon icon={faShare} />
-                  Share Results
-                </Button>
-              </div>
-              {results.length > 1 && (
-                <Alert variant="success" className="mb-3">
-                  <strong>💰 Great news!</strong> You could save at least <strong>${Math.round(results[1].totalCost - results[0].totalCost).toLocaleString()}</strong> this year by choosing {results[0].planName}.
-                </Alert>
+            {error && (
+              <Alert variant="danger" className="mb-4">
+                {error}
+              </Alert>
+            )}
+
+            <CostInputForm inputs={userInputs} onChange={handleInputChange} planData={planData} />
+
+            <div className="mt-4">
+              <Button
+                variant="success"
+                size="lg"
+                onClick={handleComparePlans}
+                disabled={!planData}
+                className="w-100 mb-3"
+              >
+                Compare <FontAwesomeIcon icon={faArrowDown} />
+              </Button>
+              {resultsOutOfDate && hasCalculatedOnce && (
+                <div className="text-center">
+                  <span className="text-warning">
+                    ⚠️ Results are out of date. Click the Compare button to recalculate
+                  </span>
+                </div>
               )}
-              <ResultsTable results={results} onShowWork={handleShowWork} />
             </div>
-          )}
-        </Col>
-      </Row>
+
+            {results.length > 0 && (
+              <div className="mt-4" style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h2 className="mb-0">Plan Comparison Results</h2>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={handleShare}
+                    className="d-flex align-items-center gap-2"
+                  >
+                    <FontAwesomeIcon icon={faShare} />
+                    Share Results
+                  </Button>
+                </div>
+                {results.length > 1 && (
+                  <Alert variant="success" className="mb-3">
+                    <strong>💰 Great news!</strong> You could save at least{' '}
+                    <strong>
+                      ${Math.round(results[1].totalCost - results[0].totalCost).toLocaleString()}
+                    </strong>{' '}
+                    this year by choosing {results[0].planName}.
+                  </Alert>
+                )}
+                <ResultsTable results={results} onShowWork={handleShowWork} />
+              </div>
+            )}
+          </Col>
+        </Row>
       </Container>
 
       <footer className="mt-auto py-4 border-top text-center text-muted bg-light">
@@ -236,18 +242,26 @@ function App() {
             >
               Matthew Watkins
             </a>
-            , 2025 • <a
+            , 2025 •{' '}
+            <a
               href="https://github.com/matthewpwatkins/insurance-plan-comparison-tool"
               target="_blank"
               rel="noopener noreferrer"
               className="text-decoration-none"
-            ><FontAwesomeIcon icon={faGithub} className="me-1" />Source</a>
+            >
+              <FontAwesomeIcon icon={faGithub} className="me-1" />
+              Source
+            </a>
           </p>
         </Container>
       </footer>
 
       {/* Toast for Share Feedback */}
-      <ToastContainer position="top-end" className="position-fixed" style={{ top: '20px', right: '20px', zIndex: 9999 }}>
+      <ToastContainer
+        position="top-end"
+        className="position-fixed"
+        style={{ top: '20px', right: '20px', zIndex: 9999 }}
+      >
         <Toast
           show={showShareToast}
           onClose={() => setShowShareToast(false)}
@@ -255,9 +269,7 @@ function App() {
           autohide
           bg="success"
         >
-          <Toast.Body className="text-white">
-            {shareToastMessage}
-          </Toast.Body>
+          <Toast.Body className="text-white">{shareToastMessage}</Toast.Body>
         </Toast>
       </ToastContainer>
     </div>

@@ -1,5 +1,11 @@
 import { calculateAllPlans, calculatePlanCost } from '../costCalculator';
-import { PlanData, HealthPlan, UserInputs, UserCosts } from '../../types';
+import { PlanData, HealthPlan, UserInputs } from '../../types';
+
+import {
+  getMaxHSAContribution,
+  getMaxFSAContribution,
+  getEmployerHSAContribution,
+} from '../../services/planDataService';
 
 // Mock the planDataService
 jest.mock('../../services/planDataService', () => ({
@@ -8,11 +14,15 @@ jest.mock('../../services/planDataService', () => ({
   getEmployerHSAContribution: jest.fn(),
 }));
 
-import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../../services/planDataService';
-
-const mockGetMaxHSAContribution = getMaxHSAContribution as jest.MockedFunction<typeof getMaxHSAContribution>;
-const mockGetMaxFSAContribution = getMaxFSAContribution as jest.MockedFunction<typeof getMaxFSAContribution>;
-const mockGetEmployerHSAContribution = getEmployerHSAContribution as jest.MockedFunction<typeof getEmployerHSAContribution>;
+const mockGetMaxHSAContribution = getMaxHSAContribution as jest.MockedFunction<
+  typeof getMaxHSAContribution
+>;
+const mockGetMaxFSAContribution = getMaxFSAContribution as jest.MockedFunction<
+  typeof getMaxFSAContribution
+>;
+const mockGetEmployerHSAContribution = getEmployerHSAContribution as jest.MockedFunction<
+  typeof getEmployerHSAContribution
+>;
 
 describe('costCalculator', () => {
   beforeEach(() => {
@@ -544,7 +554,8 @@ describe('costCalculator', () => {
 
       // Should have 12 monthly premium entries
       const premiumEntries = result.ledger.filter(entry =>
-        entry.description.startsWith('Monthly premium - Month'));
+        entry.description.startsWith('Monthly premium - Month')
+      );
       expect(premiumEntries).toHaveLength(12);
 
       // Each premium should be negative (cost)
@@ -557,8 +568,9 @@ describe('costCalculator', () => {
     it('should track employer HSA contribution for HSA plans', () => {
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
 
-      const employerContribEntry = result.ledger.find(entry =>
-        entry.description === 'Employer HSA contribution');
+      const employerContribEntry = result.ledger.find(
+        entry => entry.description === 'Employer HSA contribution'
+      );
       expect(employerContribEntry).toBeDefined();
       expect(employerContribEntry!.amount).toBe(500);
     });
@@ -567,15 +579,17 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       const employerContribEntry = result.ledger.find(entry =>
-        entry.description.includes('Employer HSA contribution'));
+        entry.description.includes('Employer HSA contribution')
+      );
       expect(employerContribEntry).toBeUndefined();
     });
 
     it('should track tax savings for FSA plans', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
-      const taxSavingsEntry = result.ledger.find(entry =>
-        entry.description === 'Tax savings from FSA contributions');
+      const taxSavingsEntry = result.ledger.find(
+        entry => entry.description === 'Tax savings from FSA contributions'
+      );
       expect(taxSavingsEntry).toBeDefined();
       expect(taxSavingsEntry!.amount).toBeGreaterThan(0);
     });
@@ -583,8 +597,9 @@ describe('costCalculator', () => {
     it('should track tax savings for HSA plans', () => {
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
 
-      const taxSavingsEntry = result.ledger.find(entry =>
-        entry.description === 'Tax savings from HSA contributions');
+      const taxSavingsEntry = result.ledger.find(
+        entry => entry.description === 'Tax savings from HSA contributions'
+      );
       expect(taxSavingsEntry).toBeDefined();
       expect(taxSavingsEntry!.amount).toBeGreaterThan(0);
     });
@@ -594,7 +609,8 @@ describe('costCalculator', () => {
 
       // Should have entries for office visits (copay)
       const visitEntries = result.ledger.filter(entry =>
-        entry.description.includes('service visit (office_visit_pcp)'));
+        entry.description.includes('service visit (office_visit_pcp)')
+      );
       expect(visitEntries.length).toBe(2); // 2 visits in mockUserInputs
 
       visitEntries.forEach(entry => {
@@ -627,7 +643,8 @@ describe('costCalculator', () => {
 
       // Find the service visit entry
       const visitEntry = result.ledger.find(entry =>
-        entry.description.includes('service visit (test_category)'));
+        entry.description.includes('service visit (test_category)')
+      );
       expect(visitEntry).toBeDefined();
 
       // Deductible should be reduced by the visit cost
@@ -639,12 +656,13 @@ describe('costCalculator', () => {
 
       // Find visit entries and check OOP remaining decreases
       const visitEntries = result.ledger.filter(entry =>
-        entry.description.includes('service visit'));
+        entry.description.includes('service visit')
+      );
 
-      if (visitEntries.length > 0) {
-        const firstVisit = visitEntries[0];
-        expect(firstVisit.outOfPocketRemaining).toBeLessThan(5000);
-      }
+      // Verify that visit entries exist and OOP decreases
+      expect(visitEntries.length).toBeGreaterThan(0);
+      const firstVisit = visitEntries[0];
+      expect(firstVisit.outOfPocketRemaining).toBeLessThan(5000);
     });
 
     it('should track mixed copay and deductible scenarios', () => {
@@ -670,8 +688,7 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mixedUserInputs);
 
       // Should have copay entry
-      const copayEntry = result.ledger.find(entry =>
-        entry.description.includes('copay'));
+      const copayEntry = result.ledger.find(entry => entry.description.includes('copay'));
       expect(copayEntry).toBeDefined();
       expect(copayEntry!.amount).toBe(-25);
 
@@ -702,7 +719,8 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, coinsuranceUserInputs);
 
       const visitEntry = result.ledger.find(entry =>
-        entry.description.includes('service visit (test_category)'));
+        entry.description.includes('service visit (test_category)')
+      );
       expect(visitEntry).toBeDefined();
 
       // Should show deductible and coinsurance
@@ -723,8 +741,9 @@ describe('costCalculator', () => {
       expect(result.ledger[12].description).toBe('Monthly premium - Month 12');
 
       // Employer contribution should come after premiums
-      const employerEntry = result.ledger.find(entry =>
-        entry.description === 'Employer HSA contribution');
+      const employerEntry = result.ledger.find(
+        entry => entry.description === 'Employer HSA contribution'
+      );
       const employerIndex = result.ledger.indexOf(employerEntry!);
       expect(employerIndex).toBeGreaterThan(12);
     });
@@ -746,7 +765,8 @@ describe('costCalculator', () => {
 
       // Should not have service visit entries
       const visitEntries = result.ledger.filter(entry =>
-        entry.description.includes('service visit'));
+        entry.description.includes('service visit')
+      );
       expect(visitEntries).toHaveLength(0);
     });
   });

@@ -18,7 +18,7 @@ const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   onChange,
   min = 0,
   max,
-  step = 1,
+  step: _step = 1,
   required = false,
   placeholder = '',
   ...props

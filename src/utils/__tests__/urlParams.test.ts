@@ -249,7 +249,7 @@ describe('urlParams', () => {
       searchParams.set('fsaContribution', '1500.25');
       const result = urlParamsToUserInputs(searchParams);
 
-      expect(result.hsaContribution).toBe(2000.50);
+      expect(result.hsaContribution).toBe(2000.5);
       expect(result.fsaContribution).toBe(1500.25);
     });
 
@@ -305,7 +305,10 @@ describe('urlParams', () => {
       const result = await copyURLToClipboard(mockUserInputs);
 
       expect(result).toBe(false);
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to copy URL to clipboard:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to copy URL to clipboard:',
+        expect.any(Error)
+      );
 
       consoleSpy.mockRestore();
     });
@@ -441,7 +444,7 @@ describe('urlParams', () => {
       expect(parsedInputs.costs).toBeDefined();
       expect(parsedInputs.costs!.categoryEstimates).toBeDefined();
       expect(parsedInputs.costs!.categoryEstimates).toHaveLength(2);
-      
+
       const firstCategory = parsedInputs.costs!.categoryEstimates![0];
       expect(firstCategory.categoryId).toBe('primary_care');
       expect(firstCategory.inNetwork.quantity).toBe(3);

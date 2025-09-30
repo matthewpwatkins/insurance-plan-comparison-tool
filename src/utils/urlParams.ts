@@ -22,7 +22,6 @@ export const userInputsToURLParams = (inputs: UserInputs): URLSearchParams => {
     params.set('categoryEstimates', JSON.stringify(inputs.costs.categoryEstimates));
   }
 
-
   return params;
 };
 
@@ -59,7 +58,6 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
     }
   }
 
-
   // Parse HSA contribution
   const hsaContribution = searchParams.get('hsaContribution');
   if (hsaContribution) {
@@ -87,13 +85,14 @@ export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsR
     try {
       const categoryEstimates = JSON.parse(categoryEstimatesParam);
       if (Array.isArray(categoryEstimates)) {
-        updates.costs.categoryEstimates = categoryEstimates.filter(estimate =>
-          estimate &&
-          typeof estimate.categoryId === 'string' &&
-          estimate.estimate &&
-          typeof estimate.estimate.quantity === 'number' &&
-          typeof estimate.estimate.costPerVisit === 'number' &&
-          typeof estimate.estimate.isInNetwork === 'boolean'
+        updates.costs.categoryEstimates = categoryEstimates.filter(
+          estimate =>
+            estimate &&
+            typeof estimate.categoryId === 'string' &&
+            estimate.estimate &&
+            typeof estimate.estimate.quantity === 'number' &&
+            typeof estimate.estimate.costPerVisit === 'number' &&
+            typeof estimate.estimate.isInNetwork === 'boolean'
         );
       }
     } catch (error) {

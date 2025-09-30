@@ -25,16 +25,16 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
 
       {/* Desktop Navigation */}
       <div className="d-none d-md-flex align-items-center gap-3">
-        <a
-          href="#"
-          className="nav-link text-primary text-decoration-none"
-          onClick={(e) => {
+        <button
+          type="button"
+          className="btn btn-link nav-link text-primary text-decoration-none p-0"
+          onClick={e => {
             e.preventDefault();
             faqRef.current?.openFAQ();
           }}
         >
           FAQ
-        </a>
+        </button>
       </div>
 
       {/* Mobile Hamburger Menu */}
@@ -45,7 +45,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
           className="border-0 p-1"
           style={{
             background: 'transparent',
-            boxShadow: 'none'
+            boxShadow: 'none',
           }}
         >
           <FontAwesomeIcon icon={faBars} />
@@ -56,7 +56,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
               <Nav.Link
                 href="#"
                 className="text-primary"
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   faqRef.current?.openFAQ();
                   setExpanded(false);

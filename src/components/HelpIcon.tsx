@@ -18,7 +18,7 @@ const HelpIcon: React.FC<HelpIconProps> = ({ title, content, className = '' }) =
         className={`text-info ${className}`}
         style={{
           cursor: 'pointer',
-          fontSize: '1em'
+          fontSize: '1em',
         }}
         onClick={() => setShowModal(true)}
         title="Click for help"
@@ -30,9 +30,7 @@ const HelpIcon: React.FC<HelpIconProps> = ({ title, content, className = '' }) =
         <Modal.Header closeButton>
           <Modal.Title>{title}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          {content}
-        </Modal.Body>
+        <Modal.Body>{content}</Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={() => setShowModal(false)}>
             Got it!

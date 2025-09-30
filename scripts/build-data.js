@@ -13,10 +13,12 @@ if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
+// eslint-disable-next-line no-console
 console.log('Building data from YAML files...');
 
 // Find all year files in plan_years directory
-const yearFiles = fs.readdirSync(PLAN_YEARS_DIR)
+const yearFiles = fs
+  .readdirSync(PLAN_YEARS_DIR)
   .filter(file => file.endsWith('.yml'))
   .map(file => {
     const year = parseInt(file.replace('.yml', ''));
@@ -25,7 +27,11 @@ const yearFiles = fs.readdirSync(PLAN_YEARS_DIR)
   .filter(item => !isNaN(item.year))
   .sort((a, b) => a.year - b.year);
 
-console.log('Found year files:', yearFiles.map(item => item.file));
+// eslint-disable-next-line no-console
+console.log(
+  'Found year files:',
+  yearFiles.map(item => item.file)
+);
 
 // Load all plan data by year
 const planDataByYear = {};
@@ -36,6 +42,7 @@ for (const { year, file } of yearFiles) {
   const parsedData = yaml.load(yamlContent);
 
   planDataByYear[year] = parsedData;
+  // eslint-disable-next-line no-console
   console.log(`Loaded ${file} for year ${year}`);
 }
 
@@ -45,6 +52,7 @@ const categoriesPath = path.join(DATA_DIR, 'categories.yml');
 if (fs.existsSync(categoriesPath)) {
   const categoriesContent = fs.readFileSync(categoriesPath, 'utf8');
   categoriesData = yaml.load(categoriesContent);
+  // eslint-disable-next-line no-console
   console.log('Loaded categories.yml');
 }
 
@@ -55,9 +63,11 @@ const helpersFile = path.join(OUTPUT_DIR, 'dataHelpers.ts');
 
 // Write JSON files
 fs.writeFileSync(planDataFile, JSON.stringify(planDataByYear, null, 2));
+// eslint-disable-next-line no-console
 console.log(`Generated ${planDataFile}`);
 
 fs.writeFileSync(categoriesFile, JSON.stringify(categoriesData, null, 2));
+// eslint-disable-next-line no-console
 console.log(`Generated ${categoriesFile}`);
 
 // Generate TypeScript helper functions
@@ -106,5 +116,10 @@ export { planDataByYear, categoriesData };
 `;
 
 fs.writeFileSync(helpersFile, helpersContent);
+// eslint-disable-next-line no-console
 console.log(`Generated ${helpersFile}`);
-console.log('Build complete! Available years:', yearFiles.map(item => item.year));
+// eslint-disable-next-line no-console
+console.log(
+  'Build complete! Available years:',
+  yearFiles.map(item => item.year)
+);

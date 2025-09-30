@@ -1,6 +1,19 @@
-import { getMaxHSAContribution, getMaxFSAContribution, getEmployerHSAContribution } from '../services/planDataService';
+import {
+  getMaxHSAContribution,
+  getMaxFSAContribution,
+  getEmployerHSAContribution,
+} from '../services/planDataService';
 import { getCategoriesData } from '../generated/dataHelpers';
-import { PlanData, HealthPlan, UserInputs, PlanResult, OrganizedLedger, ContributionEntry, PremiumEntry, ExpenseEntry } from '../types';
+import {
+  PlanData,
+  HealthPlan,
+  UserInputs,
+  PlanResult,
+  OrganizedLedger,
+  ContributionEntry,
+  PremiumEntry,
+  ExpenseEntry,
+} from '../types';
 
 /**
  * Calculate costs for all plans given user inputs and plan data
@@ -12,11 +25,14 @@ export const calculateAllPlans = (planData: PlanData, userInputs: UserInputs): P
   return results.sort((a, b) => a.totalCost - b.totalCost);
 };
 
-
 /**
  * Calculate cost breakdown for a single plan
  */
-export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInputs: UserInputs): PlanResult => {
+export const calculatePlanCost = (
+  plan: HealthPlan,
+  planData: PlanData,
+  userInputs: UserInputs
+): PlanResult => {
   const { coverage, taxRate, costs } = userInputs;
   const taxRateDecimal = taxRate / 100; // Convert percentage to decimal
 
@@ -24,9 +40,8 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
   const annualPremiums = plan.monthly_premiums[coverage] * 12;
 
   // Calculate user's HSA/FSA contributions and tax savings
-  const { userContribution, employerContribution, taxSavings } = calculateContributionsAndTaxSavings(
-    plan, planData, userInputs, taxRateDecimal
-  );
+  const { userContribution, employerContribution, taxSavings } =
+    calculateContributionsAndTaxSavings(plan, planData, userInputs, taxRateDecimal);
 
   // Create plan execution to track expenses
   const execution = new PlanExecution(plan, coverage);
@@ -48,17 +63,30 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
 
     // Check for quantity cap for this category
     const quantityCap = execution.getCategoryQuantityCap(categoryEstimate.categoryId, network);
-    const effectiveQuantity = quantityCap ? Math.min(estimate.quantity, quantityCap) : estimate.quantity;
+    const effectiveQuantity = quantityCap
+      ? Math.min(estimate.quantity, quantityCap)
+      : estimate.quantity;
     const cappedVisits = quantityCap ? estimate.quantity - effectiveQuantity : 0;
 
     // Process covered visits
     for (let i = 0; i < effectiveQuantity; i++) {
-      execution.recordExpense(categoryEstimate.categoryId, estimate.costPerVisit, network, categoryEstimate.notes);
+      execution.recordExpense(
+        categoryEstimate.categoryId,
+        estimate.costPerVisit,
+        network,
+        categoryEstimate.notes
+      );
     }
 
     // Process capped visits (user pays 100% out of pocket)
     for (let i = 0; i < cappedVisits; i++) {
-      execution.recordCappedExpense(categoryEstimate.categoryId, estimate.costPerVisit, network, categoryEstimate.notes, 'quantity');
+      execution.recordCappedExpense(
+        categoryEstimate.categoryId,
+        estimate.costPerVisit,
+        network,
+        categoryEstimate.notes,
+        'quantity'
+      );
     }
   }
 
@@ -83,12 +111,11 @@ export const calculatePlanCost = (plan: HealthPlan, planData: PlanData, userInpu
       taxSavings: -taxSavings, // Negative because it reduces total cost
       employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
-      net: totalCost
+      net: totalCost,
     },
-    ledger
+    ledger,
   };
 };
-
 
 interface ContributionResult {
   userContribution: number;
@@ -117,10 +144,14 @@ const calculateContributionsAndTaxSavings = (
     const maxHSAContribution = getMaxHSAContribution(planData, coverage, ageGroup);
 
     // userInputs.hsaContribution now represents employee contribution only
-    userContribution = Math.min(userInputs.hsaContribution, maxHSAContribution - employerContribution);
+    userContribution = Math.min(
+      userInputs.hsaContribution,
+      maxHSAContribution - employerContribution
+    );
 
     // Tax savings on employee HSA contributions include income tax + payroll taxes
-    const payrollTaxRate = (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
+    const payrollTaxRate =
+      (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
     taxSavings = userContribution * (taxRateDecimal + payrollTaxRate);
   } else {
     // PPO plans with FSA
@@ -128,7 +159,8 @@ const calculateContributionsAndTaxSavings = (
     userContribution = Math.min(userInputs.fsaContribution, maxFSAContribution);
 
     // Tax savings on user FSA contributions include income tax + payroll taxes
-    const payrollTaxRate = (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
+    const payrollTaxRate =
+      (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
     taxSavings = userContribution * (taxRateDecimal + payrollTaxRate);
   }
 
@@ -165,7 +197,7 @@ class PlanExecution {
       this.premiums.push({
         type: 'premium',
         description: `Month ${month}`,
-        amount: monthlyPremium
+        amount: monthlyPremium,
       });
     }
   }
@@ -178,7 +210,7 @@ class PlanExecution {
       this.contributionsAndSavings.push({
         type: 'contribution',
         description: 'Employer HSA contribution',
-        amount: amount
+        amount: amount,
       });
     }
   }
@@ -191,7 +223,7 @@ class PlanExecution {
       this.contributionsAndSavings.push({
         type: 'savings',
         description: `Tax savings from ${contributionType} contributions`,
-        amount: amount
+        amount: amount,
       });
     }
   }
@@ -199,7 +231,12 @@ class PlanExecution {
   /**
    * Record a single expense and calculate the out-of-pocket cost
    */
-  recordExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network', notes?: string): void {
+  recordExpense(
+    categoryId: string,
+    cost: number,
+    network: 'in_network' | 'out_of_network' = 'in_network',
+    notes?: string
+  ): void {
     const benefits = this.getCategoryBenefits(categoryId, network);
     if (!benefits) {
       return; // No coverage
@@ -240,11 +277,17 @@ class PlanExecution {
   /**
    * Internal method to record expense with normal benefit processing
    */
-  private _recordExpenseInternal(categoryId: string, cost: number, network: 'in_network' | 'out_of_network', notes: string | undefined, benefits: any): void {
-
+  private _recordExpenseInternal(
+    categoryId: string,
+    cost: number,
+    network: 'in_network' | 'out_of_network',
+    notes: string | undefined,
+    benefits: any
+  ): void {
     // Get category information
     const categoryInfo = this.categoriesData[categoryId];
-    const categoryDisplayName = categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
+    const categoryDisplayName =
+      categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
     const isPreventive = categoryInfo?.preventive || false;
     const isFree = benefits.is_free || false;
 
@@ -269,7 +312,11 @@ class PlanExecution {
         let deductiblePortion = 0;
 
         // Apply deductible first
-        const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
+        const applicableDeductible = Math.min(
+          this.deductibleRemaining(),
+          remainingCost,
+          this.oopRemaining()
+        );
         if (applicableDeductible > 0) {
           this.outOfPocketSpent += applicableDeductible;
           this.deductibleSpent += applicableDeductible;
@@ -301,7 +348,11 @@ class PlanExecution {
       let coinsurancePortion = 0;
 
       // Apply deductible first
-      const applicableDeductible = Math.min(this.deductibleRemaining(), remainingCost, this.oopRemaining());
+      const applicableDeductible = Math.min(
+        this.deductibleRemaining(),
+        remainingCost,
+        this.oopRemaining()
+      );
       if (applicableDeductible > 0) {
         this.outOfPocketSpent += applicableDeductible;
         this.deductibleSpent += applicableDeductible;
@@ -334,7 +385,9 @@ class PlanExecution {
       type: 'expense',
       network,
       category: categoryId,
-      categoryDisplayName: isPreventive ? `[Preventive] ${categoryDisplayName}` : categoryDisplayName,
+      categoryDisplayName: isPreventive
+        ? `[Preventive] ${categoryDisplayName}`
+        : categoryDisplayName,
       isPreventive,
       isFree,
       billedAmount: cost,
@@ -343,7 +396,7 @@ class PlanExecution {
       insuranceResponsibility,
       deductibleRemaining: this.deductibleRemaining(),
       outOfPocketRemaining: this.oopRemaining(),
-      notes
+      notes,
     };
 
     // Add to appropriate network expenses array
@@ -372,14 +425,17 @@ class PlanExecution {
       contributionsAndSavings: [...this.contributionsAndSavings],
       premiums: [...this.premiums],
       inNetworkExpenses: sortExpenses(this.inNetworkExpenses),
-      outOfNetworkExpenses: sortExpenses(this.outOfNetworkExpenses)
+      outOfNetworkExpenses: sortExpenses(this.outOfNetworkExpenses),
     };
   }
 
   /**
    * Get the quantity cap for a category and network
    */
-  getCategoryQuantityCap(categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined {
+  getCategoryQuantityCap(
+    categoryId: string,
+    network: 'in_network' | 'out_of_network'
+  ): number | undefined {
     // Check category-specific caps first
     const categoryBenefits = this.plan.categories[categoryId];
     if (categoryBenefits?.qty_cap !== undefined) {
@@ -398,7 +454,10 @@ class PlanExecution {
   /**
    * Get the cost cap for a category and network
    */
-  getCategoryCostCap(categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined {
+  getCategoryCostCap(
+    categoryId: string,
+    network: 'in_network' | 'out_of_network'
+  ): number | undefined {
     // Check category-specific caps first
     const categoryBenefits = this.plan.categories[categoryId];
     if (categoryBenefits?.cost_cap !== undefined) {
@@ -417,10 +476,17 @@ class PlanExecution {
   /**
    * Record an expense that exceeds caps (user pays 100% out of pocket)
    */
-  recordCappedExpense(categoryId: string, cost: number, network: 'in_network' | 'out_of_network' = 'in_network', notes?: string, capType?: 'quantity' | 'cost'): void {
+  recordCappedExpense(
+    categoryId: string,
+    cost: number,
+    network: 'in_network' | 'out_of_network' = 'in_network',
+    notes?: string,
+    capType?: 'quantity' | 'cost'
+  ): void {
     // Get category information
     const categoryInfo = this.categoriesData[categoryId];
-    const categoryDisplayName = categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
+    const categoryDisplayName =
+      categoryInfo?.name || (categoryId === 'other' ? 'Other' : categoryId);
     const isPreventive = categoryInfo?.preventive || false;
 
     // User pays full cost for capped expenses
@@ -432,7 +498,12 @@ class PlanExecution {
     this.outOfPocketSpent += applicableOOP;
 
     // Create expense entry with cap indication
-    const capNote = capType === 'quantity' ? '[Over visit limit]' : capType === 'cost' ? '[Over cost limit]' : '[Over limit]';
+    const capNote =
+      capType === 'quantity'
+        ? '[Over visit limit]'
+        : capType === 'cost'
+          ? '[Over cost limit]'
+          : '[Over limit]';
     const expenseEntry: ExpenseEntry = {
       type: 'expense',
       network,
@@ -445,7 +516,7 @@ class PlanExecution {
       insuranceResponsibility,
       deductibleRemaining: this.deductibleRemaining(),
       outOfPocketRemaining: this.oopRemaining(),
-      notes: notes ? `${capNote} ${notes}` : capNote
+      notes: notes ? `${capNote} ${notes}` : capNote,
     };
 
     // Add to appropriate network expenses array

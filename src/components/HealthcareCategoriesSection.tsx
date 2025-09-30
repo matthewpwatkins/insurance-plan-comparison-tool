@@ -16,13 +16,16 @@ interface HealthcareCategoriesSectionProps {
 const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = ({
   inputs,
   onChange,
-  planData
+  planData,
 }) => {
   const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState<string>('');
   const categoriesData = getCategoriesData();
 
   // Helper function to check if a category is free for in-network or out-of-network
-  const isCategoryFree = (categoryId: string, network: 'in_network' | 'out_of_network'): boolean => {
+  const isCategoryFree = (
+    categoryId: string,
+    network: 'in_network' | 'out_of_network'
+  ): boolean => {
     if (!planData) return false;
 
     // Get plans that have this category defined
@@ -36,16 +39,20 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
       const categoryConfig = plan.categories[categoryId];
       if (!categoryConfig) return false;
 
-      const coverage = network === 'in_network'
-        ? categoryConfig.in_network_coverage
-        : categoryConfig.out_of_network_coverage;
+      const coverage =
+        network === 'in_network'
+          ? categoryConfig.in_network_coverage
+          : categoryConfig.out_of_network_coverage;
 
       return coverage?.is_free === true;
     });
   };
 
   // Helper function to get the quantity cap for a category
-  const getCategoryQuantityCap = (categoryId: string, network: 'in_network' | 'out_of_network'): number | undefined => {
+  const getCategoryQuantityCap = (
+    categoryId: string,
+    network: 'in_network' | 'out_of_network'
+  ): number | undefined => {
     if (!planData) return undefined;
 
     // Find the minimum quantity cap across all plans that have this category
@@ -61,17 +68,24 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
 
       // Check category-level cap first
       if (categoryConfig.qty_cap !== undefined) {
-        minQuantityCap = minQuantityCap === undefined ? categoryConfig.qty_cap : Math.min(minQuantityCap, categoryConfig.qty_cap);
+        minQuantityCap =
+          minQuantityCap === undefined
+            ? categoryConfig.qty_cap
+            : Math.min(minQuantityCap, categoryConfig.qty_cap);
         continue;
       }
 
       // Check network-specific cap
-      const coverage = network === 'in_network'
-        ? categoryConfig.in_network_coverage
-        : categoryConfig.out_of_network_coverage;
+      const coverage =
+        network === 'in_network'
+          ? categoryConfig.in_network_coverage
+          : categoryConfig.out_of_network_coverage;
 
       if (coverage?.qty_cap !== undefined) {
-        minQuantityCap = minQuantityCap === undefined ? coverage.qty_cap : Math.min(minQuantityCap, coverage.qty_cap);
+        minQuantityCap =
+          minQuantityCap === undefined
+            ? coverage.qty_cap
+            : Math.min(minQuantityCap, coverage.qty_cap);
       }
     }
 
@@ -82,8 +96,8 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     onChange({
       costs: {
         ...inputs.costs,
-        [field]: value
-      }
+        [field]: value,
+      },
     });
   };
 
@@ -94,20 +108,17 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
 
   const updateCategoryEstimate = (index: number, field: 'estimate' | 'notes', value: any) => {
     const updatedEstimates = inputs.costs.categoryEstimates.map((est, i) =>
-      i === index
-        ? { ...est, [field]: value }
-        : est
+      i === index ? { ...est, [field]: value } : est
     );
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
   // Get all available categories, sorted alphabetically by display name (allows multiple instances)
-  const availableCategories = Object.keys(categoriesData)
-    .sort((a, b) => {
-      const displayNameA = `${categoriesData[a].preventive ? '[Preventive] ' : ''}${categoriesData[a].name}`;
-      const displayNameB = `${categoriesData[b].preventive ? '[Preventive] ' : ''}${categoriesData[b].name}`;
-      return displayNameA.localeCompare(displayNameB);
-    });
+  const availableCategories = Object.keys(categoriesData).sort((a, b) => {
+    const displayNameA = `${categoriesData[a].preventive ? '[Preventive] ' : ''}${categoriesData[a].name}`;
+    const displayNameB = `${categoriesData[b].preventive ? '[Preventive] ' : ''}${categoriesData[b].name}`;
+    return displayNameA.localeCompare(displayNameB);
+  });
 
   return (
     <>
@@ -132,7 +143,9 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     <span className="text-primary">*</span>
                   )}
                   {categoriesData[estimate.categoryId]?.preventive && (
-                    <Badge bg="success" className="ms-2">Preventive</Badge>
+                    <Badge bg="success" className="ms-2">
+                      Preventive
+                    </Badge>
                   )}
                 </h6>
               </div>
@@ -144,7 +157,9 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                       {categoriesData[estimate.categoryId].description}
                       {categoriesData[estimate.categoryId]?.notes && (
                         <div className="mt-3 pt-2 border-top">
-                          <p className="mb-1"><strong>* Important Notes:</strong></p>
+                          <p className="mb-1">
+                            <strong>* Important Notes:</strong>
+                          </p>
                           <ul className="mb-0">
                             {categoriesData[estimate.categoryId].notes?.map((note, noteIndex) => (
                               <li key={noteIndex}>{note}</li>
@@ -168,7 +183,12 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     name={`network-${index}`}
                     label="In-Network"
                     checked={estimate.estimate.isInNetwork}
-                    onChange={() => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, isInNetwork: true })}
+                    onChange={() =>
+                      updateCategoryEstimate(index, 'estimate', {
+                        ...estimate.estimate,
+                        isInNetwork: true,
+                      })
+                    }
                   />
                   <Form.Check
                     type="radio"
@@ -176,10 +196,20 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     name={`network-${index}`}
                     label="Out-of-Network"
                     checked={!estimate.estimate.isInNetwork}
-                    onChange={() => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, isInNetwork: false })}
+                    onChange={() =>
+                      updateCategoryEstimate(index, 'estimate', {
+                        ...estimate.estimate,
+                        isInNetwork: false,
+                      })
+                    }
                   />
-                  {isCategoryFree(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network') && (
-                    <Badge bg="primary" className="mt-1">Free</Badge>
+                  {isCategoryFree(
+                    estimate.categoryId,
+                    estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
+                  ) && (
+                    <Badge bg="primary" className="mt-1">
+                      Free
+                    </Badge>
                   )}
                 </div>
               </Col>
@@ -194,7 +224,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     placeholder="Optional notes: ex. Jill's allergy medicine"
                     value={estimate.notes || ''}
                     maxLength={100}
-                    onChange={(e) => updateCategoryEstimate(index, 'notes', e.target.value)}
+                    onChange={e => updateCategoryEstimate(index, 'notes', e.target.value)}
                     style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
                   />
                 </InputGroup>
@@ -208,14 +238,30 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   <Form.Label className="small text-muted">Visits</Form.Label>
                   <FormattedNumberInput
                     value={estimate.estimate.quantity}
-                    onChange={(value: number) => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, quantity: value })}
+                    onChange={(value: number) =>
+                      updateCategoryEstimate(index, 'estimate', {
+                        ...estimate.estimate,
+                        quantity: value,
+                      })
+                    }
                     min={0}
-                    max={getCategoryQuantityCap(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network')}
+                    max={getCategoryQuantityCap(
+                      estimate.categoryId,
+                      estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
+                    )}
                     step={1}
                   />
-                  {getCategoryQuantityCap(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network') && (
+                  {getCategoryQuantityCap(
+                    estimate.categoryId,
+                    estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
+                  ) && (
                     <Form.Text className="text-muted small">
-                      Max {getCategoryQuantityCap(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network')} visits per year
+                      Max{' '}
+                      {getCategoryQuantityCap(
+                        estimate.categoryId,
+                        estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
+                      )}{' '}
+                      visits per year
                     </Form.Text>
                   )}
                 </Form.Group>
@@ -227,11 +273,26 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   <InputGroup>
                     <InputGroup.Text>$</InputGroup.Text>
                     <FormattedNumberInput
-                      value={isCategoryFree(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network') ? 0 : estimate.estimate.costPerVisit}
-                      onChange={(value: number) => updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, costPerVisit: value })}
+                      value={
+                        isCategoryFree(
+                          estimate.categoryId,
+                          estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
+                        )
+                          ? 0
+                          : estimate.estimate.costPerVisit
+                      }
+                      onChange={(value: number) =>
+                        updateCategoryEstimate(index, 'estimate', {
+                          ...estimate.estimate,
+                          costPerVisit: value,
+                        })
+                      }
                       min={0}
                       step={10}
-                      disabled={isCategoryFree(estimate.categoryId, estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network')}
+                      disabled={isCategoryFree(
+                        estimate.categoryId,
+                        estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
+                      )}
                     />
                   </InputGroup>
                 </Form.Group>
@@ -240,14 +301,31 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     title="Cost Estimate"
                     content={
                       <div>
-                        <p><strong>Quantity:</strong> How many times you expect to use this service annually.</p>
-                        <p><strong>Cost per visit:</strong> The full amount charged by the provider (not your copay).</p>
-                        <p><strong>Network:</strong></p>
+                        <p>
+                          <strong>Quantity:</strong> How many times you expect to use this service
+                          annually.
+                        </p>
+                        <p>
+                          <strong>Cost per visit:</strong> The full amount charged by the provider
+                          (not your copay).
+                        </p>
+                        <p>
+                          <strong>Network:</strong>
+                        </p>
                         <ul>
-                          <li><strong>In-Network:</strong> Providers with contracts with your insurance plan. Lower costs, better coverage.</li>
-                          <li><strong>Out-of-Network:</strong> Providers without contracts. Higher costs, less coverage.</li>
+                          <li>
+                            <strong>In-Network:</strong> Providers with contracts with your
+                            insurance plan. Lower costs, better coverage.
+                          </li>
+                          <li>
+                            <strong>Out-of-Network:</strong> Providers without contracts. Higher
+                            costs, less coverage.
+                          </li>
                         </ul>
-                        <p><strong>Tip:</strong> Check your EOBs for negotiated rates to get accurate cost estimates.</p>
+                        <p>
+                          <strong>Tip:</strong> Check your EOBs for negotiated rates to get accurate
+                          cost estimates.
+                        </p>
                       </div>
                     }
                   />
@@ -264,7 +342,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
           <Form.Group>
             <Form.Select
               value={selectedCategoryToAdd}
-              onChange={(e) => {
+              onChange={e => {
                 const categoryId = e.target.value;
                 if (categoryId) {
                   setSelectedCategoryToAdd(categoryId);
@@ -273,11 +351,14 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                     estimate: {
                       quantity: 1,
                       costPerVisit: 0,
-                      isInNetwork: true // Default to in-network
+                      isInNetwork: true, // Default to in-network
                     },
-                    notes: ''
+                    notes: '',
                   };
-                  handleCostChange('categoryEstimates', [...inputs.costs.categoryEstimates, newEstimate]);
+                  handleCostChange('categoryEstimates', [
+                    ...inputs.costs.categoryEstimates,
+                    newEstimate,
+                  ]);
                   setSelectedCategoryToAdd('');
                 }
               }}
@@ -285,7 +366,9 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
               <option value="">Select a category to add...</option>
               {availableCategories.map(categoryId => (
                 <option key={categoryId} value={categoryId}>
-                  {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}{categoriesData[categoryId].name}{categoriesData[categoryId]?.notes ? '*' : ''}
+                  {categoriesData[categoryId].preventive ? '[Preventive] ' : ''}
+                  {categoriesData[categoryId].name}
+                  {categoriesData[categoryId]?.notes ? '*' : ''}
                 </option>
               ))}
             </Form.Select>

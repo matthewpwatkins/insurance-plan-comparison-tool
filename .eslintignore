@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+
+# Generated files
+src/generated/
+
+# Test coverage
+coverage/
+
+# Config files
+*.config.js
+*.config.ts
+
+# Package files
+package-lock.json
+
+# Husky
+.husky/

@@ -11,7 +11,7 @@ interface BasicInfoSectionProps {
   planData: PlanData | null;
 }
 
-const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, planData }) => {
+const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange }) => {
   const handleChange = (field: keyof UserInputs, value: any) => {
     onChange({ [field]: value });
   };
@@ -31,10 +31,12 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                 <Form.Label>Coverage Year</Form.Label>
                 <Form.Select
                   value={inputs.year}
-                  onChange={(e) => handleChange('year', parseInt(e.target.value))}
+                  onChange={e => handleChange('year', parseInt(e.target.value))}
                 >
                   {availableYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   ))}
                 </Form.Select>
               </Form.Group>
@@ -44,7 +46,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                 <Form.Label>Coverage Type</Form.Label>
                 <Form.Select
                   value={inputs.coverage}
-                  onChange={(e) => handleChange('coverage', e.target.value)}
+                  onChange={e => handleChange('coverage', e.target.value)}
                 >
                   <option value="single">Single</option>
                   <option value="two_party">Two Party</option>
@@ -65,17 +67,25 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                       <div>
                         <p>Select your age group to determine HSA contribution limits:</p>
                         <ul>
-                          <li><strong>Under 55:</strong> Standard HSA contribution limits apply</li>
-                          <li><strong>55+:</strong> You're eligible for additional "catch-up" HSA contributions of $1,000 per year</li>
+                          <li>
+                            <strong>Under 55:</strong> Standard HSA contribution limits apply
+                          </li>
+                          <li>
+                            <strong>55+:</strong> You're eligible for additional "catch-up" HSA
+                            contributions of $1,000 per year
+                          </li>
                         </ul>
-                        <p>This only affects HSA plans. If you or your spouse will turn 55 during the coverage year, select "55+" to maximize your tax savings.</p>
+                        <p>
+                          This only affects HSA plans. If you or your spouse will turn 55 during the
+                          coverage year, select "55+" to maximize your tax savings.
+                        </p>
                       </div>
                     }
                   />
                 </Form.Label>
                 <Form.Select
                   value={inputs.ageGroup}
-                  onChange={(e) => handleChange('ageGroup', e.target.value)}
+                  onChange={e => handleChange('ageGroup', e.target.value)}
                 >
                   <option value="under_55">Under 55</option>
                   <option value="55_plus">55+</option>
@@ -90,20 +100,30 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                     title="Marginal Tax Rate"
                     content={
                       <div>
-                        <p>Your marginal tax rate is the percentage of tax you pay on your last dollar of income.</p>
-                        <p><strong>How to find your rate:</strong></p>
+                        <p>
+                          Your marginal tax rate is the percentage of tax you pay on your last
+                          dollar of income.
+                        </p>
+                        <p>
+                          <strong>How to find your rate:</strong>
+                        </p>
                         <ul>
                           <li>Check your most recent tax return or pay stub</li>
                           <li>Use online tax calculators</li>
                           <li>Consult with a tax professional</li>
                         </ul>
-                        <p><strong>Why it matters:</strong></p>
+                        <p>
+                          <strong>Why it matters:</strong>
+                        </p>
                         <ul>
                           <li>HSA and FSA contributions reduce your taxable income</li>
                           <li>Higher tax rates = more savings from pre-tax contributions</li>
                           <li>This affects the true cost comparison between plans</li>
                         </ul>
-                        <p><strong>Common rates:</strong> 12%, 22%, 24%, 32%, 35%, 37% (for federal income tax, plus state taxes if applicable)</p>
+                        <p>
+                          <strong>Common rates:</strong> 12%, 22%, 24%, 32%, 35%, 37% (for federal
+                          income tax, plus state taxes if applicable)
+                        </p>
                       </div>
                     }
                   />
@@ -111,7 +131,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, p
                 <InputGroup>
                   <FormattedNumberInput
                     value={inputs.taxRate}
-                    onChange={(value) => handleChange('taxRate', value)}
+                    onChange={value => handleChange('taxRate', value)}
                     min={0}
                     max={100}
                     step={0.5}

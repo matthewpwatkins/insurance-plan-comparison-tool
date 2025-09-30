@@ -14,7 +14,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   userInputs,
   className = '',
   variant = 'primary',
-  size
+  size,
 }) => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -36,20 +36,11 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
   return (
     <>
-      <Button
-        variant={variant}
-        size={size}
-        className={className}
-        onClick={handleShare}
-      >
+      <Button variant={variant} size={size} className={className} onClick={handleShare}>
         🔗 Share
       </Button>
 
-      <ToastContainer
-        position="top-end"
-        className="p-3"
-        style={{ zIndex: 1050 }}
-      >
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1050 }}>
         <Toast
           show={showToast}
           onClose={() => setShowToast(false)}
@@ -58,13 +49,9 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           bg={toastVariant}
         >
           <Toast.Header>
-            <strong className="me-auto">
-              {toastVariant === 'success' ? 'Success!' : 'Error'}
-            </strong>
+            <strong className="me-auto">{toastVariant === 'success' ? 'Success!' : 'Error'}</strong>
           </Toast.Header>
-          <Toast.Body className="text-white">
-            {toastMessage}
-          </Toast.Body>
+          <Toast.Body className="text-white">{toastMessage}</Toast.Body>
         </Toast>
       </ToastContainer>
     </>

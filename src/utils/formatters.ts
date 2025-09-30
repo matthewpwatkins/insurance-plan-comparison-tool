@@ -1,7 +1,10 @@
 /**
  * Format a number as currency with commas
  */
-export const formatCurrency = (amount: number | null | undefined, showCents: boolean = false): string => {
+export const formatCurrency = (
+  amount: number | null | undefined,
+  showCents: boolean = false
+): string => {
   if (amount === null || amount === undefined || isNaN(amount)) {
     return '$0';
   }
@@ -36,7 +39,12 @@ export const parseFormattedNumber = (str: string | number): number => {
   const cleaned = str.toString().replace(/[,$\s]/g, '');
 
   // Check if the cleaned string is a valid number (digits, decimal point, optional minus sign, and scientific notation)
-  if (!/^-?\d*\.?\d*([eE][+-]?\d+)?$/.test(cleaned) || cleaned === '' || cleaned === '-' || cleaned === '.') {
+  if (
+    !/^-?\d*\.?\d*([eE][+-]?\d+)?$/.test(cleaned) ||
+    cleaned === '' ||
+    cleaned === '-' ||
+    cleaned === '.'
+  ) {
     return 0;
   }
 
