@@ -33,6 +33,7 @@ plans:
   - name: "DMBA HSA 60"
     # Prescriptions must meet deductible before copays apply
     prescriptions_subject_to_deductible: true
+    chart_color: "#22c55e"
     employer_hsa_contribution:
       single: 1_525
       two_party: 3_050
@@ -150,8 +151,7 @@ plans:
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   - name: "DMBA HSA 80"
-    # Prescriptions must meet deductible before copays apply
-    prescriptions_subject_to_deductible: true
+    chart_color: "#3b82f6"
     employer_hsa_contribution:
       single: 850
       two_party: 1_700
@@ -228,6 +228,7 @@ plans:
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   - name: "DMBA PPO 70"
+    chart_color: "#f59e0b"
     monthly_premiums:
       single: 109.20
       two_party: 221.80
@@ -370,6 +371,7 @@ plans:
 
   # PPO 90 Plan - High premium, low out-of-pocket costs
   - name: "DMBA PPO 90"
+    chart_color: "#ef4444"
     monthly_premiums:
       single: 302.00
       two_party: 615.10
