@@ -1,3 +1,9 @@
+export enum CoverageType {
+  Single = 'single',
+  TwoParty = 'two_party',
+  Family = 'family',
+}
+
 export interface CostEstimate {
   quantity: number;
   costPerVisit: number;
@@ -16,7 +22,7 @@ export interface UserCosts {
 
 export interface UserInputs {
   year: number;
-  coverage: 'single' | 'two_party' | 'family';
+  coverage: CoverageType;
   ageGroup: 'under_55' | '55_plus';
   taxRate: number;
   costs: UserCosts;

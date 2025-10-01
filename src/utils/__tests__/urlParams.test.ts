@@ -6,7 +6,7 @@ import {
   copyURLToClipboard,
   readURLParamsOnLoad,
 } from '../urlParams';
-import { UserInputs } from '../../types';
+import { UserInputs, CoverageType } from '../../types';
 
 // Mock window.location and window.history
 const mockLocation = {
@@ -66,7 +66,7 @@ describe('urlParams', () => {
 
   const mockUserInputs: UserInputs = {
     year: 2025,
-    coverage: 'single',
+    coverage: CoverageType.Single,
     ageGroup: 'under_55',
     taxRate: 22,
     costs: {
@@ -89,7 +89,7 @@ describe('urlParams', () => {
     });
 
     it('should handle different coverage types', () => {
-      const inputs = { ...mockUserInputs, coverage: 'family' as const };
+      const inputs = { ...mockUserInputs, coverage: CoverageType.Family };
       const params = userInputsToURLParams(inputs);
       expect(params.get('coverage')).toBe('family');
     });
@@ -127,7 +127,7 @@ describe('urlParams', () => {
       const result = urlParamsToUserInputs(searchParams);
 
       expect(result.year).toBe(2025);
-      expect(result.coverage).toBe('single');
+      expect(result.coverage).toBe(CoverageType.Single);
       expect(result.ageGroup).toBe('under_55');
       expect(result.taxRate).toBe(22);
       expect(result.hsaContribution).toBe(2000);
@@ -170,13 +170,17 @@ describe('urlParams', () => {
     });
 
     it('should accept valid coverage values', () => {
-      const validCoverages = ['single', 'two_party', 'family'];
+      const validCoverages = [
+        { input: 'single', expected: CoverageType.Single },
+        { input: 'two_party', expected: CoverageType.TwoParty },
+        { input: 'family', expected: CoverageType.Family },
+      ];
 
-      validCoverages.forEach(coverage => {
+      validCoverages.forEach(({ input, expected }) => {
         const searchParams = new URLSearchParams();
-        searchParams.set('coverage', coverage);
+        searchParams.set('coverage', input);
         const result = urlParamsToUserInputs(searchParams);
-        expect(result.coverage).toBe(coverage);
+        expect(result.coverage).toBe(expected);
       });
     });
 
@@ -327,7 +331,7 @@ describe('urlParams', () => {
       const result = readURLParamsOnLoad();
 
       expect(result.year).toBe(2025);
-      expect(result.coverage).toBe('family');
+      expect(result.coverage).toBe(CoverageType.Family);
       expect(result.taxRate).toBe(25);
     });
 
@@ -350,7 +354,7 @@ describe('urlParams', () => {
     it('should maintain data integrity through URL conversion cycle', () => {
       const originalInputs = {
         year: 2026,
-        coverage: 'family' as const,
+        coverage: CoverageType.Family,
         ageGroup: '55_plus' as const,
         taxRate: 32.5,
         hsaContribution: 4000,
@@ -385,7 +389,7 @@ describe('urlParams', () => {
     it('should maintain categoryEstimates data integrity through URL conversion cycle', () => {
       const originalInputs = {
         year: 2025,
-        coverage: 'single' as const,
+        coverage: CoverageType.Single,
         ageGroup: 'under_55' as const,
         taxRate: 22,
         hsaContribution: 2000,

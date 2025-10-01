@@ -12,13 +12,13 @@ import { FAQButtonRef } from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import { readURLParamsOnLoad, updateURL, copyURLToClipboard } from './utils/urlParams';
-import { PlanData, UserInputs, PlanResult } from './types';
+import { PlanData, UserInputs, PlanResult, CoverageType } from './types';
 
 function App() {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [userInputs, setUserInputs] = useState<UserInputs>({
     year: getDefaultYear(),
-    coverage: 'family',
+    coverage: CoverageType.Family,
     ageGroup: 'under_55',
     taxRate: 21.7,
     costs: {

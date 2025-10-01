@@ -1,3 +1,5 @@
+import { ContributionType } from './plan';
+
 export interface ContributionEntry {
   type: 'contribution' | 'savings';
   description: string;
@@ -35,7 +37,7 @@ export interface OrganizedLedger {
 
 export interface PlanResult {
   planName: string;
-  planType: 'PPO' | 'HSA';
+  contributionType: ContributionType;
   annualPremiums: number;
   userContribution: number;
   employerContribution: number;

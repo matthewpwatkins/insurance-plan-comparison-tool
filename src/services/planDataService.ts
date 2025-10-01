@@ -1,5 +1,5 @@
 import { getPlanData, getAvailableYears, getLatestYear } from '../generated/dataHelpers';
-import { PlanData, HealthPlan } from '../types';
+import { PlanData, HealthPlan, CoverageType } from '../types';
 
 /**
  * Load and parse plan data for a given year (synchronous, compile-time loaded)
@@ -39,7 +39,7 @@ export const getDefaultYear = (): number => {
  */
 export const getMaxHSAContribution = (
   planData: PlanData,
-  coverage: 'single' | 'two_party' | 'family',
+  coverage: CoverageType,
   ageGroup: 'under_55' | '55_plus'
 ): number => {
   if (!planData.hsa_contribution_limits) {
@@ -49,7 +49,7 @@ export const getMaxHSAContribution = (
   const limits = planData.hsa_contribution_limits;
   let maxContribution: number;
 
-  if (coverage === 'single') {
+  if (coverage === CoverageType.Single) {
     maxContribution = limits.single_coverage;
   } else {
     maxContribution = limits.family_coverage;
@@ -73,11 +73,37 @@ export const getMaxFSAContribution = (planData: PlanData): number => {
 /**
  * Get employer HSA contribution for a specific plan and coverage type
  */
-export const getEmployerHSAContribution = (
+/**
+ * Determine if a plan qualifies for an HSA based on IRS requirements
+ */
+export const isHSAQualified = (
   plan: HealthPlan,
-  coverage: 'single' | 'two_party' | 'family'
-): number => {
-  if (plan.type !== 'HSA' || !plan.employer_hsa_contribution) {
+  planData: PlanData,
+  coverage: CoverageType
+): boolean => {
+  const limits = planData.hsa_qualification_limits;
+  const deductible = plan.annual_deductible.in_network;
+
+  // Determine which minimum deductible threshold to use
+  const minDeductible =
+    coverage === CoverageType.Single
+      ? limits.minimum_deductible.single
+      : limits.minimum_deductible.family;
+
+  // Check if plan meets minimum deductible requirement
+  if (coverage === CoverageType.Single) {
+    return deductible.single >= minDeductible;
+  } else {
+    // For two_party and family coverage, check family deductible
+    return deductible.family >= minDeductible;
+  }
+};
+
+/**
+ * Get employer HSA contribution for a specific plan and coverage type
+ */
+export const getEmployerHSAContribution = (plan: HealthPlan, coverage: CoverageType): number => {
+  if (!plan.employer_hsa_contribution) {
     return 0;
   }
 

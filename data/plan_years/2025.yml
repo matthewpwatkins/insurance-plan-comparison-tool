@@ -8,6 +8,16 @@ hsa_contribution_limits:
   family_coverage: 8_550
   catch_up_age_55_plus: 1_000
 
+# HSA Qualification Requirements (set by IRS annually)
+# A plan must meet these minimum deductibles to qualify for an HSA
+hsa_qualification_limits:
+  minimum_deductible:
+    single: 1_650
+    family: 3_300
+  maximum_out_of_pocket:
+    single: 8_300
+    family: 16_600
+
 # FSA Contribution Limits (set by IRS annually)
 fsa_contribution_limits:
   healthcare_fsa: 3_300
@@ -21,7 +31,8 @@ payroll_tax_rates:
 plans:
   # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
   - name: "DMBA HSA 60"
-    type: "HSA"
+    # Prescriptions must meet deductible before copays apply
+    prescriptions_subject_to_deductible: true
     employer_hsa_contribution:
       single: 1_500
       two_party: 3_000
@@ -139,7 +150,8 @@ plans:
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   - name: "DMBA HSA 80"
-    type: "HSA"
+    # Prescriptions must meet deductible before copays apply
+    prescriptions_subject_to_deductible: true
     employer_hsa_contribution:
       single: 825
       two_party: 1_650
@@ -216,7 +228,6 @@ plans:
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   - name: "DMBA PPO 70"
-    type: "PPO"
     monthly_premiums:
       single: 101.20
       two_party: 205.70
@@ -359,7 +370,6 @@ plans:
 
   # PPO 90 Plan - High premium, low out-of-pocket costs
   - name: "DMBA PPO 90"
-    type: "PPO"
     monthly_premiums:
       single: 245.30
       two_party: 499.70

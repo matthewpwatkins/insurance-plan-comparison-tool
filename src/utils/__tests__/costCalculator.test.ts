@@ -1,10 +1,11 @@
 import { calculateAllPlans, calculatePlanCost } from '../costCalculator';
-import { PlanData, HealthPlan, UserInputs } from '../../types';
+import { PlanData, HealthPlan, UserInputs, ContributionType } from '../../types';
 
 import {
   getMaxHSAContribution,
   getMaxFSAContribution,
   getEmployerHSAContribution,
+  isHSAQualified,
 } from '../../services/planDataService';
 
 // Mock the planDataService
@@ -12,6 +13,7 @@ jest.mock('../../services/planDataService', () => ({
   getMaxHSAContribution: jest.fn(),
   getMaxFSAContribution: jest.fn(),
   getEmployerHSAContribution: jest.fn(),
+  isHSAQualified: jest.fn(),
 }));
 
 const mockGetMaxHSAContribution = getMaxHSAContribution as jest.MockedFunction<
@@ -23,6 +25,7 @@ const mockGetMaxFSAContribution = getMaxFSAContribution as jest.MockedFunction<
 const mockGetEmployerHSAContribution = getEmployerHSAContribution as jest.MockedFunction<
   typeof getEmployerHSAContribution
 >;
+const mockIsHSAQualified = isHSAQualified as jest.MockedFunction<typeof isHSAQualified>;
 
 describe('costCalculator', () => {
   beforeEach(() => {
@@ -36,6 +39,16 @@ describe('costCalculator', () => {
       family_coverage: 8550,
       catch_up_age_55_plus: 1000,
     },
+    hsa_qualification_limits: {
+      minimum_deductible: {
+        single: 1650,
+        family: 3300,
+      },
+      maximum_out_of_pocket: {
+        single: 8300,
+        family: 16600,
+      },
+    },
     fsa_contribution_limits: {
       healthcare_fsa: 3300,
     },
@@ -48,7 +61,6 @@ describe('costCalculator', () => {
 
   const mockPPOPlan: HealthPlan = {
     name: 'Test PPO Plan',
-    type: 'PPO',
     monthly_premiums: {
       single: 200,
       two_party: 400,
@@ -76,15 +88,15 @@ describe('costCalculator', () => {
 
   const mockHSAPlan: HealthPlan = {
     name: 'Test HSA Plan',
-    type: 'HSA',
+    prescriptions_subject_to_deductible: true,
     monthly_premiums: {
       single: 150,
       two_party: 300,
       family: 450,
     },
     annual_deductible: {
-      in_network: { single: 1500, family: 3000 },
-      out_of_network: { single: 3000, family: 6000 },
+      in_network: { single: 1650, family: 3300 },
+      out_of_network: { single: 3300, family: 6600 },
     },
     out_of_pocket_maximum: {
       in_network: { individual: 6000, family: 12000 },
@@ -111,24 +123,18 @@ describe('costCalculator', () => {
       categoryEstimates: [
         {
           categoryId: 'office_visit_pcp',
-          inNetwork: {
+          estimate: {
             quantity: 2,
             costPerVisit: 150,
-          },
-          outOfNetwork: {
-            quantity: 0,
-            costPerVisit: 0,
+            isInNetwork: true,
           },
         },
         {
-          categoryId: 'other', // Add as a category estimate instead of separate otherCosts
-          inNetwork: {
+          categoryId: 'other',
+          estimate: {
             quantity: 1,
             costPerVisit: 500,
-          },
-          outOfNetwork: {
-            quantity: 0,
-            costPerVisit: 0,
+            isInNetwork: true,
           },
         },
       ],
@@ -142,13 +148,19 @@ describe('costCalculator', () => {
       mockGetMaxHSAContribution.mockReturnValue(4300);
       mockGetMaxFSAContribution.mockReturnValue(3300);
       mockGetEmployerHSAContribution.mockReturnValue(500);
+      // Mock isHSAQualified based on the plan being tested
+      mockIsHSAQualified.mockImplementation((plan, _planData, _coverage) => {
+        // PPO plan has $500 deductible, doesn't qualify
+        // HSA plan has $1650 deductible, qualifies
+        return plan.annual_deductible.in_network.single >= 1650;
+      });
     });
 
     it('should calculate PPO plan costs correctly with copays', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       expect(result.planName).toBe('Test PPO Plan');
-      expect(result.planType).toBe('PPO');
+      expect(result.contributionType).toBe(ContributionType.FSA);
       expect(result.annualPremiums).toBe(2400); // 200 * 12
       expect(result.userContribution).toBe(1500); // FSA contribution
       expect(result.employerContribution).toBe(0); // No employer contribution for PPO
@@ -166,7 +178,7 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
 
       expect(result.planName).toBe('Test HSA Plan');
-      expect(result.planType).toBe('HSA');
+      expect(result.contributionType).toBe(ContributionType.HSA);
       expect(result.annualPremiums).toBe(1800); // 150 * 12
       expect(result.userContribution).toBe(2000); // Employee HSA contribution from input
       expect(result.employerContribution).toBe(500); // Employer HSA contribution
@@ -174,7 +186,7 @@ describe('costCalculator', () => {
 
       // Out of pocket for HSA: all costs go against deductible first (no copays in default HSA)
       // 2 visits * $150 + 1 other * $500 = $800 total cost
-      // All $800 goes to deductible (since deductible is $1500)
+      // All $800 goes to deductible (since deductible is $1650)
       expect(result.outOfPocketCosts).toBe(800);
     });
 

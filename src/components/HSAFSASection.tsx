@@ -4,10 +4,11 @@ import {
   getMaxHSAContribution,
   getMaxFSAContribution,
   getEmployerHSAContribution,
+  isHSAQualified,
 } from '../services/planDataService';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
-import { UserInputs, PlanData } from '../types';
+import { UserInputs, PlanData, CoverageType } from '../types';
 
 interface HSAFSASectionProps {
   inputs: UserInputs;
@@ -23,7 +24,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   const getEmployerHSAContributionForDisplay = (): number => {
     if (!planData) return 0;
 
-    const hsaPlans = planData.plans.filter(plan => plan.type === 'HSA');
+    const hsaPlans = planData.plans.filter(plan => isHSAQualified(plan, planData, inputs.coverage));
     if (hsaPlans.length === 0) return 0;
 
     // Get the minimum employer contribution across HSA plans (most conservative)
@@ -37,7 +38,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   const getMaxEmployerHSAContribution = (): number => {
     if (!planData) return 0;
 
-    const hsaPlans = planData.plans.filter(plan => plan.type === 'HSA');
+    const hsaPlans = planData.plans.filter(plan => isHSAQualified(plan, planData, inputs.coverage));
     if (hsaPlans.length === 0) return 0;
 
     // Get the maximum employer contribution across HSA plans
@@ -58,7 +59,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
   // Calculate max employee contribution for each HSA plan based on current coverage
   const hsaPlansWithEmployeeMax = planData
     ? planData.plans
-        .filter(plan => plan.type === 'HSA')
+        .filter(plan => isHSAQualified(plan, planData, inputs.coverage))
         .map(plan => {
           const employerContribution = getEmployerHSAContribution(plan, inputs.coverage);
           const employeeMax = Math.max(0, maxTotalHSAContribution - employerContribution);
@@ -141,13 +142,21 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                   <li>
                     <strong>Individual:</strong> $
                     {planData
-                      ? getMaxHSAContribution(planData, 'single', inputs.ageGroup).toLocaleString()
+                      ? getMaxHSAContribution(
+                          planData,
+                          CoverageType.Single,
+                          inputs.ageGroup
+                        ).toLocaleString()
                       : 'N/A'}
                   </li>
                   <li>
                     <strong>Family:</strong> $
                     {planData
-                      ? getMaxHSAContribution(planData, 'family', inputs.ageGroup).toLocaleString()
+                      ? getMaxHSAContribution(
+                          planData,
+                          CoverageType.Family,
+                          inputs.ageGroup
+                        ).toLocaleString()
                       : 'N/A'}
                   </li>
                   {inputs.ageGroup === '55_plus' && (
@@ -162,7 +171,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                 </h6>
                 <ul>
                   {planData?.plans
-                    .filter(plan => plan.type === 'HSA')
+                    .filter(plan => isHSAQualified(plan, planData, inputs.coverage))
                     .map(plan => (
                       <li key={plan.name}>
                         <strong>{plan.name}:</strong>

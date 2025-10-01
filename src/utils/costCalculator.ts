@@ -2,6 +2,7 @@ import {
   getMaxHSAContribution,
   getMaxFSAContribution,
   getEmployerHSAContribution,
+  isHSAQualified,
 } from '../services/planDataService';
 import { getCategoriesData } from '../generated/dataHelpers';
 import {
@@ -13,6 +14,8 @@ import {
   ContributionEntry,
   PremiumEntry,
   ExpenseEntry,
+  ContributionType,
+  CoverageType,
 } from '../types';
 
 /**
@@ -53,7 +56,8 @@ export const calculatePlanCost = (
   execution.addEmployerContribution(employerContribution);
 
   // Add tax savings to ledger
-  const contributionType = plan.type === 'HSA' ? 'HSA' : 'FSA';
+  const isHSA = isHSAQualified(plan, planData, coverage);
+  const contributionType = isHSA ? ContributionType.HSA : ContributionType.FSA;
   execution.addTaxSavings(taxSavings, contributionType);
 
   // Process all category expenses
@@ -98,7 +102,7 @@ export const calculatePlanCost = (
 
   return {
     planName: plan.name,
-    planType: plan.type,
+    contributionType: contributionType,
     annualPremiums,
     userContribution,
     employerContribution,
@@ -138,8 +142,8 @@ const calculateContributionsAndTaxSavings = (
   let employerContribution = 0;
   let taxSavings = 0;
 
-  if (plan.type === 'HSA') {
-    // HSA plans
+  if (isHSAQualified(plan, planData, coverage)) {
+    // HSA-qualified plans
     employerContribution = getEmployerHSAContribution(plan, coverage);
     const maxHSAContribution = getMaxHSAContribution(planData, coverage, ageGroup);
 
@@ -173,7 +177,7 @@ const calculateContributionsAndTaxSavings = (
  */
 class PlanExecution {
   private plan: HealthPlan;
-  private coverage: 'single' | 'two_party' | 'family';
+  private coverage: CoverageType;
   private outOfPocketSpent: number = 0;
   private deductibleSpent: number = 0;
   private contributionsAndSavings: ContributionEntry[] = [];
@@ -184,7 +188,7 @@ class PlanExecution {
   private costCapSpent: Record<string, number> = {}; // Track spending against cost caps
   private quantityUsed: Record<string, number> = {}; // Track visits used against quantity caps
 
-  constructor(plan: HealthPlan, coverage: 'single' | 'two_party' | 'family') {
+  constructor(plan: HealthPlan, coverage: CoverageType) {
     this.plan = plan;
     this.coverage = coverage;
   }
@@ -218,7 +222,7 @@ class PlanExecution {
   /**
    * Add tax savings entry to the ledger
    */
-  addTaxSavings(amount: number, contributionType: 'HSA' | 'FSA'): void {
+  addTaxSavings(amount: number, contributionType: ContributionType): void {
     if (amount > 0) {
       this.contributionsAndSavings.push({
         type: 'savings',
@@ -302,12 +306,13 @@ class PlanExecution {
       // Free care - no cost to employee
       employeeResponsibility = 0;
     } else if (benefits.copay && benefits.copay > 0) {
-      // For HSA plans, prescription copays only apply AFTER deductible is met
+      // For plans with prescriptions subject to deductible, copays only apply AFTER deductible is met
       const isPrescription = categoryId.startsWith('pharmacy_');
-      const isHSAPlan = this.plan.type === 'HSA';
+      const prescriptionsSubjectToDeductible =
+        this.plan.prescriptions_subject_to_deductible || false;
 
-      if (isHSAPlan && isPrescription && this.deductibleRemaining() > 0) {
-        // HSA plan with prescriptions: apply deductible first, then copay
+      if (prescriptionsSubjectToDeductible && isPrescription && this.deductibleRemaining() > 0) {
+        // Plan with prescriptions subject to deductible: apply deductible first, then copay
         let remainingCost = cost;
         let deductiblePortion = 0;
 
@@ -558,7 +563,7 @@ class PlanExecution {
 
   private getDeductibleForCoverage(): number {
     const deductible = this.plan.annual_deductible.in_network;
-    if (this.coverage === 'single') {
+    if (this.coverage === CoverageType.Single) {
       return deductible.single;
     } else {
       // Both two_party and family use the family deductible
@@ -568,7 +573,7 @@ class PlanExecution {
 
   private getOOPMaxForCoverage(): number {
     const oopMax = this.plan.out_of_pocket_maximum.in_network;
-    if (this.coverage === 'single') {
+    if (this.coverage === CoverageType.Single) {
       return oopMax.individual;
     } else {
       // Both two_party and family use the family out-of-pocket maximum

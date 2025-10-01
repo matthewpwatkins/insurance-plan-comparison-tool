@@ -1,3 +1,8 @@
+export enum ContributionType {
+  HSA = 'HSA',
+  FSA = 'FSA',
+}
+
 export interface PlanPremiums {
   single: number;
   two_party: number;
@@ -49,13 +54,13 @@ export interface Category {
 
 export interface HealthPlan {
   name: string;
-  type: 'PPO' | 'HSA';
   monthly_premiums: PlanPremiums;
   annual_deductible: PlanDeductible;
   out_of_pocket_maximum: PlanOutOfPocket;
   default: NetworkBenefits;
   categories: Record<string, NetworkBenefits | undefined>;
   employer_hsa_contribution?: PlanPremiums;
+  prescriptions_subject_to_deductible?: boolean;
 }
 
 export interface CategoriesData {
