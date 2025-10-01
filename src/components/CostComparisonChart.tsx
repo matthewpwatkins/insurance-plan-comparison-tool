@@ -19,7 +19,7 @@ import {
   faMagnifyingGlassMinus,
   faRotateLeft,
 } from '@fortawesome/free-solid-svg-icons';
-import { UserInputs } from '../types/user';
+import { UserInputs, CoverageType } from '../types/user';
 import { PlanData } from '../types';
 import { generateChartData, calculateUserSpending } from '../utils/chartDataGenerator';
 
@@ -46,6 +46,21 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
   const chartRef = useRef<any>(null);
   const [zoomHistory, setZoomHistory] = useState<Array<{ min: number; max: number }>>([]);
 
+  // Calculate max spending based on highest OOP maximum
+  const maxSpending = useMemo(() => {
+    const highestOOPMax = Math.max(
+      ...planData.plans.map(plan => {
+        const oopMax = plan.out_of_pocket_maximum.in_network;
+        if (userInputs.coverage === CoverageType.Single) {
+          return oopMax.individual;
+        } else {
+          return oopMax.family;
+        }
+      })
+    );
+    return highestOOPMax + 10_000;
+  }, [planData, userInputs.coverage]);
+
   const chartData = useMemo(() => {
     // Generate chart data for all plans
     const allChartData = generateChartData(planData, userInputs);
@@ -63,6 +78,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         borderColor: color,
         backgroundColor: color,
         borderWidth: 3,
+        borderDash: planChart.dashed ? [8, 4] : undefined, // Dashed lines for PPO plans
         pointRadius: 0,
         pointHoverRadius: 6,
         tension: 0.1,
@@ -86,29 +102,19 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
       borderWidth: 0,
     };
 
-    // Add zero baseline (horizontal green dashed line)
-    annotationConfig.zeroLine = {
-      type: 'line',
-      yMin: 0,
-      yMax: 0,
-      borderColor: '#22c55e',
-      borderWidth: 2,
-      borderDash: [5, 5],
-    };
-
     // Add current spending line (always show, even at zero)
     annotationConfig.currentSpending = {
       type: 'line',
       xMin: currentSpending,
       xMax: currentSpending,
-      borderColor: '#f59e0b',
+      borderColor: '#4b5563',
       borderWidth: 2,
       borderDash: [5, 5],
       label: {
         display: true,
         content: 'Your Spending',
         position: 'start',
-        backgroundColor: '#f59e0b',
+        backgroundColor: '#4b5563',
         color: '#ffffff',
         font: {
           size: 11,
@@ -176,7 +182,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
             },
           },
           limits: {
-            x: { min: 0, max: 1_000_000 }, // Allow zooming out to $1M
+            x: { min: 0, max: maxSpending }, // Limit zoom to actual data range
             // No Y-axis limits - let it scale automatically
           },
         },
@@ -218,7 +224,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         intersect: false,
       },
     };
-  }, [userInputs, annotations]);
+  }, [annotations, currentSpending, maxSpending]);
 
   const handleZoomIn = () => {
     if (chartRef.current && zoomHistory.length > 0) {
@@ -248,7 +254,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
       const center = (currentMin + currentMax) / 2;
 
       const newMin = Math.max(0, center - newRange / 2);
-      const newMax = Math.min(1_000_000, center + newRange / 2);
+      const newMax = Math.min(maxSpending, center + newRange / 2);
 
       chart.zoomScale('x', { min: newMin, max: newMax }, 'default');
     }
@@ -286,13 +292,13 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
             spending level
           </li>
           <li>
-            The <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>orange dashed line</span>{' '}
+            The <span style={{ color: '#4b5563', fontWeight: 'bold' }}>dark gray dashed line</span>{' '}
             marks your current estimated spending ($
             {currentSpending.toLocaleString()})
           </li>
           <li>
-            <strong>Zoom controls:</strong> Use the buttons below to zoom in/out (up to $1M in
-            healthcare costs) or reset to your spending range
+            <strong>Zoom controls:</strong> Use the buttons below to zoom in/out or reset to your
+            spending range
           </li>
         </ul>
       </div>
