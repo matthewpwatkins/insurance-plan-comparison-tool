@@ -7,6 +7,7 @@ import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
+import CostComparisonChart from './components/CostComparisonChart';
 import NavigationHeader from './components/NavigationHeader';
 import { FAQButtonRef } from './components/FAQButton';
 import { loadPlanData, getDefaultYear } from './services/planDataService';
@@ -225,6 +226,7 @@ function App() {
                   </Alert>
                 )}
                 <ResultsTable results={results} onShowWork={handleShowWork} />
+                {planData && <CostComparisonChart planData={planData} userInputs={userInputs} />}
               </div>
             )}
           </Col>
