@@ -42,6 +42,7 @@ interface CostComparisonChartProps {
 }
 
 const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, userInputs }) => {
+  const currentSpending = calculateUserSpending(userInputs);
   const chartRef = useRef<any>(null);
   const [zoomHistory, setZoomHistory] = useState<Array<{ min: number; max: number }>>([]);
 
@@ -74,9 +75,6 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
   }, [planData, userInputs]);
 
   const annotations = useMemo(() => {
-    // Calculate current user spending
-    const currentSpending = calculateUserSpending(userInputs);
-
     const annotationConfig: Record<string, any> = {};
 
     // Add green shaded area below y=0
@@ -124,8 +122,6 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
   }, [userInputs]);
 
   const options: ChartOptions<'line'> = useMemo(() => {
-    // Calculate current user spending to center the chart
-    const currentSpending = calculateUserSpending(userInputs);
     // Use minimum of $500 for zoom calculations to ensure reasonable initial view
     const effectiveSpending = Math.max(500, currentSpending);
     const initialMaxX = effectiveSpending * 2;
@@ -292,7 +288,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
           <li>
             The <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>orange dashed line</span>{' '}
             marks your current estimated spending ($
-            {calculateUserSpending(userInputs).toLocaleString()})
+            {currentSpending.toLocaleString()})
           </li>
           <li>
             <strong>Zoom controls:</strong> Use the buttons below to zoom in/out (up to $1M in
