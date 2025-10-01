@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faList } from '@fortawesome/free-solid-svg-icons';
 import { formatCurrency } from '../utils/formatters';
 import { PlanResult, ContributionType } from '../types';
+import HelpIcon from './HelpIcon';
 
 interface ResultsTableProps {
   results: PlanResult[];
@@ -105,6 +106,42 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
               <small className="text-muted d-block">Your Total Cost</small>
               <div className={`fs-4 fw-bold ${isLowestCost ? 'text-success' : 'text-primary'}`}>
                 {formatCurrency(result.totalCost)}
+              </div>
+            </Col>
+            <Col xs={6} md={4} lg={3}>
+              <small className="text-muted d-block">
+                Worst Case Cost{' '}
+                <HelpIcon
+                  title="Worst Case Cost"
+                  content={
+                    <div>
+                      <p>
+                        This is the <strong>absolute maximum</strong> you would ever pay in a year
+                        with this plan, assuming you hit your out-of-pocket maximum.
+                      </p>
+                      <p>
+                        It includes:
+                        <ul>
+                          <li>Annual premiums</li>
+                          <li>Out-of-pocket maximum</li>
+                          <li>Minus employer contributions</li>
+                          <li>Minus tax savings from HSA/FSA contributions</li>
+                        </ul>
+                      </p>
+                      <p>
+                        This represents your worst-case financial exposure for the year. No matter
+                        how much healthcare you use, you won't pay more than this amount.
+                      </p>
+                      <p>
+                        <strong>Note:</strong> This is the flatline value you'll see for this plan
+                        on the Cost Comparison Chart at the bottom of the page.
+                      </p>
+                    </div>
+                  }
+                />
+              </small>
+              <div className="fw-semibold text-danger fs-6">
+                {formatCurrency(result.maxAnnualCost)}
               </div>
             </Col>
           </Row>

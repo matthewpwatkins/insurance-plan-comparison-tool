@@ -22,6 +22,7 @@ import {
 import { UserInputs } from '../types/user';
 import { PlanData } from '../types';
 import { generateChartData, calculateUserSpending } from '../utils/chartDataGenerator';
+import HelpIcon from './HelpIcon';
 
 // Register Chart.js components
 ChartJS.register(
@@ -287,6 +288,67 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
           <li>
             <strong>Zoom controls:</strong> Use the buttons below to zoom in/out or reset to your
             spending range
+          </li>
+          <li>
+            <strong>PPO plans (dashed lines):</strong> These are forecasts based on your estimated
+            service mix{' '}
+            <HelpIcon
+              title="Why PPO Forecasts Are Unpredictable"
+              content={
+                <div>
+                  <p>
+                    Unlike HSA plans where costs follow predictable deductible and coinsurance
+                    rules, PPO plans have <strong>different copays for different services</strong>,
+                    making your total out-of-pocket percentage highly dependent on what types of
+                    care you receive.
+                  </p>
+                  <p>
+                    <strong>Example:</strong> Suppose two identical people—Fred and Phil—both enroll
+                    in the PPO 90 plan, and they both incur exactly $7,500 in medical costs
+                    throughout the year.
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Fred's care:</strong> 25 chiropractor visits + 25 physical therapy
+                      visits at $150 each. He pays a $35 copay at each visit, totaling{' '}
+                      <strong>$1,750 out-of-pocket</strong>.
+                    </li>
+                    <li>
+                      <strong>Phil's care:</strong> One $7,500 surgery, of which he pays 10%
+                      coinsurance = <strong>$750 out-of-pocket</strong>.
+                    </li>
+                  </ul>
+                  <p>
+                    They both received $7,500 in healthcare during the year, but{' '}
+                    <strong>Fred paid more than double what Phil paid</strong> due to the different
+                    service mix.
+                  </p>
+                  <p>
+                    The dashed PPO lines show projections based on <em>your</em> estimated service
+                    mix, but your actual costs may vary depending on what care you actually need.
+                  </p>
+                  <p>
+                    <strong>Important:</strong> If you don't enter a realistic mix of day-to-day
+                    copay-based services (like office visits) and major coinsurance-based services
+                    (like surgeries or imaging), the forecast line will be steeper or shallower than
+                    reality. However, two points are always reliable:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Starting point:</strong> Your annual premiums minus FSA tax savings
+                    </li>
+                    <li>
+                      <strong>Flatline (end point):</strong> Your worst-case maximum annual cost
+                    </li>
+                  </ul>
+                  <p>
+                    The slope between these points depends on your service mix—it's just a question
+                    of <em>how fast</em> you hit your out-of-pocket maximum, not <em>if</em> you'll
+                    hit it at high spending levels.
+                  </p>
+                </div>
+              }
+            />
           </li>
         </ul>
       </div>

@@ -100,6 +100,11 @@ export const calculatePlanCost = (
   // Calculate total cost (employer contributions reduce total cost as they're free money)
   const totalCost = annualPremiums + outOfPocketCosts - taxSavings - employerContribution;
 
+  // Calculate maximum annual cost (worst-case scenario at OOP max)
+  const oopMax = plan.out_of_pocket_maximum.in_network;
+  const oopMaxValue = coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
+  const maxAnnualCost = annualPremiums + oopMaxValue - taxSavings - employerContribution;
+
   return {
     planName: plan.name,
     contributionType: contributionType,
@@ -110,6 +115,7 @@ export const calculatePlanCost = (
     taxSavings,
     outOfPocketCosts,
     totalCost: totalCost, // Can be negative if tax savings exceed costs
+    maxAnnualCost,
     breakdown: {
       premiums: annualPremiums,
       taxSavings: -taxSavings, // Negative because it reduces total cost

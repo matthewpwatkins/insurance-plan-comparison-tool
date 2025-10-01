@@ -45,6 +45,7 @@ export interface PlanResult {
   taxSavings: number;
   outOfPocketCosts: number;
   totalCost: number;
+  maxAnnualCost: number; // Maximum possible cost in worst-case scenario (at OOP max)
   breakdown: {
     premiums: number;
     taxSavings: number;
