@@ -19,7 +19,7 @@ import {
   faMagnifyingGlassMinus,
   faRotateLeft,
 } from '@fortawesome/free-solid-svg-icons';
-import { UserInputs, CoverageType } from '../types/user';
+import { UserInputs } from '../types/user';
 import { PlanData } from '../types';
 import { generateChartData, calculateUserSpending } from '../utils/chartDataGenerator';
 
@@ -46,28 +46,16 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
   const chartRef = useRef<any>(null);
   const [zoomHistory, setZoomHistory] = useState<Array<{ min: number; max: number }>>([]);
 
-  // Calculate max spending based on highest OOP maximum
-  const maxSpending = useMemo(() => {
-    const highestOOPMax = Math.max(
-      ...planData.plans.map(plan => {
-        const oopMax = plan.out_of_pocket_maximum.in_network;
-        if (userInputs.coverage === CoverageType.Single) {
-          return oopMax.individual;
-        } else {
-          return oopMax.family;
-        }
-      })
-    );
-    return highestOOPMax + 10_000;
-  }, [planData, userInputs.coverage]);
+  // Generate chart data and get max spending
+  const { plans: chartPlans, maxSpending } = useMemo(
+    () => generateChartData(planData, userInputs),
+    [planData, userInputs]
+  );
 
   const chartData = useMemo(() => {
-    // Generate chart data for all plans
-    const allChartData = generateChartData(planData, userInputs);
-
     // Convert to Chart.js format with x,y coordinates
     // Use chart_color from plan data, fallback to gray if not specified
-    const datasets = allChartData.map(planChart => {
+    const datasets = chartPlans.map(planChart => {
       // Find the corresponding plan to get its color
       const plan = planData.plans.find(p => p.name === planChart.planName);
       const color = plan?.chart_color || '#6b7280';
@@ -88,7 +76,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
     return {
       datasets,
     };
-  }, [planData, userInputs]);
+  }, [chartPlans, planData]);
 
   const annotations = useMemo(() => {
     const annotationConfig: Record<string, any> = {};
