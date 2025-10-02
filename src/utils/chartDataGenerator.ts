@@ -77,8 +77,9 @@ export function generateChartData(planData: PlanData, userInputs: UserInputs): C
   });
 
   // Find the maximum spending needed across all plans, then add $10k buffer
+  // Also ensure we go to at least 2x the user's estimated spending
   const maxSpendingToHitOOP = Math.max(...spendingToHitOOPMax);
-  const maxSpending = maxSpendingToHitOOP + 10_000;
+  const maxSpending = Math.max(maxSpendingToHitOOP + 10_000, userSpending * 2);
 
   // Generate 500 spending points for smooth lines
   const numPoints = 500;
