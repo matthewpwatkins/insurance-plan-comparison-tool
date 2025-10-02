@@ -358,20 +358,34 @@ class PlanExecution {
       let deductiblePortion = 0;
       let coinsurancePortion = 0;
 
-      // Apply deductible first
-      const applicableDeductible = Math.min(
-        this.deductibleRemaining(),
-        remainingCost,
-        this.oopRemaining()
-      );
-      if (applicableDeductible > 0) {
-        this.outOfPocketSpent += applicableDeductible;
-        this.deductibleSpent += applicableDeductible;
-        remainingCost -= applicableDeductible;
-        deductiblePortion = applicableDeductible;
+      // Determine deductible behavior defaults based on whether plan has a deductible
+      const planHasDeductible = this.getDeductibleForCoverage() > 0;
+      const requiresDeductibleToBeMet = benefits.requires_deductible_to_be_met ?? planHasDeductible;
+      const contributesToDeductible = benefits.contributes_to_deductible ?? planHasDeductible;
+      const contributesToOOPMax = benefits.contributes_to_out_of_pocket_max ?? true;
+
+      // Apply deductible if required and not yet met
+      if (requiresDeductibleToBeMet && this.deductibleRemaining() > 0) {
+        const applicableDeductible = Math.min(
+          this.deductibleRemaining(),
+          remainingCost,
+          contributesToOOPMax ? this.oopRemaining() : remainingCost
+        );
+        if (applicableDeductible > 0) {
+          // Count toward OOP max if configured
+          if (contributesToOOPMax) {
+            this.outOfPocketSpent += applicableDeductible;
+          }
+          // Count toward deductible if configured
+          if (contributesToDeductible) {
+            this.deductibleSpent += applicableDeductible;
+          }
+          remainingCost -= applicableDeductible;
+          deductiblePortion = applicableDeductible;
+        }
       }
 
-      // Apply coinsurance to remaining cost after deductible
+      // Apply coinsurance to remaining cost after deductible (or full cost if not requiring deductible)
       const coinsurance = benefits.coinsurance || 0;
       if (coinsurance > 0 && remainingCost > 0) {
         let coinsuranceAmount = remainingCost * coinsurance;
@@ -381,8 +395,13 @@ class PlanExecution {
           coinsuranceAmount = Math.min(coinsuranceAmount, benefits.max_coinsurance);
         }
 
-        const applicableCoinsurance = Math.min(coinsuranceAmount, this.oopRemaining());
-        this.outOfPocketSpent += applicableCoinsurance;
+        const applicableCoinsurance = contributesToOOPMax
+          ? Math.min(coinsuranceAmount, this.oopRemaining())
+          : coinsuranceAmount;
+
+        if (contributesToOOPMax) {
+          this.outOfPocketSpent += applicableCoinsurance;
+        }
         coinsurancePortion = applicableCoinsurance;
       }
 

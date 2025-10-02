@@ -34,6 +34,9 @@ export interface CostStructure {
   coinsurance?: number;
   max_coinsurance?: number;
   is_free?: boolean;
+  requires_deductible_to_be_met?: boolean;
+  contributes_to_deductible?: boolean;
+  contributes_to_out_of_pocket_max?: boolean;
   qty_cap?: number;
   cost_cap?: number;
 }

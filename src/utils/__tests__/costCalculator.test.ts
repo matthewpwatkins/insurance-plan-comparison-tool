@@ -760,6 +760,207 @@ describe('costCalculator', () => {
       expect(employerIndex).toBeGreaterThan(12);
     });
 
+    it('should handle telemedicine with requires_deductible_to_be_met=false and contributes_to_deductible=false', () => {
+      const hsaPlanWithTelemedicine = {
+        ...mockHSAPlan,
+        categories: {
+          telemedicine_pcp: {
+            in_network_coverage: {
+              coinsurance: 0.2,
+              requires_deductible_to_be_met: false,
+              contributes_to_deductible: false,
+            },
+            out_of_network_coverage: { coinsurance: 0.4 },
+          },
+        },
+      };
+
+      const userInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'telemedicine_pcp',
+              estimate: {
+                quantity: 1,
+                costPerVisit: 100,
+                isInNetwork: true,
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(hsaPlanWithTelemedicine, mockPlanData, userInputs);
+
+      // Should apply only coinsurance: $100 * 0.2 = $20
+      expect(result.outOfPocketCosts).toBe(20);
+
+      // Deductible should remain at full amount (not reduced)
+      const visitEntry = result.ledger.inNetworkExpenses.find(entry =>
+        entry.category === 'telemedicine_pcp'
+      );
+      expect(visitEntry).toBeDefined();
+      expect(visitEntry!.deductibleRemaining).toBe(1650); // Full deductible unchanged
+
+      // OOP max should be reduced by the $20 coinsurance
+      expect(visitEntry!.outOfPocketRemaining).toBe(5980); // 6000 - 20
+    });
+
+    it('should apply deductible for out-of-network telemedicine with default behavior', () => {
+      const hsaPlanWithTelemedicine = {
+        ...mockHSAPlan,
+        categories: {
+          telemedicine_pcp: {
+            in_network_coverage: {
+              coinsurance: 0.2,
+              requires_deductible_to_be_met: false,
+              contributes_to_deductible: false,
+            },
+            out_of_network_coverage: { coinsurance: 0.4 }, // Uses defaults
+          },
+        },
+      };
+
+      const userInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'telemedicine_pcp',
+              estimate: {
+                quantity: 1,
+                costPerVisit: 100,
+                isInNetwork: false, // Out of network
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(hsaPlanWithTelemedicine, mockPlanData, userInputs);
+
+      // Should apply deductible first: full $100 goes to deductible
+      expect(result.outOfPocketCosts).toBe(100);
+
+      // Deductible should be reduced (out-of-network single deductible is 3300)
+      const visitEntry = result.ledger.outOfNetworkExpenses.find(entry =>
+        entry.category === 'telemedicine_pcp'
+      );
+      expect(visitEntry).toBeDefined();
+      expect(visitEntry!.deductibleRemaining).toBe(1550); // In-network deductible: 1650 - 100
+    });
+
+    it('should handle multiple telemedicine visits that dont contribute to deductible', () => {
+      const hsaPlanWithTelemedicine = {
+        ...mockHSAPlan,
+        categories: {
+          telemedicine_pcp: {
+            in_network_coverage: {
+              coinsurance: 0.4,
+              requires_deductible_to_be_met: false,
+              contributes_to_deductible: false,
+            },
+          },
+        },
+      };
+
+      const userInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'telemedicine_pcp',
+              estimate: {
+                quantity: 3,
+                costPerVisit: 150,
+                isInNetwork: true,
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(hsaPlanWithTelemedicine, mockPlanData, userInputs);
+
+      // Each visit: $150 * 0.4 = $60, total: $60 * 3 = $180
+      expect(result.outOfPocketCosts).toBe(180);
+
+      // Deductible should remain unchanged across all visits
+      const allTeleVisits = result.ledger.inNetworkExpenses.filter(entry =>
+        entry.category === 'telemedicine_pcp'
+      );
+      expect(allTeleVisits).toHaveLength(3);
+      allTeleVisits.forEach((entry, index) => {
+        expect(entry.deductibleRemaining).toBe(1650); // Deductible never touched
+        // OOP should decrease with each visit
+        expect(entry.outOfPocketRemaining).toBe(6000 - (60 * (index + 1)));
+      });
+    });
+
+    it('should handle mixed regular and no-deductible-contribution visits correctly', () => {
+      const hsaPlanWithMixedServices = {
+        ...mockHSAPlan,
+        categories: {
+          telemedicine_pcp: {
+            in_network_coverage: {
+              coinsurance: 0.2,
+              requires_deductible_to_be_met: false,
+              contributes_to_deductible: false,
+            },
+          },
+          office_visit_pcp: {
+            in_network_coverage: { coinsurance: 0.2 }, // Uses defaults (requires & contributes to deductible)
+          },
+        },
+      };
+
+      const userInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'telemedicine_pcp',
+              estimate: {
+                quantity: 1,
+                costPerVisit: 100,
+                isInNetwork: true,
+              },
+            },
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: {
+                quantity: 1,
+                costPerVisit: 200,
+                isInNetwork: true,
+              },
+            },
+          ],
+        },
+      };
+
+      const result = calculatePlanCost(hsaPlanWithMixedServices, mockPlanData, userInputs);
+
+      // Telemedicine: $100 * 0.2 = $20 (doesn't require/contribute to deductible)
+      // Office visit: $200 goes to deductible
+      // Total OOP: $20 + $200 = $220
+      expect(result.outOfPocketCosts).toBe(220);
+
+      // Check telemedicine visit didn't touch deductible
+      const teleVisit = result.ledger.inNetworkExpenses.find(
+        entry => entry.category === 'telemedicine_pcp'
+      );
+      expect(teleVisit!.deductibleRemaining).toBe(1650);
+      expect(teleVisit!.outOfPocketRemaining).toBe(5980); // 6000 - 20
+
+      // Check office visit reduced deductible
+      const officeVisit = result.ledger.inNetworkExpenses.find(
+        entry => entry.category === 'office_visit_pcp'
+      );
+      expect(officeVisit!.deductibleRemaining).toBe(1450); // 1650 - 200
+      expect(officeVisit!.outOfPocketRemaining).toBe(5780); // 5980 - 200
+    });
+
     it('should handle zero-cost scenarios in ledger', () => {
       const zeroCostInputs = {
         ...mockUserInputs,

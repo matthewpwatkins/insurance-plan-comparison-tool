@@ -148,6 +148,27 @@ plans:
         qty_cap: 25
       skilled_nursing_facility:
         qty_cap: 50
+      telemedicine_pcp:
+        in_network_coverage:
+          coinsurance: 0.4
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.6
+      telemedicine_specialist:
+        in_network_coverage:
+          coinsurance: 0.4
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.6
+      telemedicine_urgent_care:
+        in_network_coverage:
+          coinsurance: 0.4
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.4
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   - name: "DMBA HSA 80"
@@ -225,6 +246,27 @@ plans:
       pharmacy_tier_3_retail_90:
         in_network_coverage:
           copay: 230
+      telemedicine_pcp:
+        in_network_coverage:
+          coinsurance: 0.2
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.4
+      telemedicine_specialist:
+        in_network_coverage:
+          coinsurance: 0.2
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.4
+      telemedicine_urgent_care:
+        in_network_coverage:
+          coinsurance: 0.2
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.2
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   - name: "DMBA PPO 70"
