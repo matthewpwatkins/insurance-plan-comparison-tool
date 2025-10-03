@@ -797,8 +797,8 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(20);
 
       // Deductible should remain at full amount (not reduced)
-      const visitEntry = result.ledger.inNetworkExpenses.find(entry =>
-        entry.category === 'telemedicine_pcp'
+      const visitEntry = result.ledger.inNetworkExpenses.find(
+        entry => entry.category === 'telemedicine_pcp'
       );
       expect(visitEntry).toBeDefined();
       expect(visitEntry!.deductibleRemaining).toBe(1650); // Full deductible unchanged
@@ -844,8 +844,8 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(100);
 
       // Deductible should be reduced (out-of-network single deductible is 3300)
-      const visitEntry = result.ledger.outOfNetworkExpenses.find(entry =>
-        entry.category === 'telemedicine_pcp'
+      const visitEntry = result.ledger.outOfNetworkExpenses.find(
+        entry => entry.category === 'telemedicine_pcp'
       );
       expect(visitEntry).toBeDefined();
       expect(visitEntry!.deductibleRemaining).toBe(1550); // In-network deductible: 1650 - 100
@@ -887,14 +887,14 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(180);
 
       // Deductible should remain unchanged across all visits
-      const allTeleVisits = result.ledger.inNetworkExpenses.filter(entry =>
-        entry.category === 'telemedicine_pcp'
+      const allTeleVisits = result.ledger.inNetworkExpenses.filter(
+        entry => entry.category === 'telemedicine_pcp'
       );
       expect(allTeleVisits).toHaveLength(3);
       allTeleVisits.forEach((entry, index) => {
         expect(entry.deductibleRemaining).toBe(1650); // Deductible never touched
         // OOP should decrease with each visit
-        expect(entry.outOfPocketRemaining).toBe(6000 - (60 * (index + 1)));
+        expect(entry.outOfPocketRemaining).toBe(6000 - 60 * (index + 1));
       });
     });
 

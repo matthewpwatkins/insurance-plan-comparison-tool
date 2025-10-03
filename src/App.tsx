@@ -21,7 +21,7 @@ function App() {
     year: getDefaultYear(),
     coverage: CoverageType.Family,
     ageGroup: 'under_55',
-    taxRate: 21.7,
+    taxRate: 26.55, // Default 22% federal + 4.55% state marginal tax rate (common UT)
     costs: {
       categoryEstimates: [],
     },

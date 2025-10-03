@@ -2,6 +2,7 @@ import React, { useState, useImperativeHandle, forwardRef } from 'react';
 import { Modal, Button, Accordion, Table } from 'react-bootstrap';
 import { formatCurrency } from '../utils/formatters';
 import { OrganizedLedger } from '../types';
+import HelpIcon from './HelpIcon';
 
 export interface FAQButtonRef {
   openFAQ: (sectionIndex?: number) => void;
@@ -241,19 +242,68 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                   </tr>
                 </thead>
                 <tbody>
-                  {ledgerData?.ledger.premiums.map((entry, index) => (
-                    <tr key={index}>
-                      <td>{entry.description}</td>
-                      <td className="text-danger">{formatCurrency(entry.amount, true)}</td>
-                    </tr>
-                  ))}
+                  {ledgerData?.ledger.premiums.map((entry, index) => {
+                    const isDiscount = entry.amount < 0;
+                    const isPremiumNetDiscount = entry.description === 'Premium Net Discount';
+                    return (
+                      <tr key={index}>
+                        <td>
+                          {entry.description}
+                          {isPremiumNetDiscount && (
+                            <>
+                              {' '}
+                              <HelpIcon
+                                title="The Premium Net Discount"
+                                content={
+                                  <div>
+                                    <p>
+                                      <strong>You're going to pay this amount either way.</strong>
+                                    </p>
+                                    <p>
+                                      When your employer takes premium payments out of your
+                                      paycheck, they do it <strong>before calculating taxes</strong>
+                                      . This means the price of the premiums never gets taxed.
+                                    </p>
+                                    <p>
+                                      If you didn't pay for health insurance through your employer,
+                                      you'd receive this money in your paycheck instead—and you'd
+                                      pay taxes on it. Either way, this amount is leaving your
+                                      pocket:
+                                    </p>
+                                    <ul>
+                                      <li>
+                                        <strong>Pay it as premiums:</strong> Goes to your health
+                                        insurance
+                                      </li>
+                                      <li>
+                                        <strong>Pay it as taxes:</strong> Goes to the government
+                                      </li>
+                                    </ul>
+                                    <p>
+                                      The <strong>Premium Net Discount</strong> is the tax you would
+                                      have paid on this income. Since you're using it for insurance
+                                      premiums instead, it effectively reduces your net premium cost
+                                      for purposes of comparing different health plans.
+                                    </p>
+                                  </div>
+                                }
+                              />
+                            </>
+                          )}
+                        </td>
+                        <td className={isDiscount ? 'text-success' : 'text-danger'}>
+                          {formatCurrency(entry.amount, true)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="table-active">
                     <td>
-                      <strong>Total Premiums</strong>
+                      <strong>Net Premiums</strong>
                     </td>
-                    <td className="text-danger">
+                    <td>
                       <strong>
                         {formatCurrency(
                           ledgerData?.ledger.premiums.reduce(
@@ -290,28 +340,43 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                             </tr>
                           </thead>
                           <tbody>
-                            {ledgerData.ledger.inNetworkExpenses.map((entry, index) => (
-                              <tr key={index}>
-                                <td>
-                                  {entry.categoryDisplayName}
-                                  {entry.notes && (
-                                    <div className="text-muted small">{entry.notes}</div>
+                            {ledgerData.ledger.inNetworkExpenses.map((entry, index) => {
+                              const isInitialState = entry.category === 'initial_state';
+                              return (
+                                <tr key={index}>
+                                  <td>
+                                    {entry.categoryDisplayName}
+                                    {entry.notes && (
+                                      <div className="text-muted small">{entry.notes}</div>
+                                    )}
+                                  </td>
+                                  <td>
+                                    {isInitialState
+                                      ? '—'
+                                      : formatCurrency(entry.billedAmount, true)}
+                                  </td>
+                                  {showCopayColumn && (
+                                    <td>{entry.copay ? formatCurrency(entry.copay, true) : '—'}</td>
                                   )}
-                                </td>
-                                <td>{formatCurrency(entry.billedAmount, true)}</td>
-                                {showCopayColumn && (
-                                  <td>{entry.copay ? formatCurrency(entry.copay, true) : '—'}</td>
-                                )}
-                                <td
-                                  className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}
-                                >
-                                  {formatCurrency(entry.employeeResponsibility, true)}
-                                </td>
-                                <td>{formatCurrency(entry.insuranceResponsibility, true)}</td>
-                                <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
-                                <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
-                              </tr>
-                            ))}
+                                  <td
+                                    className={
+                                      entry.employeeResponsibility > 0 ? 'text-danger' : ''
+                                    }
+                                  >
+                                    {isInitialState
+                                      ? '—'
+                                      : formatCurrency(entry.employeeResponsibility, true)}
+                                  </td>
+                                  <td>
+                                    {isInitialState
+                                      ? '—'
+                                      : formatCurrency(entry.insuranceResponsibility, true)}
+                                  </td>
+                                  <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
+                                  <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                           <tfoot>
                             <tr className="table-active">
@@ -382,28 +447,43 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                             </tr>
                           </thead>
                           <tbody>
-                            {ledgerData.ledger.outOfNetworkExpenses.map((entry, index) => (
-                              <tr key={index}>
-                                <td>
-                                  {entry.categoryDisplayName}
-                                  {entry.notes && (
-                                    <div className="text-muted small">{entry.notes}</div>
+                            {ledgerData.ledger.outOfNetworkExpenses.map((entry, index) => {
+                              const isInitialState = entry.category === 'initial_state';
+                              return (
+                                <tr key={index}>
+                                  <td>
+                                    {entry.categoryDisplayName}
+                                    {entry.notes && (
+                                      <div className="text-muted small">{entry.notes}</div>
+                                    )}
+                                  </td>
+                                  <td>
+                                    {isInitialState
+                                      ? '—'
+                                      : formatCurrency(entry.billedAmount, true)}
+                                  </td>
+                                  {showCopayColumn && (
+                                    <td>{entry.copay ? formatCurrency(entry.copay, true) : '—'}</td>
                                   )}
-                                </td>
-                                <td>{formatCurrency(entry.billedAmount, true)}</td>
-                                {showCopayColumn && (
-                                  <td>{entry.copay ? formatCurrency(entry.copay, true) : '—'}</td>
-                                )}
-                                <td
-                                  className={entry.employeeResponsibility > 0 ? 'text-danger' : ''}
-                                >
-                                  {formatCurrency(entry.employeeResponsibility, true)}
-                                </td>
-                                <td>{formatCurrency(entry.insuranceResponsibility, true)}</td>
-                                <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
-                                <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
-                              </tr>
-                            ))}
+                                  <td
+                                    className={
+                                      entry.employeeResponsibility > 0 ? 'text-danger' : ''
+                                    }
+                                  >
+                                    {isInitialState
+                                      ? '—'
+                                      : formatCurrency(entry.employeeResponsibility, true)}
+                                  </td>
+                                  <td>
+                                    {isInitialState
+                                      ? '—'
+                                      : formatCurrency(entry.insuranceResponsibility, true)}
+                                  </td>
+                                  <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
+                                  <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                           <tfoot>
                             <tr className="table-active">
@@ -462,7 +542,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(({ showButton = true 
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Annual Premiums</td>
+                    <td>Net Annual Premiums</td>
                     <td className="text-danger">
                       {formatCurrency(
                         ledgerData?.ledger.premiums.reduce((sum, entry) => sum + entry.amount, 0) ||

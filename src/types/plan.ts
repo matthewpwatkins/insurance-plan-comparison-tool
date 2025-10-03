@@ -65,6 +65,7 @@ export interface HealthPlan {
   categories: Record<string, NetworkBenefits | undefined>;
   employer_hsa_contribution?: PlanPremiums;
   prescriptions_subject_to_deductible?: boolean;
+  premiums_are_pre_tax?: boolean; // Defaults to true - indicates premiums paid through Section 125 cafeteria plan
 }
 
 export interface CategoriesData {

@@ -56,7 +56,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
               style={{ cursor: 'pointer' }}
               onClick={() => onShowWork(result)}
             >
-              <FontAwesomeIcon icon={faList} />
+              <FontAwesomeIcon icon={faList} /> Details
             </Badge>
           </div>
         </Card.Header>
@@ -64,7 +64,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
           <Row className="g-3">
             <Col xs={6} md={4} lg={3}>
               <small className="text-muted d-block">Your Premiums</small>
-              <div className="fw-semibold fs-6">{formatCurrency(result.annualPremiums)}</div>
+              <div className="fw-semibold fs-6">{formatCurrency(result.netAnnualPremiums)}</div>
             </Col>
             <Col xs={6} md={4} lg={3}>
               <small className="text-muted d-block">Your Out-of-Pocket Costs</small>
@@ -99,7 +99,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
             <Col xs={6} md={4} lg={3}>
               <small className="text-muted d-block">Your Tax Savings</small>
               <div className="fw-semibold text-success fs-6">
-                {formatCurrency(result.taxSavings)}
+                {result.taxSavings > 0 ? (
+                  formatCurrency(result.taxSavings)
+                ) : (
+                  <span className="text-muted">$0</span>
+                )}
               </div>
             </Col>
             <Col xs={6} md={4} lg={3}>
@@ -122,7 +126,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
                       <p>
                         It includes:
                         <ul>
-                          <li>Annual premiums</li>
+                          <li>Net annual premiums (after pre-tax discount)</li>
                           <li>Out-of-pocket maximum</li>
                           <li>Minus employer contributions</li>
                           <li>Minus tax savings from HSA/FSA contributions</li>

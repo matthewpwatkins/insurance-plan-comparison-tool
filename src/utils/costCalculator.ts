@@ -46,19 +46,28 @@ export const calculatePlanCost = (
   const { userContribution, employerContribution, taxSavings } =
     calculateContributionsAndTaxSavings(plan, planData, userInputs, taxRateDecimal);
 
+  // Calculate premium discount (if premiums are pre-tax through Section 125)
+  const premiumsArePreTax = plan.premiums_are_pre_tax ?? true; // Default to true
+  const payrollTaxRate =
+    (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
+  const premiumDiscount = premiumsArePreTax
+    ? annualPremiums * (taxRateDecimal + payrollTaxRate)
+    : 0;
+  const netAnnualPremiums = annualPremiums - premiumDiscount;
+
   // Create plan execution to track expenses
   const execution = new PlanExecution(plan, coverage);
 
-  // Add monthly premiums to ledger
-  execution.addMonthlyPremiums(plan.monthly_premiums[coverage]);
+  // Add monthly premiums to ledger (with pre-tax discount)
+  execution.addMonthlyPremiums(plan.monthly_premiums[coverage], premiumDiscount / 12);
 
   // Add employer contribution to ledger
   execution.addEmployerContribution(employerContribution);
 
-  // Add tax savings to ledger
+  // Add HSA/FSA contribution tax savings to ledger
   const isHSA = isHSAQualified(plan, planData, coverage);
   const contributionType = isHSA ? ContributionType.HSA : ContributionType.FSA;
-  execution.addTaxSavings(taxSavings, contributionType);
+  execution.addContributionTaxSavings(taxSavings, contributionType);
 
   // Process all category expenses
   for (const categoryEstimate of costs.categoryEstimates) {
@@ -97,28 +106,31 @@ export const calculatePlanCost = (
   const outOfPocketCosts = execution.getTotalOutOfPocket();
   const ledger = execution.getLedger();
 
-  // Calculate total cost (employer contributions reduce total cost as they're free money)
-  const totalCost = annualPremiums + outOfPocketCosts - taxSavings - employerContribution;
+  // Calculate total cost (using net premiums after pre-tax discount)
+  const totalCost = netAnnualPremiums + outOfPocketCosts - taxSavings - employerContribution;
 
   // Calculate maximum annual cost (worst-case scenario at OOP max)
   const oopMax = plan.out_of_pocket_maximum.in_network;
   const oopMaxValue = coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
-  const maxAnnualCost = annualPremiums + oopMaxValue - taxSavings - employerContribution;
+  const maxAnnualCost = netAnnualPremiums + oopMaxValue - taxSavings - employerContribution;
 
   return {
     planName: plan.name,
     contributionType: contributionType,
     annualPremiums,
+    netAnnualPremiums,
+    premiumDiscount,
     userContribution,
     employerContribution,
     totalContributions: userContribution + employerContribution,
-    taxSavings,
+    taxSavings, // HSA/FSA contribution tax savings only
     outOfPocketCosts,
     totalCost: totalCost, // Can be negative if tax savings exceed costs
     maxAnnualCost,
     breakdown: {
-      premiums: annualPremiums,
-      taxSavings: -taxSavings, // Negative because it reduces total cost
+      premiums: netAnnualPremiums, // Net premiums after pre-tax discount
+      premiumDiscount: -premiumDiscount, // Negative because it reduces premiums
+      contributionTaxSavings: -taxSavings, // Negative because it reduces total cost
       employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
       net: totalCost,
@@ -200,14 +212,24 @@ class PlanExecution {
   }
 
   /**
-   * Add monthly premium entries to the ledger
+   * Add monthly premium entries to the ledger with pre-tax discount
    */
-  addMonthlyPremiums(monthlyPremium: number): void {
+  addMonthlyPremiums(monthlyGrossPremium: number, monthlyDiscount: number): void {
+    // Add all 12 months of gross premiums
     for (let month = 1; month <= 12; month++) {
       this.premiums.push({
         type: 'premium',
         description: `Month ${month}`,
-        amount: monthlyPremium,
+        amount: monthlyGrossPremium,
+      });
+    }
+
+    // Add total pre-tax benefit as a single line item at the end
+    if (monthlyDiscount > 0) {
+      this.premiums.push({
+        type: 'premium',
+        description: 'Premium Net Discount',
+        amount: -(monthlyDiscount * 12),
       });
     }
   }
@@ -226,9 +248,9 @@ class PlanExecution {
   }
 
   /**
-   * Add tax savings entry to the ledger
+   * Add HSA/FSA contribution tax savings entry to the ledger
    */
-  addTaxSavings(amount: number, contributionType: ContributionType): void {
+  addContributionTaxSavings(amount: number, contributionType: ContributionType): void {
     if (amount > 0) {
       this.contributionsAndSavings.push({
         type: 'savings',
@@ -451,11 +473,38 @@ class PlanExecution {
       });
     };
 
+    // Create initial state entry showing starting deductible and OOP values
+    const createInitialStateEntry = (): ExpenseEntry => ({
+      type: 'expense',
+      network: 'in_network',
+      category: 'initial_state',
+      categoryDisplayName: 'Initial state',
+      isPreventive: false,
+      isFree: false,
+      billedAmount: 0,
+      employeeResponsibility: 0,
+      insuranceResponsibility: 0,
+      deductibleRemaining: this.getDeductibleForCoverage(),
+      outOfPocketRemaining: this.getOOPMaxForCoverage(),
+    });
+
+    // Add initial state row to the beginning of in-network expenses if there are any expenses
+    const inNetworkWithInitial =
+      this.inNetworkExpenses.length > 0
+        ? [createInitialStateEntry(), ...sortExpenses(this.inNetworkExpenses)]
+        : sortExpenses(this.inNetworkExpenses);
+
+    // Add initial state row to the beginning of out-of-network expenses if there are any expenses
+    const outOfNetworkWithInitial =
+      this.outOfNetworkExpenses.length > 0
+        ? [createInitialStateEntry(), ...sortExpenses(this.outOfNetworkExpenses)]
+        : sortExpenses(this.outOfNetworkExpenses);
+
     return {
       contributionsAndSavings: [...this.contributionsAndSavings],
       premiums: [...this.premiums],
-      inNetworkExpenses: sortExpenses(this.inNetworkExpenses),
-      outOfNetworkExpenses: sortExpenses(this.outOfNetworkExpenses),
+      inNetworkExpenses: inNetworkWithInitial,
+      outOfNetworkExpenses: outOfNetworkWithInitial,
     };
   }
 

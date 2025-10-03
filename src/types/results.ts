@@ -38,17 +38,20 @@ export interface OrganizedLedger {
 export interface PlanResult {
   planName: string;
   contributionType: ContributionType;
-  annualPremiums: number;
+  annualPremiums: number; // Gross premiums before pre-tax benefit
+  netAnnualPremiums: number; // Net premiums after pre-tax benefit
+  premiumDiscount: number; // Pre-tax benefit discount amount
   userContribution: number;
   employerContribution: number;
   totalContributions: number;
-  taxSavings: number;
+  taxSavings: number; // HSA/FSA contribution tax savings only
   outOfPocketCosts: number;
   totalCost: number;
   maxAnnualCost: number; // Maximum possible cost in worst-case scenario (at OOP max)
   breakdown: {
     premiums: number;
-    taxSavings: number;
+    premiumDiscount: number;
+    contributionTaxSavings: number; // HSA/FSA contribution tax savings
     employerContribution: number;
     outOfPocket: number;
     net: number;

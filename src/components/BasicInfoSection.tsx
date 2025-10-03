@@ -95,20 +95,24 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange })
             <Col md={6}>
               <Form.Group>
                 <Form.Label className="d-flex justify-content-between">
-                  <span>Marginal Tax Rate</span>
+                  <span>Marginal Tax Rate (Federal + State)</span>
                   <HelpIcon
                     title="Marginal Tax Rate"
                     content={
                       <div>
                         <p>
-                          Your marginal tax rate is the percentage of tax you pay on your last
-                          dollar of income.
+                          Your marginal tax rate is the percentage of income tax you pay on your
+                          last dollar of income.{' '}
+                          <strong>
+                            Enter your combined federal + state marginal income tax rate.
+                          </strong>
                         </p>
                         <p>
                           <strong>How to find your rate:</strong>
                         </p>
                         <ul>
                           <li>Check your most recent tax return or pay stub</li>
+                          <li>Add your federal marginal rate + state marginal rate</li>
                           <li>Use online tax calculators</li>
                           <li>Consult with a tax professional</li>
                         </ul>
@@ -116,13 +120,19 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange })
                           <strong>Why it matters:</strong>
                         </p>
                         <ul>
+                          <li>Health insurance premiums paid through your employer are pre-tax</li>
                           <li>HSA and FSA contributions reduce your taxable income</li>
-                          <li>Higher tax rates = more savings from pre-tax contributions</li>
+                          <li>
+                            Higher tax rates = more savings from pre-tax contributions and premiums
+                          </li>
                           <li>This affects the true cost comparison between plans</li>
                         </ul>
                         <p>
-                          <strong>Common rates:</strong> 12%, 22%, 24%, 32%, 35%, 37% (for federal
-                          income tax, plus state taxes if applicable)
+                          <strong>Common federal rates:</strong> 12%, 22%, 24%, 32%, 35%, 37%
+                        </p>
+                        <p>
+                          <strong>Example:</strong> If you're in the 22% federal bracket and have a
+                          5% state tax rate, enter 27%.
                         </p>
                       </div>
                     }
