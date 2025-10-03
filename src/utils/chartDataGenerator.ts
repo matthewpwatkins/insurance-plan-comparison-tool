@@ -1,5 +1,5 @@
-import { PlanData, UserInputs, CoverageType } from '../types';
-import { calculatePlanCost } from './costCalculator';
+import { PlanData, UserInputs, PlanResult } from '../types';
+import { calculateAllPlans } from './costCalculator';
 import { isHSAQualified } from '../services/planDataService';
 
 /**
@@ -16,7 +16,7 @@ export interface ChartPoint {
 export interface PlanChartData {
   planName: string;
   data: ChartPoint[];
-  dashed?: boolean; // True for PPO plans (projections less reliable)
+  dashed?: boolean; // True for PPO plans (projections are approximations)
 }
 
 /**
@@ -41,111 +41,81 @@ export function calculateUserSpending(planData: PlanData, userInputs: UserInputs
 
 /**
  * Generate chart data for all plans showing how total cost varies with healthcare spending
- * - HSA plans: Pure mathematical projection (deductible + coinsurance)
- * - PPO plans: Linear approximation based on user's effective spending rate
+ *
+ * Approach:
+ * - Calculate PlanResult for user's actual inputs to get accurate costs
+ * - For each plan, generate a line that:
+ *   1. Starts at base cost (net premiums - tax savings - employer contributions)
+ *   2. Passes through the user's actual spending point at the calculated totalCost
+ *   3. Continues until hitting maxAnnualCost (OOP max plateau)
+ *   4. Flatlines from there
  */
 export function generateChartData(planData: PlanData, userInputs: UserInputs): ChartDataResult {
   const userSpending = calculateUserSpending(planData, userInputs);
 
-  // Calculate the spending level where each plan hits its OOP maximum
-  const spendingToHitOOPMax = planData.plans.map(plan => {
-    const oopMax = plan.out_of_pocket_maximum.in_network;
-    const oopMaxValue =
-      userInputs.coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
-    const deductible = plan.annual_deductible.in_network;
-    const deductibleValue =
-      userInputs.coverage === CoverageType.Single ? deductible.single : deductible.family;
+  // Calculate results for user's actual inputs
+  const planResults = calculateAllPlans(planData, userInputs);
 
-    const isHSA = isHSAQualified(plan, planData, userInputs.coverage);
+  // Calculate max spending range for chart
+  // Find the spending level where each plan hits its OOP max (flatline)
+  const spendingAtFlatlines = planResults.map(planResult => {
+    const baseCost =
+      planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
 
-    if (isHSA) {
-      // HSA: spending = deductible + (OOP_max - deductible) / coinsurance
-      const coinsurance = plan.default.in_network_coverage?.coinsurance || 0.4;
-      return deductibleValue + (oopMaxValue - deductibleValue) / coinsurance;
+    let slope: number;
+    if (userSpending > 0 && planResult.outOfPocketCosts > 0) {
+      slope = planResult.outOfPocketCosts / userSpending;
+    } else if (userSpending > 0) {
+      slope = 0.01;
     } else {
-      // PPO: Calculate effective rate from user's estimates
-      if (userSpending > 0) {
-        const baseResult = calculatePlanCost(plan, planData, userInputs);
-        const effectiveRate = baseResult.outOfPocketCosts / userSpending;
-        return oopMaxValue / effectiveRate;
-      } else {
-        // Use default coinsurance if no user estimates
-        const defaultCoinsurance = plan.default.in_network_coverage?.coinsurance || 0.3;
-        return oopMaxValue / defaultCoinsurance;
-      }
+      const plan = planData.plans.find(p => p.name === planResult.planName);
+      const defaultCoinsurance = plan?.default.in_network_coverage?.coinsurance || 0.3;
+      slope = defaultCoinsurance;
     }
+
+    // Calculate where this plan hits OOP max
+    return slope > 0 ? (planResult.maxAnnualCost - baseCost) / slope : 0;
   });
 
-  // Find the maximum spending needed across all plans, then add $10k buffer
-  // Also ensure we go to at least 2x the user's estimated spending
-  const maxSpendingToHitOOP = Math.max(...spendingToHitOOPMax);
-  const maxSpending = Math.max(maxSpendingToHitOOP + 10_000, userSpending * 2);
+  // Find the latest (highest spending) flatline and add $10k
+  const latestFlatline = Math.max(...spendingAtFlatlines);
+  const tenKPastLatestFlatline = latestFlatline + 10_000;
 
-  // Generate 500 spending points for smooth lines
-  const numPoints = 500;
+  // Use the greater of: 2x user spending OR $10k past latest flatline
+  const maxSpending = Math.max(userSpending * 2, tenKPastLatestFlatline);
+
+  // Generate spending points every $500 for cleaner data
   const spendingPoints: number[] = [];
-  for (let i = 0; i <= numPoints; i++) {
-    spendingPoints.push((i / numPoints) * maxSpending);
+  for (let spending = 0; spending <= maxSpending; spending += 500) {
+    spendingPoints.push(spending);
+  }
+  // Add final point at maxSpending if not already there
+  if (spendingPoints[spendingPoints.length - 1] !== maxSpending) {
+    spendingPoints.push(maxSpending);
+  }
+
+  // Always include user's exact spending point for accurate intersection
+  if (userSpending > 0 && !spendingPoints.includes(userSpending)) {
+    spendingPoints.push(userSpending);
+    spendingPoints.sort((a, b) => a - b);
   }
 
   // Generate chart data for each plan
   const plans = planData.plans.map(plan => {
-    // Determine if this plan uses HSA (solid line) or PPO (dashed line)
+    const planResult = planResults.find(r => r.planName === plan.name)!;
     const isHSA = isHSAQualified(plan, planData, userInputs.coverage);
 
-    if (isHSA) {
-      // HSA: Pure mathematical projection with synthetic data
-      const dataPoints = spendingPoints.map(targetSpending => {
-        const syntheticInputs: UserInputs = {
-          year: userInputs.year,
-          coverage: userInputs.coverage,
-          ageGroup: userInputs.ageGroup,
-          taxRate: userInputs.taxRate,
-          hsaContribution: userInputs.hsaContribution,
-          fsaContribution: userInputs.fsaContribution,
-          costs: {
-            categoryEstimates: [
-              {
-                categoryId: 'other',
-                estimate: {
-                  quantity: 1,
-                  costPerVisit: targetSpending,
-                  isInNetwork: true,
-                },
-              },
-            ],
-          },
-        };
-
-        const result = calculatePlanCost(plan, planData, syntheticInputs);
-
-        return {
-          spending: targetSpending,
-          totalCost: result.totalCost,
-        };
-      });
-
-      return {
-        planName: plan.name,
-        data: dataPoints,
-        dashed: false,
-      };
-    } else {
-      // PPO: Linear approximation based on user's effective spending rate
-      const linearData = generatePPOLinearApproximation(
-        plan,
-        planData,
-        userInputs,
-        userSpending,
-        spendingPoints
-      );
-
-      return {
-        planName: plan.name,
-        data: linearData,
-        dashed: true,
-      };
-    }
+    // All plans now use linear approximation based on actual PlanResult
+    // This ensures the chart passes through the user's exact calculated cost
+    return generateLinearChartData(
+      plan,
+      planData,
+      userInputs,
+      planResult,
+      userSpending,
+      spendingPoints,
+      !isHSA // PPO plans use dashed lines
+    );
   });
 
   return {
@@ -155,46 +125,76 @@ export function generateChartData(planData: PlanData, userInputs: UserInputs): C
 }
 
 /**
- * Generate linear approximation for PPO plans based on user's effective spending rate
+ * Generate chart data using linear approximation based on actual PlanResult
+ *
+ * Both HSA and PPO plans use this linear approximation to ensure the chart
+ * passes through the user's exact calculated cost. While HSA plans technically
+ * have non-linear behavior (due to deductibles), the linear approximation
+ * ensures accuracy at the user's actual spending level.
+ *
+ * 1. Base cost (y-intercept): Net premiums - tax savings - employer contributions
+ * 2. Slope: Calculated from user's actual spending point
+ * 3. Plateau: At maxAnnualCost when OOP max is hit
  */
-function generatePPOLinearApproximation(
+function generateLinearChartData(
   plan: any,
   planData: PlanData,
   userInputs: UserInputs,
+  planResult: PlanResult,
   userSpending: number,
-  spendingPoints: number[]
-): ChartPoint[] {
-  // Calculate OOP maximum for this plan
-  const oopMax = plan.out_of_pocket_maximum.in_network;
-  const oopMaxValue =
-    userInputs.coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
+  spendingPoints: number[],
+  dashed: boolean
+): PlanChartData {
+  // Base cost: What you pay even with $0 healthcare spending
+  // = Net premiums (after Premium Net Discount) - tax savings - employer contributions
+  const baseCost =
+    planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
 
-  // Calculate fixed costs (premiums, tax savings, employer contribution)
-  const baseResult = calculatePlanCost(plan, planData, userInputs);
-  const fixedCosts =
-    baseResult.annualPremiums - baseResult.taxSavings - baseResult.employerContribution;
+  // Calculate slope from user's actual result
+  // Slope = rise / run = (totalCost - baseCost) / userSpending
+  let slope: number;
 
-  // Calculate effective spending rate from user's actual estimates
-  let effectiveRate: number;
-
-  if (userSpending > 0) {
-    // User has estimates - calculate their effective rate
-    const userOOPCosts = baseResult.outOfPocketCosts;
-    effectiveRate = userOOPCosts / userSpending;
+  if (userSpending > 0 && planResult.outOfPocketCosts > 0) {
+    // Use actual calculated effective rate
+    slope = planResult.outOfPocketCosts / userSpending;
+  } else if (userSpending > 0) {
+    // User has spending but no OOP costs (everything was free/copays hit OOP max)
+    // Use a small slope
+    slope = 0.01;
   } else {
-    // User has no estimates - use plan's default coinsurance rate
+    // No user spending - use plan's default coinsurance as estimate
     const defaultCoinsurance = plan.default.in_network_coverage?.coinsurance || 0.3;
-    effectiveRate = defaultCoinsurance;
+    slope = defaultCoinsurance;
   }
 
-  // Generate linear points: totalCost = fixedCosts + min(spending * effectiveRate, oopMax)
-  return spendingPoints.map(spending => {
-    const healthcareOOP = Math.min(spending * effectiveRate, oopMaxValue);
-    const totalCost = fixedCosts + healthcareOOP;
+  // Find the spending level where we hit OOP max
+  // At OOP max, totalCost = maxAnnualCost
+  // baseCost + (spending * slope) = maxAnnualCost
+  // spending = (maxAnnualCost - baseCost) / slope
+  const spendingAtOOPMax =
+    slope > 0 ? (planResult.maxAnnualCost - baseCost) / slope : Number.MAX_SAFE_INTEGER;
+
+  // Generate points
+  const dataPoints = spendingPoints.map(spending => {
+    let totalCost: number;
+
+    if (spending <= spendingAtOOPMax) {
+      // Before hitting OOP max: linear increase
+      totalCost = baseCost + spending * slope;
+    } else {
+      // After hitting OOP max: flatline at maxAnnualCost
+      totalCost = planResult.maxAnnualCost;
+    }
 
     return {
       spending,
-      totalCost,
+      totalCost: Math.round(totalCost), // Round to nearest dollar
     };
   });
+
+  return {
+    planName: plan.name,
+    data: dataPoints,
+    dashed, // Dashed for PPO (approximation), solid for HSA
+  };
 }

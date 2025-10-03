@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -61,6 +61,11 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
       const plan = planData.plans.find(p => p.name === planChart.planName);
       const color = plan?.chart_color || '#6b7280';
 
+      // Show point at user's spending level
+      const pointRadii = planChart.data.map(point =>
+        Math.abs(point.spending - currentSpending) < 1 ? 5 : 0
+      );
+
       return {
         label: planChart.planName,
         data: planChart.data.map(point => ({ x: point.spending, y: point.totalCost })),
@@ -68,7 +73,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         backgroundColor: color,
         borderWidth: 3,
         borderDash: planChart.dashed ? [8, 4] : undefined, // Dashed lines for PPO plans
-        pointRadius: 0,
+        pointRadius: pointRadii,
         pointHoverRadius: 6,
         tension: 0.1,
       };
@@ -77,7 +82,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
     return {
       datasets,
     };
-  }, [chartPlans, planData]);
+  }, [chartPlans, planData, currentSpending]);
 
   const annotations = useMemo(() => {
     const annotationConfig: Record<string, any> = {};
@@ -255,6 +260,43 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
       setZoomHistory([]); // Clear history on reset
     }
   };
+
+  // Show tooltip at user's spending point on initial load
+  useEffect(() => {
+    if (chartRef.current && chartPlans.length > 0) {
+      const chart = chartRef.current;
+
+      // Small delay to ensure chart is fully rendered
+      const timer = setTimeout(() => {
+        // Find the data point index closest to user's spending
+        const firstPlanData = chartPlans[0].data;
+        let closestIndex = 0;
+        let minDiff = Math.abs(firstPlanData[0].spending - currentSpending);
+
+        firstPlanData.forEach((point, index) => {
+          const diff = Math.abs(point.spending - currentSpending);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestIndex = index;
+          }
+        });
+
+        // Show tooltip at the closest point for all datasets
+        if (chart.tooltip) {
+          chart.tooltip.setActiveElements(
+            chartPlans.map((_, datasetIndex) => ({
+              datasetIndex,
+              index: closestIndex,
+            })),
+            { x: 0, y: 0 }
+          );
+          chart.update();
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [chartPlans, currentSpending]);
 
   return (
     <div style={{ marginTop: '2rem' }}>
