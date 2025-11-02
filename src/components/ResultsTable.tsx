@@ -3,15 +3,22 @@ import { Badge, Card, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faList } from '@fortawesome/free-solid-svg-icons';
 import { formatCurrency } from '../utils/formatters';
-import { PlanResult, ContributionType } from '../types';
+import { PlanResult, ContributionType, PlanData, UserInputs } from '../types';
 import HelpIcon from './HelpIcon';
 
 interface ResultsTableProps {
   results: PlanResult[];
   onShowWork: (result: PlanResult) => void;
+  planData: PlanData;
+  userInputs: UserInputs;
 }
 
-const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
+const ResultsTable: React.FC<ResultsTableProps> = ({
+  results,
+  onShowWork,
+  planData,
+  userInputs,
+}) => {
   if (!results || results.length === 0) {
     return null;
   }
@@ -64,7 +71,67 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
           <Row className="g-3">
             <Col xs={6} md={4} lg={3}>
               <small className="text-muted d-block">Your Premiums</small>
-              <div className="fw-semibold fs-6">{formatCurrency(result.netAnnualPremiums)}</div>
+              <div className="fw-semibold fs-6">{formatCurrency(result.annualPremiums)}</div>
+            </Col>
+            <Col xs={6} md={4} lg={3}>
+              <small className="text-muted d-block">
+                Net Premiums Discount{' '}
+                <HelpIcon
+                  title="Net Premiums Discount"
+                  content={
+                    <div>
+                      <p>
+                        This shows your <strong>tax savings from pre-tax premiums</strong> through
+                        your employer's Section 125 plan. This is not money you receive back - it's
+                        a discount used for apples-to-apples plan comparison.
+                      </p>
+                      <p>
+                        <strong>Your calculation breakdown:</strong>
+                      </p>
+                      <ul>
+                        <li>Annual premiums: {formatCurrency(result.annualPremiums)}</li>
+                        <li>Your marginal tax rate: {userInputs.taxRate}%</li>
+                        <li>Social Security tax: {planData.payroll_tax_rates.social_security}%</li>
+                        <li>Medicare tax: {planData.payroll_tax_rates.medicare}%</li>
+                        <li>
+                          <strong>
+                            Total tax rate:{' '}
+                            {(
+                              userInputs.taxRate +
+                              planData.payroll_tax_rates.social_security +
+                              planData.payroll_tax_rates.medicare
+                            ).toFixed(2)}
+                            %
+                          </strong>
+                        </li>
+                      </ul>
+                      <p>
+                        <strong>Tax savings calculation:</strong>
+                        <br />
+                        {formatCurrency(result.annualPremiums)} ×{' '}
+                        {(
+                          userInputs.taxRate +
+                          planData.payroll_tax_rates.social_security +
+                          planData.payroll_tax_rates.medicare
+                        ).toFixed(2)}
+                        % = <strong>{formatCurrency(result.premiumDiscount)}</strong>
+                      </p>
+                      <p>
+                        <strong>Why this matters:</strong> When premiums are deducted pre-tax, you
+                        avoid paying income and payroll taxes on that money. This discount helps
+                        compare plans fairly by showing the true after-tax cost.
+                      </p>
+                    </div>
+                  }
+                />
+              </small>
+              <div className="fw-semibold text-success fs-6">
+                {result.premiumDiscount > 0 ? (
+                  formatCurrency(result.premiumDiscount)
+                ) : (
+                  <span className="text-muted">$0</span>
+                )}
+              </div>
             </Col>
             <Col xs={6} md={4} lg={3}>
               <small className="text-muted d-block">Your Out-of-Pocket Costs</small>
@@ -137,7 +204,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ results, onShowWork }) => {
                         how much healthcare you use, you won't pay more than this amount.
                       </p>
                       <p>
-                        <strong>Note:</strong> This is the flatline value you'll see for this plan
+                        <strong>Note:</strong> This is the flat line value you'll see for this plan
                         on the Cost Comparison Chart at the bottom of the page.
                       </p>
                     </div>

@@ -225,7 +225,14 @@ function App() {
                     this year by choosing {results[0].planName}.
                   </Alert>
                 )}
-                <ResultsTable results={results} onShowWork={handleShowWork} />
+                {planData && (
+                  <ResultsTable
+                    results={results}
+                    onShowWork={handleShowWork}
+                    planData={planData}
+                    userInputs={userInputs}
+                  />
+                )}
                 {planData && <CostComparisonChart planData={planData} userInputs={userInputs} />}
               </div>
             )}

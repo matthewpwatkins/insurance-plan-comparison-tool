@@ -97,11 +97,15 @@ describe('chartDataGenerator - 2026 Real Data Bug Test', () => {
 
       console.log(`${calcResult.planName}:`);
       console.log(`  Calculator Total Cost: $${calcResult.totalCost.toFixed(2)}`);
-      console.log(`  Chart at User Spending ($${closestPoint.spending.toFixed(0)}): $${closestPoint.totalCost.toFixed(2)}`);
+      console.log(
+        `  Chart at User Spending ($${closestPoint.spending.toFixed(0)}): $${closestPoint.totalCost.toFixed(2)}`
+      );
       console.log(`  Difference: $${(closestPoint.totalCost - calcResult.totalCost).toFixed(2)}`);
       console.log(`  Calculator Worst Case: $${calcResult.maxAnnualCost.toFixed(2)}`);
       console.log(`  Chart Flatline: $${flatlinePoint.totalCost.toFixed(2)}`);
-      console.log(`  Flatline Difference: $${(flatlinePoint.totalCost - calcResult.maxAnnualCost).toFixed(2)}`);
+      console.log(
+        `  Flatline Difference: $${(flatlinePoint.totalCost - calcResult.maxAnnualCost).toFixed(2)}`
+      );
       console.log('');
     });
 
@@ -138,10 +142,18 @@ describe('chartDataGenerator - 2026 Real Data Bug Test', () => {
 
     console.log('\n=== TESTING ASSERTIONS ===');
     console.log('Chart should match calculator values at user spending level:');
-    console.log(`PPO 70: Chart $${ppo70ChartCost.toFixed(2)} should equal Calculator $${ppo70Calc!.totalCost.toFixed(2)}`);
-    console.log(`HSA 60: Chart $${hsa60ChartCost.toFixed(2)} should equal Calculator $${hsa60Calc!.totalCost.toFixed(2)}`);
-    console.log(`HSA 80: Chart $${hsa80ChartCost.toFixed(2)} should equal Calculator $${hsa80Calc!.totalCost.toFixed(2)}`);
-    console.log(`PPO 90: Chart $${ppo90ChartCost.toFixed(2)} should equal Calculator $${ppo90Calc!.totalCost.toFixed(2)}`);
+    console.log(
+      `PPO 70: Chart $${ppo70ChartCost.toFixed(2)} should equal Calculator $${ppo70Calc!.totalCost.toFixed(2)}`
+    );
+    console.log(
+      `HSA 60: Chart $${hsa60ChartCost.toFixed(2)} should equal Calculator $${hsa60Calc!.totalCost.toFixed(2)}`
+    );
+    console.log(
+      `HSA 80: Chart $${hsa80ChartCost.toFixed(2)} should equal Calculator $${hsa80Calc!.totalCost.toFixed(2)}`
+    );
+    console.log(
+      `PPO 90: Chart $${ppo90ChartCost.toFixed(2)} should equal Calculator $${ppo90Calc!.totalCost.toFixed(2)}`
+    );
 
     // These should be equal (within rounding tolerance of $10)
     expect(Math.abs(ppo70ChartCost - ppo70Calc!.totalCost)).toBeLessThan(10);
@@ -156,10 +168,18 @@ describe('chartDataGenerator - 2026 Real Data Bug Test', () => {
     const ppo90Flatline = ppo90Chart!.data[ppo90Chart!.data.length - 1].totalCost;
 
     console.log('\nChart flatlines should match calculator worst case:');
-    console.log(`PPO 70: Chart $${ppo70Flatline.toFixed(2)} should equal Calculator $${ppo70Calc!.maxAnnualCost.toFixed(2)}`);
-    console.log(`HSA 60: Chart $${hsa60Flatline.toFixed(2)} should equal Calculator $${hsa60Calc!.maxAnnualCost.toFixed(2)}`);
-    console.log(`HSA 80: Chart $${hsa80Flatline.toFixed(2)} should equal Calculator $${hsa80Calc!.maxAnnualCost.toFixed(2)}`);
-    console.log(`PPO 90: Chart $${ppo90Flatline.toFixed(2)} should equal Calculator $${ppo90Calc!.maxAnnualCost.toFixed(2)}`);
+    console.log(
+      `PPO 70: Chart $${ppo70Flatline.toFixed(2)} should equal Calculator $${ppo70Calc!.maxAnnualCost.toFixed(2)}`
+    );
+    console.log(
+      `HSA 60: Chart $${hsa60Flatline.toFixed(2)} should equal Calculator $${hsa60Calc!.maxAnnualCost.toFixed(2)}`
+    );
+    console.log(
+      `HSA 80: Chart $${hsa80Flatline.toFixed(2)} should equal Calculator $${hsa80Calc!.maxAnnualCost.toFixed(2)}`
+    );
+    console.log(
+      `PPO 90: Chart $${ppo90Flatline.toFixed(2)} should equal Calculator $${ppo90Calc!.maxAnnualCost.toFixed(2)}`
+    );
 
     expect(Math.abs(ppo70Flatline - ppo70Calc!.maxAnnualCost)).toBeLessThan(10);
     expect(Math.abs(hsa60Flatline - hsa60Calc!.maxAnnualCost)).toBeLessThan(10);
