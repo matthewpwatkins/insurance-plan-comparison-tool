@@ -16,6 +16,7 @@ import {
   ExpenseEntry,
   ContributionType,
   CoverageType,
+  NetworkBenefits,
 } from '../types';
 
 /**
@@ -616,23 +617,37 @@ class PlanExecution {
     return Math.max(0, deductible - this.deductibleSpent);
   }
 
-  private getCategoryBenefits(categoryId: string, network: 'in_network' | 'out_of_network') {
-    // Check if this category has specific benefits
-    const categoryBenefits = categoryId !== 'other' ? this.plan.categories[categoryId] : undefined;
-    if (categoryBenefits) {
-      if (network === 'in_network') {
-        return categoryBenefits.in_network_coverage;
-      } else {
-        return categoryBenefits.out_of_network_coverage;
-      }
+  /**
+   * Get effective benefits for a category by merging default benefits with category-specific benefits
+   */
+  private getEffectiveBenefits(categoryId: string): NetworkBenefits {
+    // Get category-specific benefits (if any)
+    const categoryBenefits = this.plan.categories[categoryId];
+    if (!categoryBenefits) {
+      return this.plan.default;
     }
 
-    // Fall back to default plan coverage (for "other" costs or unknown categories)
-    if (network === 'in_network') {
-      return this.plan.default.in_network_coverage;
-    } else {
-      return this.plan.default.out_of_network_coverage;
-    }
+    // Merge category benefits on top of default benefits
+    return {
+      ...this.plan.default,
+      ...categoryBenefits,
+      in_network_coverage: {
+        ...this.plan.default.in_network_coverage,
+        ...categoryBenefits.in_network_coverage,
+      },
+      out_of_network_coverage: {
+        ...this.plan.default.out_of_network_coverage,
+        ...categoryBenefits.out_of_network_coverage,
+      },
+    };
+  }
+
+  private getCategoryBenefits(categoryId: string, network: 'in_network' | 'out_of_network') {
+    const effectiveBenefits = this.getEffectiveBenefits(categoryId);
+
+    return network === 'in_network'
+      ? effectiveBenefits.in_network_coverage
+      : effectiveBenefits.out_of_network_coverage;
   }
 
   private getDeductibleForCoverage(): number {
