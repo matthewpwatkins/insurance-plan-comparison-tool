@@ -62,25 +62,6 @@ plans:
       out_of_network_coverage:
         coinsurance: 0.6
     categories:
-      colonoscopy_colorectal_screening:
-        in_network_coverage:
-          is_free: true
-        qty_cap: 1
-      immunizations:
-        in_network_coverage:
-          is_free: true
-        out_of_network_coverage:
-          is_free: true
-      mammograms:
-        in_network_coverage:
-          is_free: true
-        qty_cap: 1
-      maternity_physician:
-        in_network_coverage:
-          is_free: true
-      wellness_exam:
-        in_network_coverage:
-          is_free: true
       acupuncture:
         qty_cap: 12
       behavioral_mental_health_outpatient:
@@ -88,6 +69,10 @@ plans:
           coinsurance: 0.4
       chiropractic_therapy:
         qty_cap: 25
+      colonoscopy_colorectal_screening:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
       emergency_room_physician:
         out_of_network_coverage:
           coinsurance: 0.4
@@ -100,6 +85,11 @@ plans:
       imaging_diagnostic_professional:
         out_of_network_coverage:
           coinsurance: 0.4
+      immunizations:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          is_free: true
       infertility_ivf:
         cost_cap: 10000
       laboratory_outpatient:
@@ -107,6 +97,13 @@ plans:
           coinsurance: 0.4
       lifestyle_screenings:
         cost_cap: 100
+      mammograms:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      maternity_physician:
+        in_network_coverage:
+          is_free: true
       obesity_surgery:
         qty_cap: 1
       occupational_therapy_outpatient:
@@ -169,10 +166,15 @@ plans:
           contributes_to_deductible: false
         out_of_network_coverage:
           coinsurance: 0.4
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   - name: "DMBA HSA 80"
     chart_color: "#3b82f6"
+    # Prescriptions must meet deductible before copays apply
+    prescriptions_subject_to_deductible: true
     employer_hsa_contribution:
       single: 850
       two_party: 1_700
@@ -201,18 +203,52 @@ plans:
       out_of_network_coverage:
         coinsurance: 0.4
     categories:
-      maternity_physician:
+      acupuncture:
+        qty_cap: 12
+      behavioral_mental_health_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      chiropractic_therapy:
+        qty_cap: 25
+      colonoscopy_colorectal_screening:
         in_network_coverage:
           is_free: true
-      wellness_exam:
-        in_network_coverage:
-          is_free: true
+        qty_cap: 1
+      emergency_room_physician:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      hearing_aids:
+        cost_cap: 1200
+        qty_cap: 2
       imaging_advanced_professional:
         out_of_network_coverage:
           coinsurance: 0.2
       imaging_diagnostic_professional:
         out_of_network_coverage:
           coinsurance: 0.2
+      immunizations:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          is_free: true
+      infertility_ivf:
+        cost_cap: 10000
+      laboratory_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      lifestyle_screenings:
+        cost_cap: 100
+      mammograms:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      maternity_physician:
+        in_network_coverage:
+          is_free: true
+      obesity_surgery:
+        qty_cap: 1
+      occupational_therapy_outpatient:
+        qty_cap: 25
       pharmacy_specialty_tier_1:
         in_network_coverage:
           copay: 5
@@ -246,6 +282,10 @@ plans:
       pharmacy_tier_3_retail_90:
         in_network_coverage:
           copay: 230
+      physical_therapy_outpatient:
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
       telemedicine_pcp:
         in_network_coverage:
           coinsurance: 0.2
@@ -267,6 +307,9 @@ plans:
           contributes_to_deductible: false
         out_of_network_coverage:
           coinsurance: 0.2
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   - name: "DMBA PPO 70"
@@ -295,17 +338,8 @@ plans:
       out_of_network_coverage:
         coinsurance: 0.5
     categories:
-      laboratory_outpatient:
-        in_network_coverage:
-          is_free: true
-      maternity_physician:
-        in_network_coverage:
-          is_free: true
-      wellness_exam:
-        in_network_coverage:
-          is_free: true
-        out_of_network_coverage:
-          copay: 40
+      acupuncture:
+        qty_cap: 12
       behavioral_mental_health_outpatient:
         in_network_coverage:
           copay: 25
@@ -316,6 +350,7 @@ plans:
           copay: 50
         out_of_network_coverage:
           copay: 60
+        qty_cap: 25
       emergency_room:
         in_network_coverage:
           copay: 150
@@ -331,6 +366,12 @@ plans:
       imaging_diagnostic_professional:
         out_of_network_coverage:
           coinsurance: 0.3
+      laboratory_outpatient:
+        in_network_coverage:
+          is_free: true
+      maternity_physician:
+        in_network_coverage:
+          is_free: true
       occupational_therapy_outpatient:
         in_network_coverage:
           copay: 50
@@ -390,6 +431,9 @@ plans:
           copay: 50
         out_of_network_coverage:
           copay: 60
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
       speech_therapy_outpatient:
         in_network_coverage:
           copay: 50
@@ -410,6 +454,11 @@ plans:
           copay: 60
         out_of_network_coverage:
           copay: 60
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          copay: 40
 
   # PPO 90 Plan - High premium, low out-of-pocket costs
   - name: "DMBA PPO 90"
@@ -438,17 +487,8 @@ plans:
       out_of_network_coverage:
         coinsurance: 0.3
     categories:
-      laboratory_outpatient:
-        in_network_coverage:
-          is_free: true
-      maternity_physician:
-        in_network_coverage:
-          is_free: true
-      wellness_exam:
-        in_network_coverage:
-          is_free: true
-        out_of_network_coverage:
-          copay: 40
+      acupuncture:
+        qty_cap: 12
       behavioral_mental_health_outpatient:
         in_network_coverage:
           copay: 25
@@ -459,6 +499,7 @@ plans:
           copay: 50
         out_of_network_coverage:
           copay: 60
+        qty_cap: 25
       emergency_room:
         in_network_coverage:
           copay: 150
@@ -474,6 +515,12 @@ plans:
       imaging_diagnostic_professional:
         out_of_network_coverage:
           coinsurance: 0.1
+      laboratory_outpatient:
+        in_network_coverage:
+          is_free: true
+      maternity_physician:
+        in_network_coverage:
+          is_free: true
       occupational_therapy_outpatient:
         in_network_coverage:
           copay: 50
@@ -482,6 +529,8 @@ plans:
       office_visit_pcp:
         in_network_coverage:
           copay: 25
+        out_of_network_coverage:
+          copay: 40
       office_visit_specialist:
         in_network_coverage:
           copay: 50
@@ -531,6 +580,9 @@ plans:
           copay: 50
         out_of_network_coverage:
           copay: 60
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
       speech_therapy_outpatient:
         in_network_coverage:
           copay: 50
@@ -551,3 +603,8 @@ plans:
           copay: 60
         out_of_network_coverage:
           copay: 60
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          copay: 40
