@@ -26,7 +26,6 @@ telemedicine_urgent_care:
 eye_exams:
   name: "Eye Exams"
   description: "Comprehensive eye examinations to assess vision and eye health. Includes routine eye exams, vision screenings, and diagnostic testing for eye conditions. Important for early detection of eye diseases and maintaining optimal vision health."
-  preventive: true
 
 behavioral_mental_health_outpatient:
   name: "Behavioral/Mental Health - Outpatient"
