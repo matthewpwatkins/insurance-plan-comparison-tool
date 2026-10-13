@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../schema/company.schema.json
+
+# Copy this folder to data/companies/<your-company-slug>/ (lowercase letters, digits, dashes).
+# The folder name becomes the URL: https://health-plans.netlify.app/<your-company-slug>
+
+# Shown in the page header and browser tab title
+name: Example Co
+# Optional. Who pays claims, if different from the company (used in the EOB help text).
+# insurer_name: Example Insurance
+
+# Optional. Replaces the default welcome blurb.
+# welcome: Welcome to Example Co open enrollment!
+
+# Optional. How your FSA is named in help text.
+# fsa_name: "Example Co's FSA"
+
+# Optional. Where members find past claims. Steps are shown as a numbered list.
+# claims_portal:
+#   name: Example Claims Portal
+#   url: https://example.com/claims
+#   steps:
+#     - Open Claims > History
+#     - Download a detailed report for the past 2 years
+
+# Optional. A third-party price lookup tool for future procedures.
+# cost_estimator:
+#   provider: Example Hospital
+#   name: example.com/pricing
+#   url: https://example.com/pricing

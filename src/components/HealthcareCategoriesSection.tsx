@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, Form, Row, Col, Button, Badge, InputGroup } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencil } from '@fortawesome/free-solid-svg-icons';
-import { getCategoriesData } from '../generated/dataHelpers';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
 import { UserInputs, CategoryEstimate, PlanData } from '../types';
@@ -19,7 +18,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   planData,
 }) => {
   const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState<string>('');
-  const categoriesData = getCategoriesData();
+  const categoriesData = planData?.categories ?? {};
 
   // Helper function to check if a category is free for in-network or out-of-network
   const isCategoryFree = (

@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A company's plans for one year",
+  "type": "object",
+  "required": ["year", "plans"],
+  "additionalProperties": false,
+  "properties": {
+    "year": { "type": "integer", "minimum": 2000 },
+    "plans": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/plan" } }
+  },
+  "definitions": {
+    "plan": {
+      "type": "object",
+      "required": [
+        "name",
+        "short_name",
+        "monthly_premiums",
+        "annual_deductible",
+        "out_of_pocket_maximum",
+        "default",
+        "categories"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "short_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name without the company prefix, used in tight spaces"
+        },
+        "chart_color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "prescriptions_subject_to_deductible": { "type": "boolean" },
+        "premiums_are_pre_tax": { "type": "boolean", "description": "Defaults to true" },
+        "employer_hsa_contribution": { "$ref": "#/definitions/premiums" },
+        "monthly_premiums": { "$ref": "#/definitions/premiums" },
+        "annual_deductible": {
+          "type": "object",
+          "required": ["in_network", "out_of_network"],
+          "additionalProperties": false,
+          "properties": {
+            "in_network": { "$ref": "#/definitions/deductible" },
+            "out_of_network": { "$ref": "#/definitions/deductible" }
+          }
+        },
+        "out_of_pocket_maximum": {
+          "type": "object",
+          "required": ["in_network", "out_of_network"],
+          "additionalProperties": false,
+          "properties": {
+            "in_network": { "$ref": "#/definitions/oopMax" },
+            "out_of_network": { "$ref": "#/definitions/oopMax" }
+          }
+        },
+        "default": { "$ref": "#/definitions/benefits" },
+        "categories": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/benefits" }
+        }
+      }
+    },
+    "premiums": {
+      "type": "object",
+      "required": ["single", "two_party", "family"],
+      "additionalProperties": false,
+      "properties": {
+        "single": { "type": "number", "minimum": 0 },
+        "two_party": { "type": "number", "minimum": 0 },
+        "family": { "type": "number", "minimum": 0 }
+      }
+    },
+    "deductible": {
+      "type": "object",
+      "required": ["single", "family"],
+      "additionalProperties": false,
+      "properties": {
+        "single": { "type": "number", "minimum": 0 },
+        "family": { "type": "number", "minimum": 0 }
+      }
+    },
+    "oopMax": {
+      "type": "object",
+      "required": ["individual", "family"],
+      "additionalProperties": false,
+      "properties": {
+        "individual": { "type": "number", "minimum": 0 },
+        "family": { "type": "number", "minimum": 0 }
+      }
+    },
+    "benefits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "qty_cap": { "type": "integer", "minimum": 0 },
+        "cost_cap": { "type": "number", "minimum": 0 },
+        "in_network_coverage": { "$ref": "#/definitions/costStructure" },
+        "out_of_network_coverage": { "$ref": "#/definitions/costStructure" }
+      }
+    },
+    "costStructure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "copay": { "type": "number", "minimum": 0 },
+        "coinsurance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction the member pays, e.g. 0.2"
+        },
+        "max_coinsurance": { "type": "number", "minimum": 0 },
+        "is_free": { "type": "boolean" },
+        "requires_deductible_to_be_met": { "type": "boolean" },
+        "contributes_to_deductible": { "type": "boolean" },
+        "contributes_to_out_of_pocket_max": { "type": "boolean" },
+        "qty_cap": { "type": "integer", "minimum": 0 },
+        "cost_cap": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

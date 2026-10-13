@@ -28,13 +28,16 @@ export const userInputsToURLParams = (inputs: UserInputs): URLSearchParams => {
 /**
  * Parse URL search parameters into UserInputs
  */
-export const urlParamsToUserInputs = (searchParams: URLSearchParams): URLParamsResult => {
+export const urlParamsToUserInputs = (
+  searchParams: URLSearchParams,
+  availableYears: number[]
+): URLParamsResult => {
   const updates: URLParamsResult = {};
 
   // Parse year
-  const year = searchParams.get('year');
-  if (year && (year === '2025' || year === '2026')) {
-    updates.year = parseInt(year);
+  const year = parseInt(searchParams.get('year') ?? '');
+  if (availableYears.includes(year)) {
+    updates.year = year;
   }
 
   // Parse coverage
@@ -148,7 +151,15 @@ export const copyURLToClipboard = async (inputs: UserInputs): Promise<boolean> =
 /**
  * Read URL parameters on page load
  */
-export const readURLParamsOnLoad = (): URLParamsResult => {
+export const readURLParamsOnLoad = (availableYears: number[]): URLParamsResult => {
   const searchParams = new URLSearchParams(window.location.search);
-  return urlParamsToUserInputs(searchParams);
+  return urlParamsToUserInputs(searchParams, availableYears);
+};
+
+/**
+ * Company slug is the first path segment, e.g. /dmba. Empty string when on the root.
+ */
+export const readCompanySlugFromPath = (pathname: string = window.location.pathname): string => {
+  const [segment] = pathname.split('/').filter(Boolean);
+  return (segment ?? '').toLowerCase();
 };

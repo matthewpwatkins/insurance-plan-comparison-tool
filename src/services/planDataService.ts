@@ -4,9 +4,9 @@ import { PlanData, HealthPlan, CoverageType } from '../types';
 /**
  * Load and parse plan data for a given year (synchronous, compile-time loaded)
  */
-export const loadPlanData = (year: number): PlanData => {
+export const loadPlanData = (company: string, year: number): PlanData => {
   try {
-    const planData = getPlanData(year);
+    const planData = getPlanData(company, year);
 
     // Validate the structure
     if (!planData || !planData.plans || !Array.isArray(planData.plans)) {
@@ -21,17 +21,17 @@ export const loadPlanData = (year: number): PlanData => {
 };
 
 /**
- * Get all available years
+ * Get all years a company has data for, newest first
  */
-export const getAvailableDataYears = (): number[] => {
-  return getAvailableYears();
+export const getAvailableDataYears = (company: string): number[] => {
+  return getAvailableYears(company);
 };
 
 /**
- * Get the most recent year available
+ * Get the most recent year a company has data for
  */
-export const getDefaultYear = (): number => {
-  return getLatestYear();
+export const getDefaultYear = (company: string): number => {
+  return getLatestYear(company);
 };
 
 /**

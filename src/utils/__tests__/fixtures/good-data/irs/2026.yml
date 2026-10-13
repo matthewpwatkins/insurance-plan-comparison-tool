@@ -1,0 +1,27 @@
+# Federal limits for 2026 (set annually by IRS and SSA). Shared by every company.
+
+# HSA Contribution Limits (set by IRS annually)
+hsa_contribution_limits:
+  single_coverage: 4_400
+  family_coverage: 8_750
+  catch_up_age_55_plus: 1_000
+
+# HSA Qualification Requirements (set by IRS annually)
+# A plan must meet these minimum deductibles to qualify for an HSA
+hsa_qualification_limits:
+  minimum_deductible:
+    single: 1_700
+    family: 3_400
+  maximum_out_of_pocket:
+    single: 8_550
+    family: 17_100
+
+# FSA Contribution Limits (set by IRS annually)
+fsa_contribution_limits:
+  healthcare_fsa: 3_400
+
+# Payroll Tax Rates (set by IRS/SSA annually)
+payroll_tax_rates:
+  social_security: 6.2
+  medicare: 1.45
+

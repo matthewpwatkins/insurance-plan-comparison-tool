@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Company",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name shown in the header and page title"
+    },
+    "insurer_name": {
+      "type": "string",
+      "description": "Who pays claims, if different from name (used in EOB help text)"
+    },
+    "welcome": { "type": "string", "description": "Replaces the default welcome blurb" },
+    "fsa_name": {
+      "type": "string",
+      "description": "How the company's FSA is referred to, e.g. \"Acme's FSA\""
+    },
+    "claims_portal": {
+      "type": "object",
+      "required": ["name", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "steps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "cost_estimator": {
+      "type": "object",
+      "required": ["provider", "name", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    }
+  }
+}

@@ -3,12 +3,14 @@ import { Navbar, Nav } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import FAQButton, { FAQButtonRef } from './FAQButton';
+import { Company } from '../types';
 
 interface NavigationHeaderProps {
+  company: Company;
   onFAQRef?: (ref: FAQButtonRef | null) => void;
 }
 
-const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
+const NavigationHeader: React.FC<NavigationHeaderProps> = ({ company, onFAQRef }) => {
   const [expanded, setExpanded] = useState(false);
   const faqRef = useRef<FAQButtonRef>(null);
 
@@ -21,7 +23,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
 
   return (
     <div className="d-flex justify-content-between align-items-center mb-3">
-      <h1 className="mb-0">DMBA Health Plan Comparison Tool</h1>
+      <h1 className="mb-0">{company.name} Health Plan Comparison Tool</h1>
 
       {/* Desktop Navigation */}
       <div className="d-none d-md-flex align-items-center gap-3">
@@ -70,7 +72,7 @@ const NavigationHeader: React.FC<NavigationHeaderProps> = ({ onFAQRef }) => {
       </Navbar>
 
       {/* FAQ Component - only modal, no button */}
-      <FAQButton ref={faqRef} showButton={false} />
+      <FAQButton ref={faqRef} showButton={false} company={company} />
     </div>
   );
 };

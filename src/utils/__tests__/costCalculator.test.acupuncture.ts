@@ -5,7 +5,7 @@ import { UserInputs, CoverageType } from '../../types';
 describe('costCalculator - Acupuncture Test', () => {
   it('should calculate $200 out-of-pocket for single in-network acupuncture visit at $200 on HSA 60', () => {
     // Load actual 2026 plan data
-    const planData = loadPlanData(2026);
+    const planData = loadPlanData('dmba', 2026);
 
     // User inputs: single acupuncture visit at $200
     const userInputs: UserInputs = {

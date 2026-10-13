@@ -3,20 +3,21 @@ import { Card, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { getAvailableDataYears } from '../services/planDataService';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
-import { UserInputs, PlanData } from '../types';
+import { UserInputs, PlanData, Company } from '../types';
 
 interface BasicInfoSectionProps {
   inputs: UserInputs;
   onChange: (updates: Partial<UserInputs>) => void;
   planData: PlanData | null;
+  company: Company;
 }
 
-const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange }) => {
+const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ inputs, onChange, company }) => {
   const handleChange = (field: keyof UserInputs, value: any) => {
     onChange({ [field]: value });
   };
 
-  const availableYears = getAvailableDataYears();
+  const availableYears = getAvailableDataYears(company.slug);
 
   return (
     <Card className="mb-4">

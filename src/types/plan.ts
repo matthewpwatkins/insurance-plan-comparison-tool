@@ -57,6 +57,7 @@ export interface Category {
 
 export interface HealthPlan {
   name: string;
+  short_name: string;
   chart_color?: string;
   monthly_premiums: PlanPremiums;
   annual_deductible: PlanDeductible;

@@ -57,10 +57,12 @@ describe('costCalculator', () => {
       medicare: 1.45,
     },
     plans: [],
+    categories: {},
   };
 
   const mockPPOPlan: HealthPlan = {
     name: 'Test PPO Plan',
+    short_name: 'PPO',
     monthly_premiums: {
       single: 200,
       two_party: 400,
@@ -88,6 +90,7 @@ describe('costCalculator', () => {
 
   const mockHSAPlan: HealthPlan = {
     name: 'Test HSA Plan',
+    short_name: 'HSA',
     prescriptions_subject_to_deductible: true,
     monthly_premiums: {
       single: 150,

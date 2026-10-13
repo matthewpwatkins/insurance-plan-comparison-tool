@@ -1,36 +1,12 @@
-# DMBA Health Plan Data for 2026
+# DMBA health plans for 2026
+# yaml-language-server: $schema=../../../schema/plan-year.schema.json
 
 year: 2026
 
-# HSA Contribution Limits (set by IRS annually)
-hsa_contribution_limits:
-  single_coverage: 4_400
-  family_coverage: 8_750
-  catch_up_age_55_plus: 1_000
-
-# HSA Qualification Requirements (set by IRS annually)
-# A plan must meet these minimum deductibles to qualify for an HSA
-hsa_qualification_limits:
-  minimum_deductible:
-    single: 1_700
-    family: 3_400
-  maximum_out_of_pocket:
-    single: 8_550
-    family: 17_100
-
-# FSA Contribution Limits (set by IRS annually)
-fsa_contribution_limits:
-  healthcare_fsa: 3_400
-
-# Payroll Tax Rates (set by IRS/SSA annually)
-payroll_tax_rates:
-  social_security: 6.2
-  medicare: 1.45
-
-# Available Health Plans
 plans:
   # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
   - name: "DMBA HSA 60"
+    short_name: "HSA 60"
     # Prescriptions must meet deductible before copays apply
     prescriptions_subject_to_deductible: true
     chart_color: "#22c55e"
@@ -172,6 +148,7 @@ plans:
 
   # HSA 80 Plan - Health Savings Account plan with moderate deductible
   - name: "DMBA HSA 80"
+    short_name: "HSA 80"
     chart_color: "#3b82f6"
     # Prescriptions must meet deductible before copays apply
     prescriptions_subject_to_deductible: true
@@ -313,6 +290,7 @@ plans:
 
   # PPO 70 Plan - Moderate premium, moderate out-of-pocket costs
   - name: "DMBA PPO 70"
+    short_name: "PPO 70"
     chart_color: "#f59e0b"
     monthly_premiums:
       single: 109.20
@@ -462,6 +440,7 @@ plans:
 
   # PPO 90 Plan - High premium, low out-of-pocket costs
   - name: "DMBA PPO 90"
+    short_name: "PPO 90"
     chart_color: "#ef4444"
     monthly_premiums:
       single: 302.00

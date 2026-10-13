@@ -1,0 +1,17 @@
+year: 2026
+plans:
+  - name: "Tiny PPO"
+    short_name: "PPO"
+    monthly_premiums: { single: 100, two_party: 200, family: 300 }
+    annual_deductible:
+      in_network: { single: 0, family: 0 }
+      out_of_network: { single: 500, family: 1_000 }
+    out_of_pocket_maximum:
+      in_network: { individual: 4_000, family: 8_000 }
+      out_of_network: { individual: 6_000, family: 12_000 }
+    default:
+      in_network_coverage: { coinsurance: 0.2 }
+      out_of_network_coverage: { coinsurance: 0.4 }
+    categories:
+      office_visit_pcp:
+        in_network_coverage: { copay: 25 }

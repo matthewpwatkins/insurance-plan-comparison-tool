@@ -8,15 +8,16 @@ import {
 } from '../services/planDataService';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
-import { UserInputs, PlanData, CoverageType } from '../types';
+import { UserInputs, PlanData, CoverageType, Company } from '../types';
 
 interface HSAFSASectionProps {
   inputs: UserInputs;
   onChange: (updates: Partial<UserInputs>) => void;
   planData: PlanData | null;
+  company: Company;
 }
 
-const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planData }) => {
+const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planData, company }) => {
   const handleChange = (field: keyof UserInputs, value: any) => {
     onChange({ [field]: value });
   };
@@ -63,7 +64,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
         .map(plan => {
           const employerContribution = getEmployerHSAContribution(plan, inputs.coverage);
           const employeeMax = Math.max(0, maxTotalHSAContribution - employerContribution);
-          return { name: plan.name, employeeMax };
+          return { name: plan.name, shortName: plan.short_name, employeeMax };
         })
     : [];
 
@@ -274,10 +275,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                     <small className="text-muted">
                       (
                       {hsaPlansWithEmployeeMax
-                        .map(
-                          p =>
-                            `${p.name.replace('DMBA ', '')} Max: $${p.employeeMax.toLocaleString()}`
-                        )
+                        .map(p => `${p.shortName} Max: $${p.employeeMax.toLocaleString()}`)
                         .join(' | ')}
                       )
                     </small>
@@ -343,7 +341,8 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({ inputs, onChange, planDat
                       <div>
                         <p>
                           <strong>
-                            If I went with a PPO plan, I'd put this amount in DMBA's FSA.
+                            If I went with a PPO plan, I'd put this amount in{' '}
+                            {company.fsa_name ?? 'my FSA'}.
                           </strong>
                         </p>
                         <p>

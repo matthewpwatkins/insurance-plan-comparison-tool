@@ -5,8 +5,11 @@ import {
   getShareableURL,
   copyURLToClipboard,
   readURLParamsOnLoad,
+  readCompanySlugFromPath,
 } from '../urlParams';
 import { UserInputs, CoverageType } from '../../types';
+
+const YEARS = [2026, 2025];
 
 // Mock window.location and window.history
 const mockLocation = {
@@ -124,7 +127,7 @@ describe('urlParams', () => {
       searchParams.set('hsaContribution', '2000');
       searchParams.set('fsaContribution', '1500');
 
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.year).toBe(2025);
       expect(result.coverage).toBe(CoverageType.Single);
@@ -136,7 +139,7 @@ describe('urlParams', () => {
 
     it('should handle missing parameters gracefully', () => {
       const searchParams = new URLSearchParams();
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(Object.keys(result)).toHaveLength(0);
     });
@@ -144,7 +147,7 @@ describe('urlParams', () => {
     it('should ignore invalid year values', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('year', '2024'); // Not in allowed list
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.year).toBeUndefined();
     });
@@ -152,19 +155,19 @@ describe('urlParams', () => {
     it('should accept valid years', () => {
       const searchParams1 = new URLSearchParams();
       searchParams1.set('year', '2025');
-      const result1 = urlParamsToUserInputs(searchParams1);
+      const result1 = urlParamsToUserInputs(searchParams1, YEARS);
       expect(result1.year).toBe(2025);
 
       const searchParams2 = new URLSearchParams();
       searchParams2.set('year', '2026');
-      const result2 = urlParamsToUserInputs(searchParams2);
+      const result2 = urlParamsToUserInputs(searchParams2, YEARS);
       expect(result2.year).toBe(2026);
     });
 
     it('should ignore invalid coverage values', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('coverage', 'invalid');
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.coverage).toBeUndefined();
     });
@@ -179,7 +182,7 @@ describe('urlParams', () => {
       validCoverages.forEach(({ input, expected }) => {
         const searchParams = new URLSearchParams();
         searchParams.set('coverage', input);
-        const result = urlParamsToUserInputs(searchParams);
+        const result = urlParamsToUserInputs(searchParams, YEARS);
         expect(result.coverage).toBe(expected);
       });
     });
@@ -187,7 +190,7 @@ describe('urlParams', () => {
     it('should ignore invalid age group values', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('ageGroup', 'invalid');
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.ageGroup).toBeUndefined();
     });
@@ -198,7 +201,7 @@ describe('urlParams', () => {
       validAgeGroups.forEach(ageGroup => {
         const searchParams = new URLSearchParams();
         searchParams.set('ageGroup', ageGroup);
-        const result = urlParamsToUserInputs(searchParams);
+        const result = urlParamsToUserInputs(searchParams, YEARS);
         expect(result.ageGroup).toBe(ageGroup);
       });
     });
@@ -206,24 +209,24 @@ describe('urlParams', () => {
     it('should validate tax rate range', () => {
       const searchParams1 = new URLSearchParams();
       searchParams1.set('taxRate', '-5'); // Below 0
-      const result1 = urlParamsToUserInputs(searchParams1);
+      const result1 = urlParamsToUserInputs(searchParams1, YEARS);
       expect(result1.taxRate).toBeUndefined();
 
       const searchParams2 = new URLSearchParams();
       searchParams2.set('taxRate', '105'); // Above 100
-      const result2 = urlParamsToUserInputs(searchParams2);
+      const result2 = urlParamsToUserInputs(searchParams2, YEARS);
       expect(result2.taxRate).toBeUndefined();
 
       const searchParams3 = new URLSearchParams();
       searchParams3.set('taxRate', '22'); // Valid
-      const result3 = urlParamsToUserInputs(searchParams3);
+      const result3 = urlParamsToUserInputs(searchParams3, YEARS);
       expect(result3.taxRate).toBe(22);
     });
 
     it('should handle invalid tax rate strings', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('taxRate', 'abc');
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.taxRate).toBeUndefined();
     });
@@ -231,18 +234,18 @@ describe('urlParams', () => {
     it('should validate contribution amounts', () => {
       const searchParams1 = new URLSearchParams();
       searchParams1.set('hsaContribution', '-100'); // Negative
-      const result1 = urlParamsToUserInputs(searchParams1);
+      const result1 = urlParamsToUserInputs(searchParams1, YEARS);
       expect(result1.hsaContribution).toBeUndefined();
 
       const searchParams2 = new URLSearchParams();
       searchParams2.set('fsaContribution', 'abc'); // Non-numeric
-      const result2 = urlParamsToUserInputs(searchParams2);
+      const result2 = urlParamsToUserInputs(searchParams2, YEARS);
       expect(result2.fsaContribution).toBeUndefined();
 
       const searchParams3 = new URLSearchParams();
       searchParams3.set('hsaContribution', '2000'); // Valid
       searchParams3.set('fsaContribution', '1500'); // Valid
-      const result3 = urlParamsToUserInputs(searchParams3);
+      const result3 = urlParamsToUserInputs(searchParams3, YEARS);
       expect(result3.hsaContribution).toBe(2000);
       expect(result3.fsaContribution).toBe(1500);
     });
@@ -251,7 +254,7 @@ describe('urlParams', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('hsaContribution', '2000.50');
       searchParams.set('fsaContribution', '1500.25');
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.hsaContribution).toBe(2000.5);
       expect(result.fsaContribution).toBe(1500.25);
@@ -261,7 +264,7 @@ describe('urlParams', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('hsaContribution', '0');
       searchParams.set('fsaContribution', '0');
-      const result = urlParamsToUserInputs(searchParams);
+      const result = urlParamsToUserInputs(searchParams, YEARS);
 
       expect(result.hsaContribution).toBe(0);
       expect(result.fsaContribution).toBe(0);
@@ -328,7 +331,7 @@ describe('urlParams', () => {
         writable: true,
       });
 
-      const result = readURLParamsOnLoad();
+      const result = readURLParamsOnLoad(YEARS);
 
       expect(result.year).toBe(2025);
       expect(result.coverage).toBe(CoverageType.Family);
@@ -344,7 +347,7 @@ describe('urlParams', () => {
         writable: true,
       });
 
-      const result = readURLParamsOnLoad();
+      const result = readURLParamsOnLoad(YEARS);
 
       expect(Object.keys(result)).toHaveLength(0);
     });
@@ -376,7 +379,7 @@ describe('urlParams', () => {
 
       // Convert to URL params and back
       const params = userInputsToURLParams(originalInputs as UserInputs);
-      const parsedInputs = urlParamsToUserInputs(params);
+      const parsedInputs = urlParamsToUserInputs(params, YEARS);
 
       expect(parsedInputs.year).toBe(originalInputs.year);
       expect(parsedInputs.coverage).toBe(originalInputs.coverage);
@@ -434,7 +437,7 @@ describe('urlParams', () => {
 
       // Convert to URL params and back
       const params = userInputsToURLParams(originalInputs as UserInputs);
-      const parsedInputs = urlParamsToUserInputs(params);
+      const parsedInputs = urlParamsToUserInputs(params, YEARS);
 
       // Verify basic fields
       expect(parsedInputs.year).toBe(originalInputs.year);
@@ -470,5 +473,33 @@ describe('urlParams', () => {
       expect(parsedInputs.costs!.otherCosts!.outOfNetwork.quantity).toBe(0);
       expect(parsedInputs.costs!.otherCosts!.outOfNetwork.costPerVisit).toBe(0);
     });
+  });
+});
+
+describe('readCompanySlugFromPath', () => {
+  it('reads the first path segment', () => {
+    expect(readCompanySlugFromPath('/dmba')).toBe('dmba');
+    expect(readCompanySlugFromPath('/dmba/')).toBe('dmba');
+    expect(readCompanySlugFromPath('/dmba/extra')).toBe('dmba');
+  });
+
+  it('lowercases the slug', () => {
+    expect(readCompanySlugFromPath('/DMBA')).toBe('dmba');
+  });
+
+  it('returns an empty string on the root', () => {
+    expect(readCompanySlugFromPath('/')).toBe('');
+  });
+});
+
+describe('urlParamsToUserInputs year check', () => {
+  it('accepts any year the company has data for', () => {
+    const result = urlParamsToUserInputs(new URLSearchParams('year=2031'), [2031, 2030]);
+    expect(result.year).toBe(2031);
+  });
+
+  it('ignores a year the company has no data for', () => {
+    const result = urlParamsToUserInputs(new URLSearchParams('year=2025'), [2031, 2030]);
+    expect(result.year).toBeUndefined();
   });
 });

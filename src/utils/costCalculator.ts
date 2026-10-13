@@ -4,7 +4,6 @@ import {
   getEmployerHSAContribution,
   isHSAQualified,
 } from '../services/planDataService';
-import { getCategoriesData } from '../generated/dataHelpers';
 import {
   PlanData,
   HealthPlan,
@@ -17,6 +16,7 @@ import {
   ContributionType,
   CoverageType,
   NetworkBenefits,
+  CategoriesData,
 } from '../types';
 
 /**
@@ -57,7 +57,7 @@ export const calculatePlanCost = (
   const netAnnualPremiums = annualPremiums - premiumDiscount;
 
   // Create plan execution to track expenses
-  const execution = new PlanExecution(plan, coverage);
+  const execution = new PlanExecution(plan, coverage, planData.categories);
 
   // Add monthly premiums to ledger (with pre-tax discount)
   execution.addMonthlyPremiums(plan.monthly_premiums[coverage], premiumDiscount / 12);
@@ -203,13 +203,14 @@ class PlanExecution {
   private premiums: PremiumEntry[] = [];
   private inNetworkExpenses: ExpenseEntry[] = [];
   private outOfNetworkExpenses: ExpenseEntry[] = [];
-  private categoriesData = getCategoriesData();
+  private categoriesData: CategoriesData;
   private costCapSpent: Record<string, number> = {}; // Track spending against cost caps
   private quantityUsed: Record<string, number> = {}; // Track visits used against quantity caps
 
-  constructor(plan: HealthPlan, coverage: CoverageType) {
+  constructor(plan: HealthPlan, coverage: CoverageType, categoriesData: CategoriesData) {
     this.plan = plan;
     this.coverage = coverage;
+    this.categoriesData = categoriesData;
   }
 
   /**

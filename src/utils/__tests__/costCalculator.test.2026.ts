@@ -5,7 +5,7 @@ import { UserInputs, CoverageType } from '../../types';
 describe('costCalculator - 2026 Real Data Bug Test', () => {
   it('should calculate correct costs for user input: emergency_room + chiropractic + mental_health + pharmacy', () => {
     // Load actual 2026 plan data
-    const planData = loadPlanData(2026);
+    const planData = loadPlanData('dmba', 2026);
 
     // User inputs from the URL
     const userInputs: UserInputs = {

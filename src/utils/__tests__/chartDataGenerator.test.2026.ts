@@ -6,7 +6,7 @@ import { UserInputs, CoverageType } from '../../types';
 describe('chartDataGenerator - 2026 Real Data Bug Test', () => {
   it('should generate chart data that matches calculator results at user spending level', () => {
     // Load actual 2026 plan data
-    const planData = loadPlanData(2026);
+    const planData = loadPlanData('dmba', 2026);
 
     // User inputs from the URL (same as costCalculator test)
     const userInputs: UserInputs = {

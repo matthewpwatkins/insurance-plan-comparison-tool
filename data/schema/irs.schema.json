@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Federal limits for one year",
+  "type": "object",
+  "required": [
+    "hsa_contribution_limits",
+    "hsa_qualification_limits",
+    "fsa_contribution_limits",
+    "payroll_tax_rates"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "hsa_contribution_limits": {
+      "type": "object",
+      "required": ["single_coverage", "family_coverage", "catch_up_age_55_plus"],
+      "additionalProperties": false,
+      "properties": {
+        "single_coverage": { "type": "number" },
+        "family_coverage": { "type": "number" },
+        "catch_up_age_55_plus": { "type": "number" }
+      }
+    },
+    "hsa_qualification_limits": {
+      "type": "object",
+      "required": ["minimum_deductible", "maximum_out_of_pocket"],
+      "additionalProperties": false,
+      "properties": {
+        "minimum_deductible": { "$ref": "#/definitions/singleFamily" },
+        "maximum_out_of_pocket": { "$ref": "#/definitions/singleFamily" }
+      }
+    },
+    "fsa_contribution_limits": {
+      "type": "object",
+      "required": ["healthcare_fsa"],
+      "additionalProperties": false,
+      "properties": { "healthcare_fsa": { "type": "number" } }
+    },
+    "payroll_tax_rates": {
+      "type": "object",
+      "required": ["social_security", "medicare"],
+      "additionalProperties": false,
+      "properties": {
+        "social_security": { "type": "number", "description": "Percent, e.g. 6.2" },
+        "medicare": { "type": "number", "description": "Percent, e.g. 1.45" }
+      }
+    }
+  },
+  "definitions": {
+    "singleFamily": {
+      "type": "object",
+      "required": ["single", "family"],
+      "additionalProperties": false,
+      "properties": { "single": { "type": "number" }, "family": { "type": "number" } }
+    }
+  }
+}

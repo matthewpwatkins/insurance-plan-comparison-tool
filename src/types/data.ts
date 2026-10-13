@@ -1,4 +1,4 @@
-import { HealthPlan } from './plan';
+import { HealthPlan, CategoriesData } from './plan';
 
 export interface HSAContributionLimits {
   single_coverage: number;
@@ -33,4 +33,27 @@ export interface PlanData {
   fsa_contribution_limits: FSAContributionLimits;
   payroll_tax_rates: PayrollTaxRates;
   plans: HealthPlan[];
+  categories: CategoriesData;
+}
+
+export interface ClaimsPortal {
+  name: string;
+  url: string;
+  steps?: string[];
+}
+
+export interface CostEstimator {
+  provider: string;
+  name: string;
+  url: string;
+}
+
+export interface Company {
+  slug: string;
+  name: string;
+  insurer_name?: string;
+  welcome?: string;
+  fsa_name?: string;
+  claims_portal?: ClaimsPortal;
+  cost_estimator?: CostEstimator;
 }

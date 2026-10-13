@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../../schema/company.schema.json
+
+name: DMBA
+fsa_name: "DMBA's FSA"
+
+claims_portal:
+  name: DMBA Claims Portal
+  url: https://www.dmba.com/sc/medical/HealthClaims.aspx?type=medical
+  steps:
+    - Navigate to My Health > Claims
+    - Click "Create Claims History Report"
+    - Select all family members and both prescription and medical categories
+    - Include the past 2 years and select a "Detail" report
+
+cost_estimator:
+  provider: University of Utah
+  name: healthcare.utah.edu/pricing
+  url: https://healthcare.utah.edu/pricing

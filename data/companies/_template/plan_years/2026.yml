@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=../../../schema/plan-year.schema.json
+
+# One file per plan year. The file name must match `year`, and data/irs/<year>.yml must exist.
+year: 2026
+
+plans:
+  # A plan counts as an HSA plan when its deductible meets the IRS minimum in data/irs/<year>.yml.
+  # Everything else is treated as an FSA plan.
+  - name: 'Example HSA'
+    short_name: 'HSA' # name without the company prefix
+    chart_color: '#22c55e'
+    # HSA plans only: what the employer puts in the member's HSA each year
+    employer_hsa_contribution:
+      single: 500
+      two_party: 1_000
+      family: 1_000
+    # Prescriptions must meet the deductible before copays apply (typical of HSA plans)
+    prescriptions_subject_to_deductible: true
+    monthly_premiums:
+      single: 80
+      two_party: 160
+      family: 240
+    annual_deductible:
+      in_network:
+        single: 2_000
+        family: 4_000
+      out_of_network:
+        single: 4_000
+        family: 8_000
+    out_of_pocket_maximum:
+      in_network:
+        individual: 5_000
+        family: 10_000
+      out_of_network:
+        individual: 8_000
+        family: 16_000
+    # Used for any category not listed below. coinsurance is the share the MEMBER pays (0.2 = 20%).
+    default:
+      in_network_coverage:
+        coinsurance: 0.2
+      out_of_network_coverage:
+        coinsurance: 0.4
+    # Only list categories that differ from `default`. Ids come from data/categories.yml.
+    categories:
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1 # visits per year; extra visits are billed 100% to the member
+      office_visit_pcp:
+        in_network_coverage:
+          coinsurance: 0.1
+
+  - name: 'Example PPO'
+    short_name: 'PPO'
+    chart_color: '#3b82f6'
+    monthly_premiums:
+      single: 150
+      two_party: 300
+      family: 450
+    annual_deductible:
+      in_network:
+        single: 0
+        family: 0
+      out_of_network:
+        single: 500
+        family: 1_000
+    out_of_pocket_maximum:
+      in_network:
+        individual: 4_000
+        family: 8_000
+      out_of_network:
+        individual: 6_000
+        family: 12_000
+    default:
+      in_network_coverage:
+        coinsurance: 0.2
+      out_of_network_coverage:
+        coinsurance: 0.4
+    categories:
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+      office_visit_pcp:
+        in_network_coverage:
+          copay: 25 # flat dollar amount per visit
+      office_visit_specialist:
+        in_network_coverage:
+          copay: 50
