@@ -1,10 +1,12 @@
 import React from 'react';
-import { Badge, Card, Row, Col } from 'react-bootstrap';
+import { Alert, Badge, Card, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faList } from '@fortawesome/free-solid-svg-icons';
 import { formatCurrency } from '../utils/formatters';
 import { PlanResult, ContributionType, PlanData, UserInputs } from '../types';
 import HelpIcon from './HelpIcon';
+import { breakEvenSpending } from '../utils/chartDataGenerator';
+import { getMaxFSAContribution, getMaxHSAContribution } from '../services/planDataService';
 
 interface ResultsTableProps {
   results: PlanResult[];
@@ -24,6 +26,440 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
   }
 
   const lowestCostAmount = results[0]?.totalCost;
+
+  const Section: React.FC<{ title: string; className: string; children: React.ReactNode }> = ({
+    title,
+    className,
+    children,
+  }) => (
+    <Col xs={12} lg={4}>
+      <h6 className={`text-uppercase small fw-bold mb-3 text-nowrap ${className}`}>{title}</h6>
+      {children}
+    </Col>
+  );
+
+  const Item: React.FC<{
+    amount: number;
+    title: string;
+    info: React.ReactNode;
+    infoTitle?: string;
+    amountClassName?: string;
+    amountNode?: React.ReactNode;
+    approx?: boolean;
+    children?: React.ReactNode;
+  }> = ({ amount, title, info, infoTitle, amountClassName, amountNode, approx, children }) => (
+    <div className="mb-4">
+      <div className={`fs-3 fw-bold lh-1 ${amountClassName ?? ''}`}>
+        {approx && '~'}
+        {amountNode ?? formatCurrency(amount)}
+      </div>
+      <div className="fw-semibold mt-1">
+        {title} <HelpIcon title={infoTitle ?? title} content={info} />
+      </div>
+      {children && <div className="small text-muted mt-1">{children}</div>}
+    </div>
+  );
+
+  // Shows a net amount as money spent (positive) or earned (negative)
+  const netAmount = (amount: number) => (
+    <span className={amount < 0 ? 'text-success' : 'text-danger'}>
+      <strong>
+        {formatCurrency(Math.abs(amount))} {amount < 0 ? 'earned' : 'spent'}
+      </strong>
+    </span>
+  );
+
+  const MathTable: React.FC<{ rows: [string, string][]; total: [string, string] }> = ({
+    rows,
+    total,
+  }) => (
+    <table className="table table-sm mb-3">
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label}>
+            <td>{label}</td>
+            <td className="text-end">{value}</td>
+          </tr>
+        ))}
+        <tr className="fw-bold">
+          <td>{total[0]}</td>
+          <td className="text-end">{total[1]}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+
+  const PlanCardBody: React.FC<{ result: PlanResult }> = ({ result }) => {
+    const isHSA = result.contributionType === ContributionType.HSA;
+    const account = isHSA ? 'HSA' : 'FSA';
+    const taxRate = (
+      userInputs.taxRate +
+      planData.payroll_tax_rates.social_security +
+      planData.payroll_tax_rates.medicare
+    ).toFixed(2);
+    const outOfPocketMax =
+      result.maxAnnualCost -
+      result.netAnnualPremiums +
+      result.taxSavings +
+      result.employerContribution;
+    const incomeRate = userInputs.taxRate;
+    const ssRate = planData.payroll_tax_rates.social_security;
+    const medicareRate = planData.payroll_tax_rates.medicare;
+    const rateRows: [string, string][] = [
+      ['Your income tax rate (you entered this above)', `${incomeRate}%`],
+      ['Social Security tax', `${ssRate}%`],
+      ['Medicare tax', `${medicareRate}%`],
+      ['Combined rate you skip', `${taxRate}%`],
+    ];
+    const depositLimit = isHSA
+      ? getMaxHSAContribution(planData, userInputs.coverage, userInputs.ageGroup)
+      : getMaxFSAContribution(planData);
+    const bestCase = result.netAnnualPremiums - result.employerContribution - result.taxSavings;
+    const breakEven = breakEvenSpending(planData, userInputs, result);
+    const planShare = [
+      ...result.ledger.inNetworkExpenses,
+      ...result.ledger.outOfNetworkExpenses,
+    ].reduce((sum, expense) => sum + expense.insuranceResponsibility, 0);
+    const totalBills = result.outOfPocketCosts + planShare;
+    const hasBenefits =
+      planShare > 0 ||
+      result.premiumDiscount > 0 ||
+      result.employerContribution > 0 ||
+      result.taxSavings > 0;
+
+    return (
+      <Row className="g-4">
+        <Section title="Your costs" className="text-danger">
+          <Item
+            amount={result.annualPremiums}
+            title="Premiums"
+            info={
+              <div>
+                <p>
+                  Premiums are what you pay to have this plan, whether or not you use any care. They
+                  come out of your paychecks in equal amounts all year.
+                </p>
+                <MathTable
+                  rows={[
+                    ['Per month', formatCurrency(result.annualPremiums / 12)],
+                    ['× 12 months', ''],
+                  ]}
+                  total={['Premiums for the year', formatCurrency(result.annualPremiums)]}
+                />
+                <p className="mb-0">
+                  This is the full price. Because premiums come out before taxes, part of it comes
+                  back to you as tax savings, shown under Your benefits.
+                </p>
+              </div>
+            }
+          >
+            At {formatCurrency(result.annualPremiums / 12)}/month
+          </Item>
+          <Item
+            amount={result.outOfPocketCosts}
+            approx
+            title="Your share of medical costs"
+            info={
+              <div>
+                <p>
+                  This is what you'd pay this year for the total medical costs you estimated above,
+                  after the plan pays its part. It includes:
+                </p>
+                <ul>
+                  <li>
+                    <strong>Deductible:</strong> what you pay in full before the plan starts sharing
+                    costs
+                  </li>
+                  <li>
+                    <strong>Copays:</strong> flat fees for some visits and prescriptions
+                  </li>
+                  <li>
+                    <strong>Coinsurance:</strong> your percentage of the bill after the deductible
+                  </li>
+                </ul>
+                <p className="mb-0">
+                  Medical costs include doctor visits, prescriptions, tests, procedures, and
+                  therapy. Of the {formatCurrency(totalBills)} in total medical costs you estimated
+                  above, the plan pays {formatCurrency(planShare)} and you pay{' '}
+                  {formatCurrency(result.outOfPocketCosts)}. Your share never goes above the plan's{' '}
+                  {formatCurrency(outOfPocketMax)} out-of-pocket max. Click <strong>Details</strong>{' '}
+                  on this card to see every visit.
+                </p>
+              </div>
+            }
+          >
+            What you pay at the counter for the {formatCurrency(totalBills)} in total medical costs
+            you estimated above
+          </Item>
+        </Section>
+
+        <Section title="Your benefits" className="text-success">
+          {result.premiumDiscount > 0 && (
+            <Item
+              amount={result.premiumDiscount}
+              amountClassName="text-success"
+              title="Tax savings on premiums"
+              info={
+                <div>
+                  <p>
+                    This isn't a refund or a check. Your employer takes premiums out of your pay{' '}
+                    <em>before</em> figuring your taxes, so you're taxed on less money and your
+                    take-home pay is higher than if you paid the same premiums after taxes.
+                  </p>
+                  <MathTable
+                    rows={[
+                      ['Your premiums for the year', formatCurrency(result.annualPremiums)],
+                      ...rateRows,
+                    ]}
+                    total={['Taxes you skip', formatCurrency(result.premiumDiscount)]}
+                  />
+                  <p className="mb-0">
+                    Plans with higher premiums save more in taxes, but never more than the premiums
+                    themselves. Change your income tax rate above to see this update.
+                  </p>
+                </div>
+              }
+            >
+              Because premiums are taken before taxes
+            </Item>
+          )}
+          {result.employerContribution > 0 && (
+            <Item
+              amount={result.employerContribution}
+              title={`Employer ${account} contribution`}
+              amountClassName="text-success"
+              info={
+                isHSA ? (
+                  <div>
+                    <p>
+                      Free money your employer puts into your Health Savings Account (HSA) this
+                      year. You don't pay it back and you don't pay tax on it.
+                    </p>
+                    <ul className="mb-0">
+                      <li>It's yours forever, even if you change jobs or plans.</li>
+                      <li>Unused money rolls over every year. There's no deadline to spend it.</li>
+                      <li>You can invest it, and growth is tax-free when spent on care.</li>
+                      <li>It counts toward the yearly IRS HSA limit.</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <div>
+                    <p>
+                      Free money your employer puts into your Flexible Spending Account (FSA) this
+                      year. You don't pay it back and you don't pay tax on it.
+                    </p>
+                    <p className="mb-0">
+                      Spend it on care by the end of the plan year. Money left over can be lost.
+                    </p>
+                  </div>
+                )
+              }
+            >
+              {isHSA ? 'Free, and yours to keep forever' : 'Free, use it by year end'}
+            </Item>
+          )}
+          {result.taxSavings > 0 && (
+            <Item
+              amount={result.taxSavings}
+              amountClassName="text-success"
+              title={`Tax savings on your ${account} contributions`}
+              info={
+                <div>
+                  <p>
+                    Money you put into your {account} comes out of your pay before taxes, the same
+                    way premiums do. You then spend it on care tax-free.
+                  </p>
+                  <MathTable
+                    rows={[
+                      [
+                        `Your ${account} contribution for the year`,
+                        formatCurrency(result.userContribution),
+                      ],
+                      ...rateRows,
+                    ]}
+                    total={['Taxes you skip', formatCurrency(result.taxSavings)]}
+                  />
+                  <p>
+                    Every extra dollar you contribute saves about{' '}
+                    {formatCurrency(Number(taxRate) / 100)} in taxes.{' '}
+                    {isHSA ? (
+                      <>
+                        The IRS limit for your coverage this year is {formatCurrency(depositLimit)},
+                        and your employer's {formatCurrency(result.employerContribution)} counts
+                        toward it.
+                      </>
+                    ) : (
+                      <>
+                        The IRS limit for FSA contributions this year is{' '}
+                        {formatCurrency(depositLimit)}.
+                      </>
+                    )}
+                  </p>
+                  <p className="mb-0">
+                    {isHSA
+                      ? 'Your contribution itself stays yours. Unused HSA money rolls over every year and goes with you if you change jobs, so contributing more than you expect to spend is safe.'
+                      : 'Your contribution is still yours to spend on care, but FSA money left at the end of the plan year can be lost, so contribute only what you expect to spend.'}
+                  </p>
+                </div>
+              }
+            >
+              On your {formatCurrency(result.userContribution)} contribution
+            </Item>
+          )}
+          {planShare > 0 && (
+            <Item
+              amount={planShare}
+              approx
+              amountClassName="text-success"
+              title="Plan's share of medical costs"
+              info={
+                <div>
+                  <p>
+                    The part of your medical costs the plan pays the doctor, hospital, or pharmacy
+                    directly. You never see this money, but without the plan you'd owe it.
+                  </p>
+                  <MathTable
+                    rows={[
+                      ['Total medical costs you estimated above', formatCurrency(totalBills)],
+                      ['− Your share', formatCurrency(result.outOfPocketCosts)],
+                    ]}
+                    total={["Plan's share", formatCurrency(planShare)]}
+                  />
+                  <p className="mb-0">
+                    It isn't subtracted from your total healthcare cost, because you never pay it in
+                    the first place. It shows how much this plan does for you. Click{' '}
+                    <strong>Details</strong> on this card to see every visit.
+                  </p>
+                </div>
+              }
+            >
+              What the plan pays for the {formatCurrency(totalBills)} in total medical costs you
+              estimated above
+            </Item>
+          )}
+          {!hasBenefits && (
+            <p className="small text-muted">No employer money or tax savings with this plan.</p>
+          )}
+        </Section>
+
+        <Section title="Your total healthcare picture" className="text-primary">
+          <Item
+            amount={result.totalCost}
+            title={result.totalCost < 0 ? 'Earned' : 'Spent'}
+            infoTitle="Your total healthcare picture"
+            amountClassName={result.totalCost < 0 ? 'text-success' : 'text-danger'}
+            approx
+            amountNode={formatCurrency(Math.abs(result.totalCost))}
+            info={
+              <div>
+                <p>
+                  Everything you'd spend on healthcare this year with this plan, not just the plan's
+                  price. The Estimated column below uses the total medical costs you estimated
+                  above. Use it to compare plans.
+                </p>
+                <table className="table table-sm mb-3">
+                  <thead>
+                    <tr>
+                      <th />
+                      <th className="text-end">Best case</th>
+                      <th className="text-end">Estimated</th>
+                      <th className="text-end">Worst case</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(
+                      [
+                        [
+                          'Premiums',
+                          result.annualPremiums,
+                          result.annualPremiums,
+                          result.annualPremiums,
+                        ],
+                        [
+                          '+ Your share of medical costs',
+                          0,
+                          result.outOfPocketCosts,
+                          outOfPocketMax,
+                        ],
+                        [
+                          '− Tax savings on premiums',
+                          result.premiumDiscount,
+                          result.premiumDiscount,
+                          result.premiumDiscount,
+                        ],
+                        [
+                          `− Employer ${account} contribution`,
+                          result.employerContribution,
+                          result.employerContribution,
+                          result.employerContribution,
+                        ],
+                        [
+                          `− Tax savings on your ${account} contributions`,
+                          result.taxSavings,
+                          result.taxSavings,
+                          result.taxSavings,
+                        ],
+                      ] as [string, number, number, number][]
+                    ).map(([label, best, estimated, worst]) => (
+                      <tr key={label}>
+                        <td>{label}</td>
+                        <td className="text-end">{formatCurrency(best)}</td>
+                        <td className="text-end">{formatCurrency(estimated)}</td>
+                        <td className="text-end">{formatCurrency(worst)}</td>
+                      </tr>
+                    ))}
+                    <tr className="fw-bold">
+                      <td>Total healthcare cost</td>
+                      <td className="text-end">{formatCurrency(bestCase)}</td>
+                      <td className="text-end">{formatCurrency(result.totalCost)}</td>
+                      <td className="text-end">{formatCurrency(result.maxAnnualCost)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <ul>
+                  <li>
+                    <strong>Best case:</strong> you need no care beyond free preventive visits. This
+                    is where the plan's line starts on the chart below.
+                  </li>
+                  <li>
+                    <strong>Worst case:</strong> your share of medical costs hits the{' '}
+                    {formatCurrency(outOfPocketMax)} out-of-pocket max, a ceiling on your share of
+                    covered medical costs. Past it, the plan pays the rest for the year. This is the
+                    plan's flat line on the chart.
+                  </li>
+                </ul>
+                <p className="mb-0">
+                  Your own {account} contribution isn't counted as a cost, because that money stays
+                  yours. The out-of-pocket max only applies to care the plan covers. Services the
+                  plan excludes, and out-of-network charges above what the plan allows, can cost
+                  more.
+                </p>
+              </div>
+            }
+          >
+            Based on the total medical costs you estimated above. Best case {netAmount(bestCase)} ·
+            Worst case {netAmount(result.maxAnnualCost)}
+          </Item>
+          {bestCase < 0 && (
+            <Alert variant="success" className="small py-2 mb-4" style={{ marginTop: '-1rem' }}>
+              <span className="fs-5 me-1">💰</span>
+              <span>
+                <strong>That's not a typo!</strong> This plan can pay you more than it costs.{' '}
+                {result.maxAnnualCost < 0 || breakEven === null ? (
+                  <>You come out ahead no matter how much care you need.</>
+                ) : (
+                  <>
+                    As long as your total medical costs for the year are less than about{' '}
+                    {formatCurrency(breakEven ?? 0)}, you come out ahead!
+                  </>
+                )}
+              </span>
+            </Alert>
+          )}
+        </Section>
+      </Row>
+    );
+  };
 
   // Card View Component for All Screen Sizes
   const PlanCard: React.FC<{ result: PlanResult; isLowestCost: boolean }> = ({
@@ -68,154 +504,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           </div>
         </Card.Header>
         <Card.Body>
-          <Row className="g-3">
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">Your Premiums</small>
-              <div className="fw-semibold fs-6">{formatCurrency(result.annualPremiums)}</div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">
-                Net Premiums Discount{' '}
-                <HelpIcon
-                  title="Net Premiums Discount"
-                  content={
-                    <div>
-                      <p>
-                        This shows your <strong>tax savings from pre-tax premiums</strong> through
-                        your employer's Section 125 plan. This is not money you receive back - it's
-                        a discount used for apples-to-apples plan comparison.
-                      </p>
-                      <p>
-                        <strong>Your calculation breakdown:</strong>
-                      </p>
-                      <ul>
-                        <li>Annual premiums: {formatCurrency(result.annualPremiums)}</li>
-                        <li>Your marginal tax rate: {userInputs.taxRate}%</li>
-                        <li>Social Security tax: {planData.payroll_tax_rates.social_security}%</li>
-                        <li>Medicare tax: {planData.payroll_tax_rates.medicare}%</li>
-                        <li>
-                          <strong>
-                            Total tax rate:{' '}
-                            {(
-                              userInputs.taxRate +
-                              planData.payroll_tax_rates.social_security +
-                              planData.payroll_tax_rates.medicare
-                            ).toFixed(2)}
-                            %
-                          </strong>
-                        </li>
-                      </ul>
-                      <p>
-                        <strong>Tax savings calculation:</strong>
-                        <br />
-                        {formatCurrency(result.annualPremiums)} ×{' '}
-                        {(
-                          userInputs.taxRate +
-                          planData.payroll_tax_rates.social_security +
-                          planData.payroll_tax_rates.medicare
-                        ).toFixed(2)}
-                        % = <strong>{formatCurrency(result.premiumDiscount)}</strong>
-                      </p>
-                      <p>
-                        <strong>Why this matters:</strong> When premiums are deducted pre-tax, you
-                        avoid paying income and payroll taxes on that money. This discount helps
-                        compare plans fairly by showing the true after-tax cost.
-                      </p>
-                    </div>
-                  }
-                />
-              </small>
-              <div className="fw-semibold text-success fs-6">
-                {result.premiumDiscount > 0 ? (
-                  formatCurrency(result.premiumDiscount)
-                ) : (
-                  <span className="text-muted">$0</span>
-                )}
-              </div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">Your Out-of-Pocket Costs</small>
-              <div className="fw-semibold fs-6">{formatCurrency(result.outOfPocketCosts)}</div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">
-                Your {result.contributionType === ContributionType.HSA ? 'HSA' : 'FSA'} Contribution
-              </small>
-              <div className="fw-semibold text-success fs-6">
-                {result.userContribution > 0 ? (
-                  formatCurrency(result.userContribution)
-                ) : (
-                  <span className="text-muted">$0</span>
-                )}
-              </div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">
-                {result.employerContribution > 0
-                  ? 'Employer HSA Contribution'
-                  : 'Employer Contribution'}
-              </small>
-              <div className="fw-semibold text-success fs-6">
-                {result.employerContribution > 0 ? (
-                  formatCurrency(result.employerContribution)
-                ) : (
-                  <span className="text-muted">$0</span>
-                )}
-              </div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">Your Tax Savings</small>
-              <div className="fw-semibold text-success fs-6">
-                {result.taxSavings > 0 ? (
-                  formatCurrency(result.taxSavings)
-                ) : (
-                  <span className="text-muted">$0</span>
-                )}
-              </div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">Your Total Cost</small>
-              <div className={`fs-4 fw-bold ${isLowestCost ? 'text-success' : 'text-primary'}`}>
-                {formatCurrency(result.totalCost)}
-              </div>
-            </Col>
-            <Col xs={6} md={4} lg={3}>
-              <small className="text-muted d-block">
-                Worst Case Cost{' '}
-                <HelpIcon
-                  title="Worst Case Cost"
-                  content={
-                    <div>
-                      <p>
-                        This is the <strong>absolute maximum</strong> you would ever pay in a year
-                        with this plan, assuming you hit your out-of-pocket maximum.
-                      </p>
-                      <p>
-                        It includes:
-                        <ul>
-                          <li>Net annual premiums (after pre-tax discount)</li>
-                          <li>Out-of-pocket maximum</li>
-                          <li>Minus employer contributions</li>
-                          <li>Minus tax savings from HSA/FSA contributions</li>
-                        </ul>
-                      </p>
-                      <p>
-                        This represents your worst-case financial exposure for the year. No matter
-                        how much healthcare you use, you won't pay more than this amount.
-                      </p>
-                      <p>
-                        <strong>Note:</strong> This is the flat line value you'll see for this plan
-                        on the Cost Comparison Chart at the bottom of the page.
-                      </p>
-                    </div>
-                  }
-                />
-              </small>
-              <div className="fw-semibold text-danger fs-6">
-                {formatCurrency(result.maxAnnualCost)}
-              </div>
-            </Col>
-          </Row>
+          <PlanCardBody result={result} />
         </Card.Body>
       </Card>
     </div>

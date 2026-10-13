@@ -62,16 +62,8 @@ export function generateChartData(planData: PlanData, userInputs: UserInputs): C
     const baseCost =
       planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
 
-    let slope: number;
-    if (userSpending > 0 && planResult.outOfPocketCosts > 0) {
-      slope = planResult.outOfPocketCosts / userSpending;
-    } else if (userSpending > 0) {
-      slope = 0.01;
-    } else {
-      const plan = planData.plans.find(p => p.name === planResult.planName);
-      const defaultCoinsurance = plan?.default.in_network_coverage?.coinsurance || 0.3;
-      slope = defaultCoinsurance;
-    }
+    const plan = planData.plans.find(p => p.name === planResult.planName);
+    const slope = chartSlope(plan, planResult, userSpending);
 
     // Calculate where this plan hits OOP max
     return slope > 0 ? (planResult.maxAnnualCost - baseCost) / slope : 0;
@@ -125,6 +117,43 @@ export function generateChartData(planData: PlanData, userInputs: UserInputs): C
 }
 
 /**
+ * Slope of a plan's chart line: the share of each billed dollar the user pays
+ * Slope = rise / run = (totalCost - baseCost) / userSpending
+ */
+function chartSlope(plan: any, planResult: PlanResult, userSpending: number): number {
+  if (userSpending > 0 && planResult.outOfPocketCosts > 0) {
+    // Use actual calculated effective rate
+    return planResult.outOfPocketCosts / userSpending;
+  }
+  if (userSpending > 0) {
+    // User has spending but no OOP costs (everything was free/copays hit OOP max)
+    // Use a small slope
+    return 0.01;
+  }
+  // No user spending - use plan's default coinsurance as estimate
+  return plan?.default.in_network_coverage?.coinsurance || 0.3;
+}
+
+/**
+ * Billed healthcare spending at which a plan's chart line crosses $0 total cost,
+ * or null if the plan never comes out ahead (base cost already >= 0)
+ */
+export function breakEvenSpending(
+  planData: PlanData,
+  userInputs: UserInputs,
+  planResult: PlanResult
+): number | null {
+  const baseCost =
+    planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
+  if (baseCost >= 0) {
+    return null;
+  }
+  const plan = planData.plans.find(p => p.name === planResult.planName);
+  const slope = chartSlope(plan, planResult, calculateUserSpending(planData, userInputs));
+  return slope > 0 ? -baseCost / slope : null;
+}
+
+/**
  * Generate chart data using linear approximation based on actual PlanResult
  *
  * Both HSA and PPO plans use this linear approximation to ensure the chart
@@ -150,22 +179,7 @@ function generateLinearChartData(
   const baseCost =
     planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
 
-  // Calculate slope from user's actual result
-  // Slope = rise / run = (totalCost - baseCost) / userSpending
-  let slope: number;
-
-  if (userSpending > 0 && planResult.outOfPocketCosts > 0) {
-    // Use actual calculated effective rate
-    slope = planResult.outOfPocketCosts / userSpending;
-  } else if (userSpending > 0) {
-    // User has spending but no OOP costs (everything was free/copays hit OOP max)
-    // Use a small slope
-    slope = 0.01;
-  } else {
-    // No user spending - use plan's default coinsurance as estimate
-    const defaultCoinsurance = plan.default.in_network_coverage?.coinsurance || 0.3;
-    slope = defaultCoinsurance;
-  }
+  const slope = chartSlope(plan, planResult, userSpending);
 
   // Find the spending level where we hit OOP max
   // At OOP max, totalCost = maxAnnualCost

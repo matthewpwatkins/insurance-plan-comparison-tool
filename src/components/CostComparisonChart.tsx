@@ -104,16 +104,31 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
       borderColor: '#4b5563',
       borderWidth: 2,
       borderDash: [5, 5],
-      label: {
+    };
+
+    // Speech bubble pointing at the top of the spending line
+    annotationConfig.currentSpendingLabel = {
+      type: 'label',
+      xValue: currentSpending,
+      yValue: ({ chart }: { chart: ChartJS }) => chart.scales.y.max,
+      xAdjust: ({ chart }: { chart: ChartJS }) =>
+        currentSpending > chart.scales.x.max * 0.7 ? -75 : 75,
+      yAdjust: 25,
+      content: 'Your Spending',
+      backgroundColor: '#4b5563',
+      color: '#ffffff',
+      font: { size: 11, weight: 'bold' },
+      padding: 6,
+      borderRadius: 4,
+      callout: {
         display: true,
-        content: 'Your Spending',
-        position: 'start',
+        position: ({ chart }: { chart: ChartJS }) =>
+          currentSpending > chart.scales.x.max * 0.7 ? 'right' : 'left',
+        side: 8,
+        margin: 0,
+        borderColor: '#4b5563',
+        borderWidth: 2,
         backgroundColor: '#4b5563',
-        color: '#ffffff',
-        font: {
-          size: 11,
-          weight: 'bold',
-        },
       },
     };
 
@@ -122,10 +137,6 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
   }, [userInputs]);
 
   const options: ChartOptions<'line'> = useMemo(() => {
-    // Use minimum of $500 for zoom calculations to ensure reasonable initial view
-    const effectiveSpending = Math.max(500, currentSpending);
-    const initialMaxX = effectiveSpending * 2;
-
     return {
       responsive: true,
       maintainAspectRatio: true,
@@ -185,7 +196,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         x: {
           type: 'linear',
           min: 0,
-          max: initialMaxX, // Center user spending on initial view
+          max: maxSpending, // Start fully zoomed out
           title: {
             display: true,
             text: 'Your Care Cost ($)',
@@ -218,7 +229,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         intersect: false,
       },
     };
-  }, [annotations, currentSpending, maxSpending]);
+  }, [annotations, maxSpending]);
 
   const handleZoomIn = () => {
     if (chartRef.current && zoomHistory.length > 0) {
@@ -328,8 +339,8 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
             {currentSpending.toLocaleString()})
           </li>
           <li>
-            <strong>Zoom controls:</strong> Use the buttons below to zoom in/out or reset to your
-            spending range
+            <strong>Zoom controls:</strong> Use the buttons below to zoom in/out or reset to the
+            full range
           </li>
           <li>
             <strong>PPO plans (dashed lines):</strong> These are forecasts based on your estimated

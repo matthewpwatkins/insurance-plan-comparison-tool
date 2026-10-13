@@ -235,11 +235,22 @@ function CompanyApp({ company }: CompanyAppProps) {
                 </div>
                 {results.length > 1 && (
                   <Alert variant="success" className="mb-3">
-                    <strong>💰 Great news!</strong> You could save at least{' '}
-                    <strong>
-                      ${Math.round(results[1].totalCost - results[0].totalCost).toLocaleString()}
-                    </strong>{' '}
-                    this year by choosing {results[0].planName}.
+                    <strong>💰 Great news!</strong> You could save{' '}
+                    {(() => {
+                      const low = Math.round(results[1].totalCost - results[0].totalCost);
+                      const high = Math.round(
+                        results[results.length - 1].totalCost - results[0].totalCost
+                      );
+                      return (
+                        <strong>
+                          {low === high
+                            ? `$${low.toLocaleString()}`
+                            : `between $${low.toLocaleString()} and $${high.toLocaleString()}`}
+                        </strong>
+                      );
+                    })()}{' '}
+                    this year by choosing {results[0].planName} instead of{' '}
+                    {results.length === 2 ? results[1].planName : 'another plan'}.
                   </Alert>
                 )}
                 {planData && (
