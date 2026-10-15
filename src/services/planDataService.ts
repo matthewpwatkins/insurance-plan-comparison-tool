@@ -40,6 +40,9 @@ export const getDefaultYear = (company: string): number => {
   return chosen && getAvailableYears(company).includes(chosen) ? chosen : getLatestYear(company);
 };
 
+/** Explainer on HSAs, including investing the balance. */
+export const HSA_VIDEO_URL = 'https://www.youtube.com/watch?v=N4dPuqKn3nM';
+
 /**
  * Get HSA contribution limits for a given year and coverage type
  */

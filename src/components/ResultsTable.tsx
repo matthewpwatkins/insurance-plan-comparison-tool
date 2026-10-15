@@ -6,7 +6,11 @@ import { formatCurrency } from '../utils/formatters';
 import { PlanResult, ContributionType, PlanData, UserInputs } from '../types';
 import HelpIcon from './HelpIcon';
 import { breakEvenSpending } from '../utils/chartDataGenerator';
-import { getMaxFSAContribution, getMaxHSAContribution } from '../services/planDataService';
+import {
+  getMaxFSAContribution,
+  getMaxHSAContribution,
+  HSA_VIDEO_URL,
+} from '../services/planDataService';
 
 interface ResultsTableProps {
   results: PlanResult[];
@@ -465,6 +469,17 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                 )}
               </span>
             </Alert>
+          )}
+          {isHSA && (
+            <p className="small text-muted mb-0">
+              <span className="me-1">📈</span>
+              <strong>Hidden superpower not shown here:</strong> your HSA can be invested like a
+              401(k) and grow for decades, then pay for medical care completely tax-free. Unspent
+              money is yours forever, even if you change jobs.{' '}
+              <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
+                Here's how it works
+              </a>
+            </p>
           )}
         </Section>
       </Row>

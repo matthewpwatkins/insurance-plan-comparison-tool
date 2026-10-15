@@ -24,6 +24,7 @@ import {
   getEmployerHSAContribution,
   getMaxFSAContribution,
   getMaxHSAContribution,
+  HSA_VIDEO_URL,
   isHSAQualified,
 } from '../../services/planDataService';
 import { formatCurrency } from '../../utils/formatters';
@@ -382,8 +383,16 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
                 <strong>{formatCurrency(maxEmployerHSA)} a year</strong> to it for free.
               </p>
               <p>
-                What you put in comes out of your paycheck <em>before</em> taxes, rolls over every
-                year, and can be invested like a retirement account.
+                What you put in comes out of your paycheck <em>before</em> taxes and stays yours,
+                even if you change jobs.
+              </p>
+              <p>
+                📈 <strong>The hidden superpower:</strong> you can invest it like a 401(k) and let
+                it grow for decades, then spend it on medical care completely tax-free. Many people
+                pay this year's bills out of pocket and let their HSA snowball for retirement.{' '}
+                <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
+                  Here's how it works
+                </a>
               </p>
               <p className="mb-0">
                 If you went that route, what's the most you'd be willing to contribute?
