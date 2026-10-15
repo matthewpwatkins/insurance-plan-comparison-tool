@@ -94,10 +94,12 @@ describe('claims review', () => {
     container.remove();
   });
 
-  it('starts with every expense it can place, at its default category', () => {
+  it('starts with every expense checked, each it can place at its default category', () => {
     render(loadPlanData('dmba', 2026));
 
-    expect(draft!.ready).toBe(true);
+    // The unknown service is checked too, so it needs a category first
+    expect(byLabel<HTMLInputElement>('Include MYSTERY CO').checked).toBe(true);
+    expect(draft!.ready).toBe(false);
     expect(kept()).toEqual([
       'behavioral_mental_health_outpatient',
       'laboratory_outpatient',
@@ -142,7 +144,6 @@ describe('claims review', () => {
   it('holds Continue until a checked unknown service has a category', () => {
     render(loadPlanData('dmba', 2026));
 
-    click(byLabel('Include MYSTERY CO'));
     expect(draft!.ready).toBe(false);
     expect(container.textContent).toContain('Pick a category for every checked row');
 

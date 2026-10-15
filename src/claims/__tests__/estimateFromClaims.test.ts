@@ -155,11 +155,11 @@ describe('past expenses from claims', () => {
     ).toBe(3);
   });
 
-  it('leaves unknown services unchecked until the person picks a category', () => {
+  it('keeps unknown services checked, with no category for the person to fill in', () => {
     const prepared = prepareClaims([charge({ service: 'MYSTERY' })], report);
     const [expense] = groupPastExpenses(prepared.visits, report);
     expect(suggestCarryOver(expense, { planYear: 2027, years: 1, inflationRate: 5 })).toEqual(
-      expect.objectContaining({ include: false, categoryId: null })
+      expect.objectContaining({ include: true, categoryId: null })
     );
   });
 

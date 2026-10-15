@@ -175,10 +175,10 @@ export const ClaimsReview: React.FC<{
   onDraftChange: (draft: ClaimsDraft | null) => void;
 }> = ({ claims, planData, onDraftChange }) => {
   const { prepared, expenses } = claims;
-  // Services we can't place start unchecked until the person picks a category
+  // Every service starts checked, including ones we can't place: the person picks a category
+  // for those or unchecks them
   const [included, setIncludedKeys] = useState<Set<string>>(
-    () =>
-      new Set(expenses.filter(expense => expense.choices.length > 0).map(expense => expense.key))
+    () => new Set(expenses.map(expense => expense.key))
   );
   /** Categories picked for services the company's mapping doesn't know */
   const [picked, setPicked] = useState<Record<string, string>>({});

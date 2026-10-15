@@ -207,7 +207,7 @@ export const suggestCarryOver = (
   const growth = Math.pow(1 + inflationRate / 100, Math.max(0, planYear + 0.5 - averageDate));
   const categoryId = expense.choices[0] ?? null;
   return {
-    include: categoryId !== null,
+    include: true,
     categoryId,
     quantity: Math.max(1, Math.round(count / years)),
     costPerVisit: Math.round((expense.total / count) * growth),
