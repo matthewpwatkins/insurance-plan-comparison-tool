@@ -1,0 +1,482 @@
+# DMBA health plans for 2027
+# yaml-language-server: $schema=../../../schema/plan-year.schema.json
+#
+# Source: DMBA 2027 Plan Comparison Information (sources/2027-summary.md). It lists three
+# plans: PPO 80 (new), HSA 80, and HSA 60. PPO 70 and PPO 90 are gone.
+#
+# The 2027 comparison has no premiums or employer HSA contributions. Until DMBA publishes
+# 2027 rates:
+# - HSA 60 and HSA 80 premiums and employer HSA contributions are 2026's.
+# - PPO 80 premiums are a PLACEHOLDER copied from 2026 PPO 70. Replace them.
+# Visit and cost caps, preventive care at no charge, and HSA telemedicine before the
+# deductible are not in the comparison either; they carry over from 2026 (2025 SBCs).
+
+year: 2027
+
+plans:
+  # HSA 60 Plan - Health Savings Account plan with high deductible, lowest premium
+  - name: "DMBA HSA 60"
+    short_name: "HSA 60"
+    # Prescriptions must meet deductible before copays apply
+    prescriptions_subject_to_deductible: true
+    chart_color: "#22c55e"
+    # Not in the 2027 comparison; 2026 amounts
+    employer_hsa_contribution:
+      single: 1_525
+      two_party: 3_050
+      family: 3_050
+    # Not in the 2027 comparison; 2026 premiums
+    monthly_premiums:
+      single: 62.40
+      two_party: 103.30
+      family: 121.30
+    annual_deductible:
+      in_network:
+        single: 4_000
+        family: 8_000
+      out_of_network:
+        single: 8_000
+        family: 16_000
+    out_of_pocket_maximum:
+      in_network:
+        individual: 8_700
+        family: 14_500
+      out_of_network:
+        individual: 17_400
+        family: 29_000
+    default:
+      in_network_coverage:
+        coinsurance: 0.4
+      out_of_network_coverage:
+        coinsurance: 0.6
+    categories:
+      acupuncture:
+        qty_cap: 12
+      behavioral_mental_health_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.4
+      chiropractic_therapy:
+        qty_cap: 25
+      colonoscopy_colorectal_screening:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      emergency_room_physician:
+        out_of_network_coverage:
+          coinsurance: 0.4
+      hearing_aids:
+        cost_cap: 1200
+        qty_cap: 2
+      imaging_advanced_professional:
+        out_of_network_coverage:
+          coinsurance: 0.4
+      imaging_diagnostic_professional:
+        out_of_network_coverage:
+          coinsurance: 0.4
+      immunizations:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          is_free: true
+      infertility_ivf:
+        cost_cap: 10000
+      laboratory_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.4
+      lifestyle_screenings:
+        cost_cap: 100
+      mammograms:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      obesity_surgery:
+        qty_cap: 1
+      occupational_therapy_outpatient:
+        qty_cap: 25
+      pharmacy_specialty_tier_1:
+        in_network_coverage:
+          copay: 15
+      pharmacy_specialty_tier_2:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 500
+      pharmacy_tier_1_mail_90:
+        in_network_coverage:
+          copay: 30
+      pharmacy_tier_1_retail_30:
+        in_network_coverage:
+          copay: 15
+      pharmacy_tier_1_retail_90:
+        in_network_coverage:
+          copay: 40
+      pharmacy_tier_2_mail_90:
+        in_network_coverage:
+          coinsurance: 0.3
+          max_coinsurance: 300
+      pharmacy_tier_2_retail_30:
+        in_network_coverage:
+          coinsurance: 0.3
+          max_coinsurance: 150
+      pharmacy_tier_2_retail_90:
+        in_network_coverage:
+          coinsurance: 0.3
+          max_coinsurance: 400
+      pharmacy_tier_3_mail_90:
+        in_network_coverage:
+          coinsurance: 0.5
+          max_coinsurance: 450
+      pharmacy_tier_3_retail_30:
+        in_network_coverage:
+          coinsurance: 0.5
+          max_coinsurance: 225
+      pharmacy_tier_3_retail_90:
+        in_network_coverage:
+          coinsurance: 0.5
+          max_coinsurance: 550
+      physical_therapy_outpatient:
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
+      telemedicine_pcp:
+        in_network_coverage:
+          coinsurance: 0.4
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.6
+      telemedicine_specialist:
+        in_network_coverage:
+          coinsurance: 0.4
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.6
+      telemedicine_urgent_care:
+        in_network_coverage:
+          coinsurance: 0.4
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.4
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+
+  # HSA 80 Plan - Health Savings Account plan with moderate deductible
+  - name: "DMBA HSA 80"
+    short_name: "HSA 80"
+    chart_color: "#3b82f6"
+    # Prescriptions must meet deductible before copays apply
+    prescriptions_subject_to_deductible: true
+    # Not in the 2027 comparison; 2026 amounts
+    employer_hsa_contribution:
+      single: 850
+      two_party: 1_700
+      family: 1_700
+    # Not in the 2027 comparison; 2026 premiums
+    monthly_premiums:
+      single: 114.60
+      two_party: 230.00
+      family: 274.20
+    annual_deductible:
+      in_network:
+        single: 2_500
+        family: 5_000
+      out_of_network:
+        single: 5_000
+        family: 10_000
+    out_of_pocket_maximum:
+      in_network:
+        individual: 7_500
+        family: 12_000
+      out_of_network:
+        individual: 15_000
+        family: 24_000
+    default:
+      in_network_coverage:
+        coinsurance: 0.2
+      out_of_network_coverage:
+        coinsurance: 0.4
+    categories:
+      acupuncture:
+        qty_cap: 12
+      behavioral_mental_health_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      chiropractic_therapy:
+        qty_cap: 25
+      colonoscopy_colorectal_screening:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      emergency_room_physician:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      hearing_aids:
+        cost_cap: 1200
+        qty_cap: 2
+      imaging_advanced_professional:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      imaging_diagnostic_professional:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      immunizations:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          is_free: true
+      infertility_ivf:
+        cost_cap: 10000
+      laboratory_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      lifestyle_screenings:
+        cost_cap: 100
+      mammograms:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      obesity_surgery:
+        qty_cap: 1
+      occupational_therapy_outpatient:
+        qty_cap: 25
+      pharmacy_specialty_tier_1:
+        in_network_coverage:
+          copay: 10
+      pharmacy_specialty_tier_2:
+        in_network_coverage:
+          coinsurance: 0.1
+          max_coinsurance: 300
+      pharmacy_tier_1_mail_90:
+        in_network_coverage:
+          copay: 20
+      pharmacy_tier_1_retail_30:
+        in_network_coverage:
+          copay: 10
+      pharmacy_tier_1_retail_90:
+        in_network_coverage:
+          copay: 25
+      pharmacy_tier_2_mail_90:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 200
+      pharmacy_tier_2_retail_30:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 100
+      pharmacy_tier_2_retail_90:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 250
+      pharmacy_tier_3_mail_90:
+        in_network_coverage:
+          coinsurance: 0.4
+          max_coinsurance: 350
+      pharmacy_tier_3_retail_30:
+        in_network_coverage:
+          coinsurance: 0.4
+          max_coinsurance: 175
+      pharmacy_tier_3_retail_90:
+        in_network_coverage:
+          coinsurance: 0.4
+          max_coinsurance: 450
+      physical_therapy_outpatient:
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
+      telemedicine_pcp:
+        in_network_coverage:
+          coinsurance: 0.2
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.4
+      telemedicine_specialist:
+        in_network_coverage:
+          coinsurance: 0.2
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.4
+      telemedicine_urgent_care:
+        in_network_coverage:
+          coinsurance: 0.2
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+        out_of_network_coverage:
+          coinsurance: 0.2
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+
+  # PPO 80 Plan - New for 2027. Copays like the old PPOs, but with a deductible.
+  - name: "DMBA PPO 80"
+    short_name: "PPO 80"
+    chart_color: "#f59e0b"
+    # PLACEHOLDER: the 2027 comparison has no premiums. These are 2026 PPO 70's.
+    monthly_premiums:
+      single: 109.20
+      two_party: 221.80
+      family: 346.40
+    annual_deductible:
+      in_network:
+        single: 500
+        family: 1_000
+      out_of_network:
+        single: 1_000
+        family: 2_000
+    out_of_pocket_maximum:
+      in_network:
+        individual: 6_000
+        family: 10_000
+      out_of_network:
+        individual: 12_000
+        family: 20_000
+    default:
+      in_network_coverage:
+        coinsurance: 0.2
+      out_of_network_coverage:
+        coinsurance: 0.4
+    categories:
+      # Caps and no-charge preventive care are plan-wide in the 2025 PPO SBCs
+      acupuncture:
+        qty_cap: 12
+      behavioral_mental_health_outpatient:
+        in_network_coverage:
+          copay: 25
+        out_of_network_coverage:
+          copay: 25
+      chiropractic_therapy:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+        qty_cap: 25
+      colonoscopy_colorectal_screening:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      emergency_room:
+        in_network_coverage:
+          copay: 200
+      eye_exams:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+      hearing_aids:
+        cost_cap: 1200
+        qty_cap: 2
+      imaging_advanced_professional:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      imaging_diagnostic_professional:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      immunizations:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          is_free: true
+      infertility_ivf:
+        cost_cap: 10000
+      laboratory_outpatient:
+        out_of_network_coverage:
+          coinsurance: 0.2
+      lifestyle_screenings:
+        cost_cap: 100
+      mammograms:
+        in_network_coverage:
+          is_free: true
+        qty_cap: 1
+      obesity_surgery:
+        qty_cap: 1
+      occupational_therapy_outpatient:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+      office_visit_pcp:
+        in_network_coverage:
+          copay: 25
+        out_of_network_coverage:
+          copay: 40
+      office_visit_specialist:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+      pharmacy_specialty_tier_1:
+        in_network_coverage:
+          copay: 10
+      pharmacy_specialty_tier_2:
+        in_network_coverage:
+          coinsurance: 0.1
+          max_coinsurance: 300
+      pharmacy_tier_1_mail_90:
+        in_network_coverage:
+          copay: 20
+      pharmacy_tier_1_retail_30:
+        in_network_coverage:
+          copay: 10
+      pharmacy_tier_1_retail_90:
+        in_network_coverage:
+          copay: 25
+      pharmacy_tier_2_mail_90:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 200
+      pharmacy_tier_2_retail_30:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 100
+      pharmacy_tier_2_retail_90:
+        in_network_coverage:
+          coinsurance: 0.2
+          max_coinsurance: 250
+      pharmacy_tier_3_mail_90:
+        in_network_coverage:
+          coinsurance: 0.4
+          max_coinsurance: 350
+      pharmacy_tier_3_retail_30:
+        in_network_coverage:
+          coinsurance: 0.4
+          max_coinsurance: 175
+      pharmacy_tier_3_retail_90:
+        in_network_coverage:
+          coinsurance: 0.4
+          max_coinsurance: 450
+      physical_therapy_outpatient:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+        qty_cap: 25
+      skilled_nursing_facility:
+        qty_cap: 50
+      speech_therapy_outpatient:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+      telemedicine_pcp:
+        in_network_coverage:
+          copay: 25
+        out_of_network_coverage:
+          copay: 40
+      telemedicine_specialist:
+        in_network_coverage:
+          copay: 50
+        out_of_network_coverage:
+          copay: 60
+      telemedicine_urgent_care:
+        in_network_coverage:
+          copay: 60
+        out_of_network_coverage:
+          copay: 60
+      wellness_exam:
+        in_network_coverage:
+          is_free: true
+        out_of_network_coverage:
+          copay: 40

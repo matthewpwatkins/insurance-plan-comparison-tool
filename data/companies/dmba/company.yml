@@ -2,6 +2,8 @@
 
 name: DMBA
 fsa_name: "DMBA's FSA"
+# 2027 premiums and employer HSA amounts aren't published yet, so keep 2026 the default
+default_year: 2026
 
 claims_portal:
   name: DMBA Claims Portal

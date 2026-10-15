@@ -15,6 +15,10 @@
       "description": "Who pays claims, if different from name (used in EOB help text)"
     },
     "welcome": { "type": "string", "description": "Replaces the default welcome blurb" },
+    "default_year": {
+      "type": "integer",
+      "description": "Plan year selected by default. Omit to use the newest year; set it to hold back a year whose data is incomplete."
+    },
     "fsa_name": {
       "type": "string",
       "description": "How the company's FSA is referred to, e.g. \"Acme's FSA\""

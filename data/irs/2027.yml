@@ -1,0 +1,40 @@
+# Federal limits for 2027 (set annually by IRS and SSA). Shared by every company.
+
+# HSA Contribution Limits (set by IRS annually)
+# IRS Rev. Proc. 2026-24: https://www.irs.gov/pub/irs-drop/rp-26-24.pdf
+# The $1,000 catch-up is set by statute and not indexed.
+hsa_contribution_limits:
+  single_coverage: 4_500
+  family_coverage: 9_000
+  catch_up_age_55_plus: 1_000
+
+# HSA Qualification Requirements (set by IRS annually)
+# A plan must meet these minimum deductibles to qualify for an HSA
+# IRS Rev. Proc. 2026-24: https://www.irs.gov/pub/irs-drop/rp-26-24.pdf
+hsa_qualification_limits:
+  minimum_deductible:
+    single: 1_750
+    family: 3_500
+  maximum_out_of_pocket:
+    single: 8_700
+    family: 17_400
+
+# FSA Contribution Limits (set by IRS annually)
+# PROVISIONAL: the IRS had not published the 2027 limit as of 2026-10-15. This is Mercer's
+# June 2026 projection:
+# https://www.mercer.com/en-us/insights/law-and-policy/mercer-projects-2027-transportation-and-health-fsa-limits/
+# Replace with the figure from the IRS's fall 2026 inflation-adjustment revenue procedure.
+fsa_contribution_limits:
+  healthcare_fsa: 3_500
+
+# Payroll Tax Rates (set by IRS/SSA annually)
+# Employee rates are set by statute: https://www.irs.gov/taxtopics/tc751
+payroll_tax_rates:
+  social_security: 6.2
+  medicare: 1.45
+
+# Expected rise in healthcare prices going into this year, in percent. Default for growing
+# last year's claims into this year's estimates. BLS CPI-U medical care services, 12 months to
+# September 2026 (physicians ~3.4%, hospital services ~5.4%):
+# https://www.bls.gov/news.release/cpi.t02.htm
+healthcare_price_increase: 4.0

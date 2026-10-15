@@ -1,4 +1,9 @@
-import { getPlanData, getAvailableYears, getLatestYear } from '../generated/dataHelpers';
+import {
+  getCompany,
+  getPlanData,
+  getAvailableYears,
+  getLatestYear,
+} from '../generated/dataHelpers';
 import { PlanData, HealthPlan, CoverageType } from '../types';
 
 /**
@@ -28,10 +33,11 @@ export const getAvailableDataYears = (company: string): number[] => {
 };
 
 /**
- * Get the most recent year a company has data for
+ * The year selected by default: the company's chosen year, else the most recent one
  */
 export const getDefaultYear = (company: string): number => {
-  return getLatestYear(company);
+  const chosen = getCompany(company)?.default_year;
+  return chosen && getAvailableYears(company).includes(chosen) ? chosen : getLatestYear(company);
 };
 
 /**

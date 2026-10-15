@@ -73,6 +73,8 @@ export interface Company {
   name: string;
   insurer_name?: string;
   welcome?: string;
+  /** Plan year selected by default; the newest year when unset */
+  default_year?: number;
   fsa_name?: string;
   claims_portal?: ClaimsPortal;
   cost_estimator?: CostEstimator;

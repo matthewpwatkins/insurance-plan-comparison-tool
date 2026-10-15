@@ -32,7 +32,7 @@ describe('build-data', () => {
     const { status, stdout } = runBuild(path.join(__dirname, '../../../data'));
 
     expect(status).toBe(0);
-    expect(stdout).toContain('dmba (2025, 2026)');
+    expect(stdout).toContain('dmba (2025, 2026, 2027)');
     expect(stdout).not.toContain('_template');
   });
 

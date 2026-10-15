@@ -147,6 +147,11 @@ for (const slug of companyDirs) {
     years[year] = { ...irsByYear[year], year, plans: planYear.plans, categories };
   }
 
+  if (company?.default_year && !years[company.default_year]) {
+    errors.push(
+      `${relative(path.join(dir, 'company.yml'))}: default_year ${company.default_year} has no plan_years file`
+    );
+  }
   if (company && slug !== TEMPLATE_SLUG) {
     companies[slug] = { company: { slug, ...company }, years };
   }
