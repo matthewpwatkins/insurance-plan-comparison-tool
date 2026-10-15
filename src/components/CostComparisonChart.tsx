@@ -12,16 +12,16 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import zoomPlugin from 'chartjs-plugin-zoom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMagnifyingGlassPlus,
   faMagnifyingGlassMinus,
   faRotateLeft,
+  IconDefinition,
 } from '@fortawesome/free-solid-svg-icons';
 import { UserInputs } from '../types/user';
 import { PlanData } from '../types';
-import { generateChartData, calculateUserSpending } from '../utils/chartDataGenerator';
+import { generateChartData } from '../utils/chartDataGenerator';
 import HelpIcon from './HelpIcon';
 
 // Register Chart.js components
@@ -33,8 +33,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  annotationPlugin,
-  zoomPlugin
+  annotationPlugin
 );
 
 interface CostComparisonChartProps {
@@ -42,47 +41,147 @@ interface CostComparisonChartProps {
   userInputs: UserInputs;
 }
 
-const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, userInputs }) => {
-  const currentSpending = calculateUserSpending(planData, userInputs);
-  const chartRef = useRef<any>(null);
-  const [zoomHistory, setZoomHistory] = useState<Array<{ min: number; max: number }>>([]);
+// Wait for typing to pause before redrawing, so the chart doesn't jump on every keystroke
+/** Each zoom click shows this much less (or more) of the spending axis */
+const ZOOM_STEP = 2;
+/** Pixels left beyond the plot's edge for the arrowheads at the end of each line */
+const ARROW_ROOM = 14;
+/** Screens narrower than this get the phone layout */
+const NARROW_WIDTH = 576;
+/** The fully zoomed-out range ends on a multiple of this */
+const FULL_RANGE_STEP = 5_000;
+/** Zoomed views start and end on multiples of this */
+const ZOOM_SNAP = 500;
+/** Narrowest spending range the chart zooms in to */
+const MIN_ZOOM_RANGE = 1_000;
 
-  // Generate chart data and get max spending
-  const { plans: chartPlans, maxSpending } = useMemo(
-    () => generateChartData(planData, userInputs),
-    [planData, userInputs]
-  );
+const ZoomButton: React.FC<{
+  title: string;
+  icon: IconDefinition;
+  disabled: boolean;
+  onClick: () => void;
+}> = ({ title, icon, disabled, onClick }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    title={title}
+    aria-label={title}
+    style={{
+      padding: '0.375rem',
+      width: '2rem',
+      height: '2rem',
+      backgroundColor: disabled ? '#f3f4f6' : 'white',
+      color: disabled ? '#9ca3af' : '#374151',
+      border: '1px solid #d1d5db',
+      borderRadius: '0.25rem',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      fontSize: '0.875rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: disabled ? 'none' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+    }}
+  >
+    <FontAwesomeIcon icon={icon} />
+  </button>
+);
+
+const REDRAW_DELAY_MS = 250;
+
+const CostComparisonChart: React.FC<CostComparisonChartProps> = ({
+  planData,
+  userInputs: liveInputs,
+}) => {
+  const [userInputs, setUserInputs] = useState(liveInputs);
+  useEffect(() => {
+    const timer = setTimeout(() => setUserInputs(liveInputs), REDRAW_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [liveInputs]);
+  const chartRef = useRef<any>(null);
+
+  const {
+    plans: chartPlans,
+    dots,
+    userSpending: currentSpending,
+    maxSpending,
+  } = useMemo(() => generateChartData(planData, userInputs), [planData, userInputs]);
+
+  // Visible spending range. Opens fully zoomed out; zooming centers on the user's spending.
+  const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < NARROW_WIDTH);
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < NARROW_WIDTH);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Full range ends on a round number, and zoomed views snap to whole steps
+  const fullMax = Math.ceil(maxSpending / FULL_RANGE_STEP) * FULL_RANGE_STEP;
+  const [view, setView] = useState({ min: 0, max: fullMax });
+  useEffect(() => setView({ min: 0, max: fullMax }), [fullMax]);
+  const zoomTo = (range: number) => {
+    const snap = (value: number) => Math.round(value / ZOOM_SNAP) * ZOOM_SNAP;
+    const width = Math.min(fullMax, Math.max(MIN_ZOOM_RANGE, snap(range)));
+    const center = currentSpending > 0 ? currentSpending : (view.min + view.max) / 2;
+    const min = Math.max(0, Math.min(snap(center - width / 2), fullMax - width));
+    setView({ min, max: min + width });
+  };
+  const viewRange = view.max - view.min;
+  const canZoomIn = viewRange > MIN_ZOOM_RANGE;
+  const canZoomOut = viewRange < fullMax;
+  const fullyZoomedOut = !canZoomOut;
 
   const chartData = useMemo(() => {
     // Convert to Chart.js format with x,y coordinates
     // Use chart_color from plan data, fallback to gray if not specified
-    const datasets = chartPlans.map(planChart => {
-      // Find the corresponding plan to get its color
-      const plan = planData.plans.find(p => p.name === planChart.planName);
-      const color = plan?.chart_color || '#6b7280';
+    const colorOf = (planName: string) =>
+      planData.plans.find(p => p.name === planName)?.chart_color || '#6b7280';
 
-      // Show point at user's spending level
-      const pointRadii = planChart.data.map(point =>
-        Math.abs(point.spending - currentSpending) < 1 ? 5 : 0
-      );
-
+    // Fully zoomed out, every line has gone flat at its out-of-pocket max by the right edge.
+    // There each line ends in a right-pointing arrow: its cost stays flat however high bills go.
+    const lines = chartPlans.map(planChart => {
+      const data = planChart.data.map(point => ({ x: point.spending, y: point.totalCost }));
+      const last = data[data.length - 1];
+      if (last && last.x < fullMax) data.push({ x: fullMax, y: last.y });
+      const arrow = (context: { dataIndex?: number }) =>
+        fullyZoomedOut && context.dataIndex === data.length - 1;
       return {
         label: planChart.planName,
-        data: planChart.data.map(point => ({ x: point.spending, y: point.totalCost })),
-        borderColor: color,
-        backgroundColor: color,
+        planName: planChart.planName,
+        isDot: false,
+        data,
+        borderColor: colorOf(planChart.planName),
+        backgroundColor: colorOf(planChart.planName),
         borderWidth: 3,
-        borderDash: planChart.dashed ? [8, 4] : undefined, // Dashed lines for PPO plans
-        pointRadius: pointRadii,
-        pointHoverRadius: 6,
-        tension: 0.1,
+        pointRadius: (context: { dataIndex?: number }) => (arrow(context) ? 8 : 0),
+        pointHoverRadius: (context: { dataIndex?: number }) => (arrow(context) ? 9 : 4),
+        pointStyle: (context: { dataIndex?: number }) => (arrow(context) ? 'triangle' : 'circle'),
+        pointRotation: (context: { dataIndex?: number }) => (arrow(context) ? 90 : 0),
+        tension: 0, // Keep the bends at the deductible and out-of-pocket max sharp
+        // Let the arrowheads draw past the plot's edge; zoomed in, lines stop at the edge
+        clip: fullyZoomedOut ? { left: 0, top: ARROW_ROOM, right: ARROW_ROOM, bottom: 0 } : 0,
       };
     });
 
+    // Each dot sits at the same x values as the lines (empty everywhere but the user's
+    // spending), so hovering there lists every plan's line and dot together
+    const xs = chartPlans[0]?.data.map(point => point.spending) ?? [];
+    const dotSets = dots.map(dot => ({
+      label: `${dot.planName} (your estimate)`,
+      planName: dot.planName,
+      isDot: true,
+      data: xs.map(x => ({ x, y: x === dot.spending ? dot.totalCost : null })),
+      borderColor: '#ffffff',
+      backgroundColor: colorOf(dot.planName),
+      borderWidth: 2,
+      pointRadius: 7,
+      pointHoverRadius: 8,
+      showLine: false,
+    }));
+
     return {
-      datasets,
+      datasets: [...lines, ...dotSets],
     };
-  }, [chartPlans, planData, currentSpending]);
+  }, [chartPlans, dots, planData, fullMax, fullyZoomedOut]);
 
   const annotations = useMemo(() => {
     const annotationConfig: Record<string, any> = {};
@@ -140,11 +239,26 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
     return {
       responsive: true,
       maintainAspectRatio: true,
-      aspectRatio: 2,
+      // Taller on phones so the lines aren't squashed
+      aspectRatio: isNarrow ? 0.9 : 2,
+      layout: { padding: { right: ARROW_ROOM, top: ARROW_ROOM } },
       plugins: {
         legend: {
           position: 'top',
+          // One legend entry per plan; clicking it hides the plan's line and dot together
+          onClick: (_event, legendItem, legend) => {
+            const chart = legend.chart;
+            const planName = (chart.data.datasets[legendItem.datasetIndex!] as any).planName;
+            const hide = chart.isDatasetVisible(legendItem.datasetIndex!);
+            chart.data.datasets.forEach((dataset, index) => {
+              if ((dataset as any).planName === planName) {
+                chart.setDatasetVisibility(index, !hide);
+              }
+            });
+            chart.update();
+          },
           labels: {
+            filter: (legendItem, data) => !(data.datasets[legendItem.datasetIndex!] as any).isDot,
             usePointStyle: true,
             padding: 15,
             font: {
@@ -159,54 +273,38 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         tooltip: {
           mode: 'index',
           intersect: false,
+          filter: item => item.parsed.y !== null && !Number.isNaN(item.parsed.y),
           callbacks: {
             label: context => {
               const label = context.dataset.label || '';
-              const value = context.parsed.y;
+              const value = Math.round(context.parsed.y);
               return `${label}: $${value.toLocaleString()}`;
             },
             title: tooltipItems => {
               const spending = tooltipItems[0].parsed.x;
-              return `Healthcare Spending: $${spending.toLocaleString()}`;
+              return `Medical bills: $${Math.round(spending).toLocaleString()}`;
             },
           },
         },
         annotation: {
           annotations,
         },
-        zoom: {
-          pan: {
-            enabled: false, // Disable mouse panning
-          },
-          zoom: {
-            wheel: {
-              enabled: false, // Disable scroll zoom
-            },
-            pinch: {
-              enabled: false, // Disable pinch zoom
-            },
-          },
-          limits: {
-            x: { min: 0, max: maxSpending }, // Limit zoom to actual data range
-            // No Y-axis limits - let it scale automatically
-          },
-        },
       },
       scales: {
         x: {
           type: 'linear',
-          min: 0,
-          max: maxSpending, // Start fully zoomed out
+          min: view.min,
+          max: view.max,
           title: {
             display: true,
-            text: 'Your Care Cost ($)',
+            text: 'Your Medical Bills ($)',
             font: {
               size: 13,
               weight: 'bold',
             },
           },
           ticks: {
-            callback: value => `$${Number(value).toLocaleString()}`,
+            callback: value => `$${Math.round(Number(value)).toLocaleString()}`,
           },
         },
         y: {
@@ -219,7 +317,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
             },
           },
           ticks: {
-            callback: value => `$${Number(value).toLocaleString()}`,
+            callback: value => `$${Math.round(Number(value)).toLocaleString()}`,
           },
         },
       },
@@ -229,52 +327,12 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         intersect: false,
       },
     };
-  }, [annotations, maxSpending]);
+  }, [annotations, view, isNarrow]);
 
-  const handleZoomIn = () => {
-    if (chartRef.current && zoomHistory.length > 0) {
-      const chart = chartRef.current;
-      const previousZoom = zoomHistory[zoomHistory.length - 1];
-
-      // Restore previous zoom level
-      chart.zoomScale('x', { min: previousZoom.min, max: previousZoom.max }, 'default');
-
-      // Remove from history
-      setZoomHistory(prev => prev.slice(0, -1));
-    }
-  };
-
-  const handleZoomOut = () => {
-    if (chartRef.current) {
-      const chart = chartRef.current;
-      const xScale = chart.scales.x;
-      const currentMin = xScale.min;
-      const currentMax = xScale.max;
-
-      // Save current zoom to history before zooming out
-      setZoomHistory(prev => [...prev, { min: currentMin, max: currentMax }]);
-
-      const range = currentMax - currentMin;
-      const newRange = range * 1.5; // Zoom out by 1.5x
-      const center = (currentMin + currentMax) / 2;
-
-      const newMin = Math.max(0, center - newRange / 2);
-      const newMax = Math.min(maxSpending, center + newRange / 2);
-
-      chart.zoomScale('x', { min: newMin, max: newMax }, 'default');
-    }
-  };
-
-  const handleResetZoom = () => {
-    if (chartRef.current) {
-      chartRef.current.resetZoom();
-      setZoomHistory([]); // Clear history on reset
-    }
-  };
-
-  // Show tooltip at user's spending point on initial load
+  // Show tooltip at user's spending point on initial load, except on phones where it would
+  // cover most of the chart
   useEffect(() => {
-    if (chartRef.current && chartPlans.length > 0) {
+    if (chartRef.current && chartPlans.length > 0 && !isNarrow) {
       const chart = chartRef.current;
 
       // Small delay to ensure chart is fully rendered
@@ -295,7 +353,7 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         // Show tooltip at the closest point for all datasets
         if (chart.tooltip) {
           chart.tooltip.setActiveElements(
-            chartPlans.map((_, datasetIndex) => ({
+            chart.data.datasets.map((_: unknown, datasetIndex: number) => ({
               datasetIndex,
               index: closestIndex,
             })),
@@ -307,15 +365,60 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
 
       return () => clearTimeout(timer);
     }
-  }, [chartPlans, currentSpending]);
+  }, [chartPlans, currentSpending, isNarrow]);
 
   return (
     <div style={{ marginTop: '2rem' }}>
       <h3 style={{ marginBottom: '1rem' }}>Cost Comparison Chart</h3>
 
+      <div style={{ padding: isNarrow ? '0.5rem 0' : '1rem', position: 'relative' }}>
+        {/* Zoom controls: over the chart's top right corner, or above the chart on phones */}
+        <div
+          style={
+            isNarrow
+              ? {
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.25rem',
+                  marginBottom: '0.5rem',
+                }
+              : {
+                  position: 'absolute',
+                  top: '1.5rem',
+                  right: '1.5rem',
+                  display: 'flex',
+                  gap: '0.25rem',
+                  zIndex: 10,
+                }
+          }
+        >
+          <ZoomButton
+            title="Zoom out"
+            icon={faMagnifyingGlassMinus}
+            disabled={!canZoomOut}
+            onClick={() => zoomTo(viewRange * ZOOM_STEP)}
+          />
+          <ZoomButton
+            title="Show everything"
+            icon={faRotateLeft}
+            disabled={!canZoomOut}
+            onClick={() => setView({ min: 0, max: fullMax })}
+          />
+          <ZoomButton
+            title="Zoom in on your spending"
+            icon={faMagnifyingGlassPlus}
+            disabled={!canZoomIn}
+            onClick={() => zoomTo(viewRange / ZOOM_STEP)}
+          />
+        </div>
+
+        <Line ref={chartRef} data={chartData} options={options} />
+      </div>
+
       <div
         style={{
-          marginBottom: '1rem',
+          marginTop: '1rem',
+          marginBottom: '3rem', // Keep it apart from the gray page footer
           padding: '0.75rem',
           backgroundColor: '#f3f4f6',
           borderRadius: '0.375rem',
@@ -326,34 +429,39 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
         <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>How to read this chart:</p>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
           <li>
-            Each colored line shows how your total annual cost (premiums + out-of-pocket) changes as
-            your healthcare spending increases
+            Each colored line shows how a plan's total annual cost (premiums + out-of-pocket) grows
+            with your medical bills, and each dot is that plan's total for the care you entered
           </li>
           <li>
-            <strong>Lower is better</strong> - choose the plan with the lowest line at your expected
-            spending level
+            <strong>Lower is better</strong> - your best plan has the lowest dot; the lines show how
+            that could change if your bills run higher or lower
           </li>
           <li>
             The <span style={{ color: '#4b5563', fontWeight: 'bold' }}>dark gray dashed line</span>{' '}
-            marks your current estimated spending ($
-            {currentSpending.toLocaleString()})
+            marks your medical bills (${Math.round(currentSpending).toLocaleString()})
           </li>
           <li>
-            <strong>Zoom controls:</strong> Use the buttons below to zoom in/out or reset to the
-            full range
+            <strong>Dots and lines:</strong> Dots are your real totals. Lines show a typical bill,
+            using your mix of copays once the deductible is met. Copays before the deductible, free
+            care and visit limits can put a dot above or below its line. The bottom axis leaves out
+            care that is free on every plan
           </li>
           <li>
-            <strong>PPO plans (dashed lines):</strong> These are forecasts based on your estimated
-            service mix{' '}
+            <strong>Zoom controls:</strong> Zoom in on your spending, zoom back out, or show
+            everything
+          </li>
+          <li>
+            <strong>Bends in the lines:</strong> You pay all of your bills until you meet the
+            deductible, then the plan's share for your mix of care, and nothing more once you reach
+            the out-of-pocket maximum{' '}
             <HelpIcon
-              title="Why PPO Forecasts Are Unpredictable"
+              title="Why Your Service Mix Matters"
               content={
                 <div>
                   <p>
-                    Unlike HSA plans where costs follow predictable deductible and coinsurance
-                    rules, PPO plans have <strong>different copays for different services</strong>,
-                    making your total out-of-pocket percentage highly dependent on what types of
-                    care you receive.
+                    Plans charge <strong>different copays for different services</strong>, so your
+                    total out-of-pocket percentage depends heavily on what types of care you
+                    receive.
                   </p>
                   <p>
                     <strong>Example:</strong> Suppose two identical people—Fred and Phil—both enroll
@@ -377,18 +485,15 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
                     service mix.
                   </p>
                   <p>
-                    The dashed PPO lines show projections based on <em>your</em> estimated service
-                    mix, but your actual costs may vary depending on what care you actually need.
-                  </p>
-                  <p>
-                    <strong>Important:</strong> If you don't enter a realistic mix of day-to-day
-                    copay-based services (like office visits) and major coinsurance-based services
-                    (like surgeries or imaging), the forecast line will be steeper or shallower than
-                    reality. However, two points are always reliable:
+                    After the deductible, each line blends in the copays for the care you entered.
+                    Your dots use your exact care, so a dot can still sit above or below its line
+                    (copays before the deductible, free care, visit limits). Either way, two points
+                    on every line are reliable:
                   </p>
                   <ul>
                     <li>
-                      <strong>Starting point:</strong> Your annual premiums minus FSA tax savings
+                      <strong>Starting point:</strong> Your annual premiums minus HSA/FSA tax
+                      savings and any employer contribution
                     </li>
                     <li>
                       <strong>Flatline (end point):</strong> Your worst-case maximum annual cost
@@ -404,87 +509,6 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({ planData, use
             />
           </li>
         </ul>
-      </div>
-
-      <div style={{ padding: '1rem', position: 'relative' }}>
-        {/* Zoom controls positioned at top right */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '1.5rem',
-            right: '1.5rem',
-            display: 'flex',
-            gap: '0.25rem',
-            zIndex: 10,
-          }}
-        >
-          <button
-            onClick={handleZoomOut}
-            title="Zoom Out"
-            style={{
-              padding: '0.375rem',
-              width: '2rem',
-              height: '2rem',
-              backgroundColor: 'white',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.25rem',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <FontAwesomeIcon icon={faMagnifyingGlassMinus} />
-          </button>
-          <button
-            onClick={handleResetZoom}
-            title="Reset Zoom"
-            style={{
-              padding: '0.375rem',
-              width: '2rem',
-              height: '2rem',
-              backgroundColor: 'white',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.25rem',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <FontAwesomeIcon icon={faRotateLeft} />
-          </button>
-          <button
-            onClick={handleZoomIn}
-            disabled={zoomHistory.length === 0}
-            title="Zoom In"
-            style={{
-              padding: '0.375rem',
-              width: '2rem',
-              height: '2rem',
-              backgroundColor: zoomHistory.length === 0 ? '#f3f4f6' : 'white',
-              color: zoomHistory.length === 0 ? '#9ca3af' : '#374151',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.25rem',
-              cursor: zoomHistory.length === 0 ? 'not-allowed' : 'pointer',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: zoomHistory.length === 0 ? 'none' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <FontAwesomeIcon icon={faMagnifyingGlassPlus} />
-          </button>
-        </div>
-
-        <Line ref={chartRef} data={chartData} options={options} />
       </div>
     </div>
   );

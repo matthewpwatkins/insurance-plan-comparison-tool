@@ -17,6 +17,7 @@ import {
   CoverageType,
   NetworkBenefits,
   CategoriesData,
+  CostStructure,
 } from '../types';
 
 /**
@@ -193,6 +194,52 @@ const calculateContributionsAndTaxSavings = (
   }
 
   return { userContribution, employerContribution, taxSavings };
+};
+
+/**
+ * A category's benefits on a plan: the plan's default with the category's own settings on top
+ */
+const effectiveBenefits = (plan: HealthPlan, categoryId: string): NetworkBenefits => {
+  const categoryBenefits = plan.categories[categoryId];
+  if (!categoryBenefits) {
+    return plan.default;
+  }
+  return {
+    ...plan.default,
+    ...categoryBenefits,
+    in_network_coverage: {
+      ...plan.default.in_network_coverage,
+      ...categoryBenefits.in_network_coverage,
+    },
+    out_of_network_coverage: {
+      ...plan.default.out_of_network_coverage,
+      ...categoryBenefits.out_of_network_coverage,
+    },
+  };
+};
+
+/**
+ * How a plan covers a category in one network, as the cost engine applies it
+ */
+export const categoryCoverage = (
+  plan: HealthPlan,
+  categoryId: string,
+  network: 'in_network' | 'out_of_network'
+): CostStructure | undefined => {
+  const benefits = effectiveBenefits(plan, categoryId);
+  return network === 'in_network' ? benefits.in_network_coverage : benefits.out_of_network_coverage;
+};
+
+/**
+ * Visits a plan covers per year in a category and network, or undefined if unlimited
+ */
+export const categoryQuantityCap = (
+  plan: HealthPlan,
+  categoryId: string,
+  network: 'in_network' | 'out_of_network'
+): number | undefined => {
+  const categoryBenefits = plan.categories[categoryId];
+  return categoryBenefits?.qty_cap ?? categoryBenefits?.[`${network}_coverage`]?.qty_cap;
 };
 
 /**
@@ -529,19 +576,7 @@ class PlanExecution {
     categoryId: string,
     network: 'in_network' | 'out_of_network'
   ): number | undefined {
-    // Check category-specific caps first
-    const categoryBenefits = this.plan.categories[categoryId];
-    if (categoryBenefits?.qty_cap !== undefined) {
-      return categoryBenefits.qty_cap;
-    }
-
-    // Check network-specific caps
-    const networkBenefits = categoryBenefits?.[`${network}_coverage`];
-    if (networkBenefits?.qty_cap !== undefined) {
-      return networkBenefits.qty_cap;
-    }
-
-    return undefined;
+    return categoryQuantityCap(this.plan, categoryId, network);
   }
 
   /**
@@ -633,34 +668,8 @@ class PlanExecution {
   /**
    * Get effective benefits for a category by merging default benefits with category-specific benefits
    */
-  private getEffectiveBenefits(categoryId: string): NetworkBenefits {
-    // Get category-specific benefits (if any)
-    const categoryBenefits = this.plan.categories[categoryId];
-    if (!categoryBenefits) {
-      return this.plan.default;
-    }
-
-    // Merge category benefits on top of default benefits
-    return {
-      ...this.plan.default,
-      ...categoryBenefits,
-      in_network_coverage: {
-        ...this.plan.default.in_network_coverage,
-        ...categoryBenefits.in_network_coverage,
-      },
-      out_of_network_coverage: {
-        ...this.plan.default.out_of_network_coverage,
-        ...categoryBenefits.out_of_network_coverage,
-      },
-    };
-  }
-
   private getCategoryBenefits(categoryId: string, network: 'in_network' | 'out_of_network') {
-    const effectiveBenefits = this.getEffectiveBenefits(categoryId);
-
-    return network === 'in_network'
-      ? effectiveBenefits.in_network_coverage
-      : effectiveBenefits.out_of_network_coverage;
+    return categoryCoverage(this.plan, categoryId, network);
   }
 
   private getDeductibleForCoverage(): number {

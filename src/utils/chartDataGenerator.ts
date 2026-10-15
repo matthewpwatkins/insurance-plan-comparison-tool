@@ -1,6 +1,10 @@
-import { PlanData, UserInputs, PlanResult } from '../types';
-import { calculateAllPlans } from './costCalculator';
-import { isHSAQualified } from '../services/planDataService';
+import { PlanData, UserInputs, PlanResult, HealthPlan, CoverageType } from '../types';
+import {
+  calculateAllPlans,
+  calculatePlanCost,
+  categoryCoverage,
+  categoryQuantityCap,
+} from './costCalculator';
 
 /**
  * Data structure for a single point on the chart
@@ -16,7 +20,13 @@ export interface ChartPoint {
 export interface PlanChartData {
   planName: string;
   data: ChartPoint[];
-  dashed?: boolean; // True for PPO plans (projections are approximations)
+}
+
+/**
+ * A plan's real total for the user's estimates, placed at their non-free spending
+ */
+export interface EstimateDot extends ChartPoint {
+  planName: string;
 }
 
 /**
@@ -24,119 +34,239 @@ export interface PlanChartData {
  */
 export interface ChartDataResult {
   plans: PlanChartData[];
+  dots: EstimateDot[];
+  userSpending: number;
   maxSpending: number;
 }
 
-/**
- * Calculate the user's current total healthcare spending based on their estimates
- * This represents the total billed amount (after insurance negotiation, before split)
- */
-export function calculateUserSpending(planData: PlanData, userInputs: UserInputs): number {
-  return userInputs.costs.categoryEstimates.reduce((total, categoryEstimate) => {
-    const costForCategory =
-      Math.round(categoryEstimate.estimate.quantity) * categoryEstimate.estimate.costPerVisit;
-    return total + costForCategory;
-  }, 0);
+// A category id no plan overrides, so an expense in it gets each plan's default coverage
+const DEFAULT_COVERAGE_CATEGORY = '__default_coverage__';
+// Highest spending searched when looking for where a line flattens or crosses zero
+const SEARCH_CEILING = 1_000_000;
+// Lines are straight between bends, so a coarse grid only guards against bends we don't predict
+const GRID_POINTS = 100;
+// Spending past the last plan's flat point, so the flat stretch is visible
+const PAST_FLATLINE = 10_000;
+// The x-axis runs at least this far past the user's own spending
+const PAST_USER_SPENDING = 1.5;
+
+type Network = 'in_network' | 'out_of_network';
+
+interface BilledEstimate {
+  categoryId: string;
+  network: Network;
+  quantity: number;
+  costPerVisit: number;
 }
 
 /**
- * Generate chart data for all plans showing how total cost varies with healthcare spending
+ * The user's estimates with care that is free on every plan taken out.
  *
- * Approach:
- * - Calculate PlanResult for user's actual inputs to get accurate costs
- * - For each plan, generate a line that:
- *   1. Starts at base cost (net premiums - tax savings - employer contributions)
- *   2. Passes through the user's actual spending point at the calculated totalCost
- *   3. Continues until hitting maxAnnualCost (OOP max plateau)
- *   4. Flatlines from there
+ * A category counts as free only if every plan covers it at no charge in that network, and only
+ * up to the smallest visit limit among the plans; visits past that limit are billed on some plan,
+ * so they stay in at their full cost. Care free on only some plans stays in full.
+ */
+function billedEstimates(planData: PlanData, userInputs: UserInputs): BilledEstimate[] {
+  const freeVisitsUsed: Record<string, number> = {};
+  return userInputs.costs.categoryEstimates.map(({ categoryId, estimate }) => {
+    const network: Network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
+    const quantity = Math.round(estimate.quantity);
+    const billed = { categoryId, network, quantity, costPerVisit: estimate.costPerVisit };
+    const freeEverywhere =
+      planData.plans.length > 0 &&
+      planData.plans.every(plan => categoryCoverage(plan, categoryId, network)?.is_free === true);
+    if (!freeEverywhere) {
+      return billed;
+    }
+    // A limit spans every row of the category, as in the cost engine
+    const freeLimit = Math.min(
+      ...planData.plans.map(plan => categoryQuantityCap(plan, categoryId, network) ?? Infinity)
+    );
+    const key = `${categoryId}|${network}`;
+    const freeVisits = Math.min(quantity, Math.max(0, freeLimit - (freeVisitsUsed[key] ?? 0)));
+    freeVisitsUsed[key] = (freeVisitsUsed[key] ?? 0) + freeVisits;
+    return { ...billed, quantity: quantity - freeVisits };
+  });
+}
+
+/**
+ * Billed spending on the user's estimates, leaving out care that is free on every plan
+ */
+export function calculateUserSpending(planData: PlanData, userInputs: UserInputs): number {
+  return billedEstimates(planData, userInputs).reduce(
+    (total, { quantity, costPerVisit }) => total + quantity * costPerVisit,
+    0
+  );
+}
+
+/**
+ * Share of each billed dollar a plan charges once its deductible is met, for the user's mix of
+ * care: default coinsurance, except that care the plan covers with a copay costs the copay per
+ * visit (never more than the visit) instead of coinsurance. With no billed care, it is the
+ * default coinsurance.
+ */
+export function rateAfterDeductible(
+  plan: HealthPlan,
+  planData: PlanData,
+  userInputs: UserInputs
+): number {
+  const coinsurance = plan.default.in_network_coverage?.coinsurance ?? 0;
+  let billedTotal = 0;
+  let copayBilled = 0;
+  let copayDollars = 0;
+  billedEstimates(planData, userInputs).forEach(
+    ({ categoryId, network, quantity, costPerVisit }) => {
+      const billed = quantity * costPerVisit;
+      billedTotal += billed;
+      const coverage = categoryCoverage(plan, categoryId, network);
+      if (!coverage?.is_free && coverage?.copay && coverage.copay > 0) {
+        copayBilled += billed;
+        copayDollars += quantity * Math.min(coverage.copay, costPerVisit);
+      }
+    }
+  );
+  if (billedTotal <= 0) {
+    return coinsurance;
+  }
+  return (coinsurance * (billedTotal - copayBilled) + copayDollars) / billedTotal;
+}
+
+/**
+ * A plan's total annual cost when the year's care is `spending` of in-network bills: premiums
+ * and account savings, then 100% of bills until the deductible, then the plan's rate for the
+ * user's mix of care, then nothing more past the out-of-pocket max.
+ */
+function planLine(
+  plan: HealthPlan,
+  planData: PlanData,
+  userInputs: UserInputs
+): (spending: number) => number {
+  // The plan with its default coverage charging the blended rate, so the engine draws the line
+  const { copay: _copay, ...defaultCoverage } = plan.default.in_network_coverage ?? {};
+  const linePlan: HealthPlan = {
+    ...plan,
+    default: {
+      ...plan.default,
+      in_network_coverage: {
+        ...defaultCoverage,
+        coinsurance: rateAfterDeductible(plan, planData, userInputs),
+      },
+    },
+  };
+  return spending =>
+    calculatePlanCost(linePlan, planData, {
+      ...userInputs,
+      costs: {
+        ...userInputs.costs,
+        categoryEstimates:
+          spending > 0
+            ? [
+                {
+                  categoryId: DEFAULT_COVERAGE_CATEGORY,
+                  estimate: { quantity: 1, costPerVisit: spending, isInNetwork: true },
+                  notes: '',
+                },
+              ]
+            : [],
+      },
+    }).totalCost;
+}
+
+/**
+ * Lowest spending (to the cent) at which a non-decreasing line reaches `target`, or null if it
+ * never does below the search ceiling
+ */
+function spendingWhereCostReaches(
+  costAt: (spending: number) => number,
+  target: number
+): number | null {
+  if (costAt(0) >= target) {
+    return 0;
+  }
+  if (costAt(SEARCH_CEILING) < target) {
+    return null;
+  }
+  let low = 0;
+  let high = SEARCH_CEILING;
+  while (high - low > 1) {
+    const mid = (low + high) / 2;
+    if (costAt(mid) >= target) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+  // The line is straight just below the crossing, so extend it to land on the exact spot
+  const a = Math.max(0, low - 2);
+  const rise = costAt(low) - costAt(a);
+  const exact = rise > 0 ? low + ((target - costAt(low)) * (low - a)) / rise : high;
+  return Math.round(Math.min(Math.max(exact, low), high) * 100) / 100;
+}
+
+function deductibleFor(plan: HealthPlan, coverage: CoverageType): number {
+  // two_party and family both use the family deductible, as in the cost engine
+  const deductible = plan.annual_deductible.in_network;
+  return coverage === CoverageType.Single ? deductible.single : deductible.family;
+}
+
+/**
+ * Chart lines, one per plan, of total cost against in-network bills, plus a dot per plan at the
+ * user's own non-free spending and that plan's real total for their estimates.
+ *
+ * After the deductible each line charges the plan's rate for the user's mix of care, copays
+ * included. The lines still bill 100% before the deductible and ignore visit limits and care free
+ * on only some plans, so the dots can sit off them.
  */
 export function generateChartData(planData: PlanData, userInputs: UserInputs): ChartDataResult {
   const userSpending = calculateUserSpending(planData, userInputs);
+  const results = calculateAllPlans(planData, userInputs);
 
-  // Calculate results for user's actual inputs
-  const planResults = calculateAllPlans(planData, userInputs);
-
-  // Calculate max spending range for chart
-  // Find the spending level where each plan hits its OOP max (flatline)
-  const spendingAtFlatlines = planResults.map(planResult => {
-    const baseCost =
-      planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
-
-    const plan = planData.plans.find(p => p.name === planResult.planName);
-    const slope = chartSlope(plan, planResult, userSpending);
-
-    // Calculate where this plan hits OOP max
-    return slope > 0 ? (planResult.maxAnnualCost - baseCost) / slope : 0;
+  const lines = planData.plans.map(plan => {
+    const costAt = planLine(plan, planData, userInputs);
+    const maxAnnualCost = results.find(r => r.planName === plan.name)!.maxAnnualCost;
+    // A hair under the worst case, so rounding noise on the flat stretch still counts as flat
+    const flatPoint = spendingWhereCostReaches(costAt, maxAnnualCost - 1e-6);
+    return { plan, costAt, flatPoint };
   });
+  const latestFlatPoint = Math.max(0, ...lines.map(line => line.flatPoint ?? 0));
+  const maxSpending = Math.max(latestFlatPoint + PAST_FLATLINE, userSpending * PAST_USER_SPENDING);
 
-  // Find the latest (highest spending) flatline and add $10k
-  const latestFlatline = Math.max(...spendingAtFlatlines);
-  const tenKPastLatestFlatline = latestFlatline + 10_000;
-
-  // Use the greater of: 2x user spending OR $10k past latest flatline
-  const maxSpending = Math.max(userSpending * 2, tenKPastLatestFlatline);
-
-  // Generate spending points every $500 for cleaner data
-  const spendingPoints: number[] = [];
-  for (let spending = 0; spending <= maxSpending; spending += 500) {
-    spendingPoints.push(spending);
+  // Every line shares one set of x values (so a hover shows all plans), with each plan's
+  // deductible and flat point included so the bends are exact
+  const points = new Set<number>([0, maxSpending, userSpending]);
+  for (let i = 1; i < GRID_POINTS; i++) {
+    points.add(Math.round((maxSpending * i) / GRID_POINTS));
   }
-  // Add final point at maxSpending if not already there
-  if (spendingPoints[spendingPoints.length - 1] !== maxSpending) {
-    spendingPoints.push(maxSpending);
-  }
-
-  // Always include user's exact spending point for accurate intersection
-  if (userSpending > 0 && !spendingPoints.includes(userSpending)) {
-    spendingPoints.push(userSpending);
-    spendingPoints.sort((a, b) => a - b);
-  }
-
-  // Generate chart data for each plan
-  const plans = planData.plans.map(plan => {
-    const planResult = planResults.find(r => r.planName === plan.name)!;
-    const isHSA = isHSAQualified(plan, planData, userInputs.coverage);
-
-    // All plans now use linear approximation based on actual PlanResult
-    // This ensures the chart passes through the user's exact calculated cost
-    return generateLinearChartData(
-      plan,
-      planData,
-      userInputs,
-      planResult,
-      userSpending,
-      spendingPoints,
-      !isHSA // PPO plans use dashed lines
-    );
+  lines.forEach(({ plan, flatPoint }) => {
+    points.add(deductibleFor(plan, userInputs.coverage));
+    if (flatPoint !== null) {
+      points.add(flatPoint);
+    }
   });
+  const spendingPoints = Array.from(points)
+    .filter(spending => spending <= maxSpending)
+    .sort((a, b) => a - b);
 
-  return {
-    plans,
-    maxSpending,
-  };
+  const plans = lines.map(({ plan, costAt }) => ({
+    planName: plan.name,
+    data: spendingPoints.map(spending => ({ spending, totalCost: costAt(spending) })),
+  }));
+
+  const dots =
+    userInputs.costs.categoryEstimates.length > 0
+      ? planData.plans.map(plan => ({
+          planName: plan.name,
+          spending: userSpending,
+          totalCost: results.find(r => r.planName === plan.name)!.totalCost,
+        }))
+      : [];
+
+  return { plans, dots, userSpending, maxSpending };
 }
 
 /**
- * Slope of a plan's chart line: the share of each billed dollar the user pays
- * Slope = rise / run = (totalCost - baseCost) / userSpending
- */
-function chartSlope(plan: any, planResult: PlanResult, userSpending: number): number {
-  if (userSpending > 0 && planResult.outOfPocketCosts > 0) {
-    // Use actual calculated effective rate
-    return planResult.outOfPocketCosts / userSpending;
-  }
-  if (userSpending > 0) {
-    // User has spending but no OOP costs (everything was free/copays hit OOP max)
-    // Use a small slope
-    return 0.01;
-  }
-  // No user spending - use plan's default coinsurance as estimate
-  return plan?.default.in_network_coverage?.coinsurance || 0.3;
-}
-
-/**
- * Billed healthcare spending at which a plan's chart line crosses $0 total cost,
- * or null if the plan never comes out ahead (base cost already >= 0)
+ * Spending at which a plan's chart line crosses $0 total cost, or null if the plan
+ * never comes out ahead (base cost already >= 0) or never stops coming out ahead
  */
 export function breakEvenSpending(
   planData: PlanData,
@@ -149,66 +279,8 @@ export function breakEvenSpending(
     return null;
   }
   const plan = planData.plans.find(p => p.name === planResult.planName);
-  const slope = chartSlope(plan, planResult, calculateUserSpending(planData, userInputs));
-  return slope > 0 ? -baseCost / slope : null;
-}
-
-/**
- * Generate chart data using linear approximation based on actual PlanResult
- *
- * Both HSA and PPO plans use this linear approximation to ensure the chart
- * passes through the user's exact calculated cost. While HSA plans technically
- * have non-linear behavior (due to deductibles), the linear approximation
- * ensures accuracy at the user's actual spending level.
- *
- * 1. Base cost (y-intercept): Net premiums - tax savings - employer contributions
- * 2. Slope: Calculated from user's actual spending point
- * 3. Plateau: At maxAnnualCost when OOP max is hit
- */
-function generateLinearChartData(
-  plan: any,
-  planData: PlanData,
-  userInputs: UserInputs,
-  planResult: PlanResult,
-  userSpending: number,
-  spendingPoints: number[],
-  dashed: boolean
-): PlanChartData {
-  // Base cost: What you pay even with $0 healthcare spending
-  // = Net premiums (after Premium Net Discount) - tax savings - employer contributions
-  const baseCost =
-    planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
-
-  const slope = chartSlope(plan, planResult, userSpending);
-
-  // Find the spending level where we hit OOP max
-  // At OOP max, totalCost = maxAnnualCost
-  // baseCost + (spending * slope) = maxAnnualCost
-  // spending = (maxAnnualCost - baseCost) / slope
-  const spendingAtOOPMax =
-    slope > 0 ? (planResult.maxAnnualCost - baseCost) / slope : Number.MAX_SAFE_INTEGER;
-
-  // Generate points
-  const dataPoints = spendingPoints.map(spending => {
-    let totalCost: number;
-
-    if (spending <= spendingAtOOPMax) {
-      // Before hitting OOP max: linear increase
-      totalCost = baseCost + spending * slope;
-    } else {
-      // After hitting OOP max: flatline at maxAnnualCost
-      totalCost = planResult.maxAnnualCost;
-    }
-
-    return {
-      spending,
-      totalCost: Math.round(totalCost), // Round to nearest dollar
-    };
-  });
-
-  return {
-    planName: plan.name,
-    data: dataPoints,
-    dashed, // Dashed for PPO (approximation), solid for HSA
-  };
+  if (!plan) {
+    return null;
+  }
+  return spendingWhereCostReaches(planLine(plan, planData, userInputs), 0);
 }

@@ -458,8 +458,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   <>You come out ahead no matter how much care you need.</>
                 ) : (
                   <>
-                    As long as your total medical costs for the year are less than about{' '}
-                    {formatCurrency(breakEven ?? 0)}, you come out ahead!
+                    As long as your medical bills for the year stay under about{' '}
+                    {formatCurrency(breakEven ?? 0)}, not counting care that's free, you come out
+                    ahead!
                   </>
                 )}
               </span>
