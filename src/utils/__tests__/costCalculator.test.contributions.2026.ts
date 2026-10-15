@@ -103,7 +103,11 @@ describe('HSA and FSA contributions with 2026 DMBA data', () => {
     for (const r of results) {
       expect(r.netAnnualPremiums).toBeCloseTo(r.annualPremiums * (1 - SAVINGS_RATE), 2);
       expect(r.totalCost).toBeCloseTo(
-        r.netAnnualPremiums + r.outOfPocketCosts - r.taxSavings - r.employerContribution,
+        r.netAnnualPremiums +
+          r.outOfPocketCosts +
+          r.fsaForfeited -
+          r.taxSavings -
+          r.employerContribution,
         2
       );
     }

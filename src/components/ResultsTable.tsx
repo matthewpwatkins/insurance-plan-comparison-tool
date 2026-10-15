@@ -104,11 +104,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
       planData.payroll_tax_rates.social_security +
       planData.payroll_tax_rates.medicare
     ).toFixed(2);
-    const outOfPocketMax =
-      result.maxAnnualCost -
-      result.netAnnualPremiums +
-      result.taxSavings +
-      result.employerContribution;
+    const outOfPocketMax = result.outOfPocketMax;
+    // FSA money left at year end is lost: all of it with no care, none of it at the max
+    const fsaLostBest = isHSA ? 0 : result.userContribution;
+    const fsaLostWorst = isHSA ? 0 : Math.max(0, result.userContribution - outOfPocketMax);
     const incomeRate = userInputs.taxRate;
     const ssRate = planData.payroll_tax_rates.social_security;
     const medicareRate = planData.payroll_tax_rates.medicare;
@@ -121,7 +120,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     const depositLimit = isHSA
       ? getMaxHSAContribution(planData, userInputs.coverage, userInputs.ageGroup)
       : getMaxFSAContribution(planData);
-    const bestCase = result.netAnnualPremiums - result.employerContribution - result.taxSavings;
+    const bestCase =
+      result.netAnnualPremiums + fsaLostBest - result.employerContribution - result.taxSavings;
     const breakEven = breakEvenSpending(planData, userInputs, result);
     const planShare = [
       ...result.ledger.inNetworkExpenses,
@@ -202,6 +202,36 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
             >
               What you pay at the counter for the {formatCurrency(totalBills)} in total medical
               costs you estimated above
+            </Item>
+          )}
+          {shows(result.fsaForfeited) && (
+            <Item
+              amountClassName="text-danger"
+              amount={result.fsaForfeited}
+              approx
+              title="Unspent FSA money you lose"
+              info={
+                <div>
+                  <p>
+                    FSA money you don't spend on care by the end of the plan year is lost. You
+                    planned to put in {formatCurrency(result.userContribution)} but expect to spend
+                    only {formatCurrency(result.outOfPocketCosts)} on care with this plan.
+                  </p>
+                  <MathTable
+                    rows={[
+                      ['Your FSA contribution', formatCurrency(result.userContribution)],
+                      ['− Your share of medical costs', formatCurrency(result.outOfPocketCosts)],
+                    ]}
+                    total={['Money you lose', formatCurrency(result.fsaForfeited)]}
+                  />
+                  <p className="mb-0">
+                    Lower your FSA contribution above to what you expect to spend and this goes
+                    away.
+                  </p>
+                </div>
+              }
+            >
+              You put in more than you expect to spend on care
             </Item>
           )}
         </Section>
@@ -394,6 +424,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                           result.outOfPocketCosts,
                           outOfPocketMax,
                         ],
+                        ...(isHSA || result.userContribution === 0
+                          ? []
+                          : [
+                              [
+                                '+ Unspent FSA money you lose',
+                                fsaLostBest,
+                                result.fsaForfeited,
+                                fsaLostWorst,
+                              ],
+                            ]),
                         [
                           '− Tax savings on premiums',
                           result.premiumDiscount,

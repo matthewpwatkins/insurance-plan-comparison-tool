@@ -99,7 +99,104 @@ describe('2027 DMBA data', () => {
     const ppo80 = byName(results, 'DMBA PPO 80');
     expect(ppo80.contributionType).toBe(ContributionType.FSA);
     expect(ppo80.userContribution).toBe(3500);
-    expect(ppo80.totalCost).toBeCloseTo(ppo80.netAnnualPremiums - ppo80.taxSavings, 2);
+    // With no care, the whole FSA is unspent and lost
+    expect(ppo80.fsaForfeited).toBe(3500);
+    expect(ppo80.totalCost).toBeCloseTo(ppo80.netAnnualPremiums - ppo80.taxSavings + 3500, 2);
+  });
+});
+
+describe('2027 timing of care through the year', () => {
+  const visits = [
+    {
+      categoryId: 'office_visit_pcp',
+      estimate: { quantity: 6, costPerVisit: 120, isInNetwork: true },
+    },
+    {
+      categoryId: 'pharmacy_tier_1_retail_30',
+      estimate: { quantity: 12, costPerVisit: 20, isInNetwork: true },
+    },
+  ];
+  const ppo80 = (categoryEstimates: typeof visits) =>
+    byName(calculateAllPlans(planData, inputs({ costs: { categoryEstimates } })), 'DMBA PPO 80')
+      .outOfPocketCosts;
+
+  it('gives the same cost whichever order the estimates are listed in', () => {
+    expect(ppo80(visits)).toBe(ppo80([...visits].reverse()));
+  });
+
+  it('spreads visits through the year, between all-visits-first and all-fills-first', () => {
+    // All visits first: 4 x $120 + ($20 + $25) + $25 + 12 fills x $10 = $670.
+    // All fills first: $120 of fills, 3 x $120 + ($20 + $25) + 2 x $25 = $575.
+    // Spread through the year, some fills land before the deductible is met.
+    const cost = ppo80(visits);
+    expect(cost).toBeGreaterThan(575);
+    expect(cost).toBeLessThan(670);
+  });
+});
+
+describe('2027 unspent FSA money', () => {
+  const ppo80 = (fsaContribution: number, pcpVisits: number) =>
+    byName(
+      calculateAllPlans(
+        planData,
+        inputs({
+          fsaContribution,
+          costs: {
+            categoryEstimates: [
+              {
+                categoryId: 'office_visit_pcp',
+                estimate: { quantity: pcpVisits, costPerVisit: 100, isInNetwork: true },
+              },
+            ],
+          },
+        })
+      ),
+      'DMBA PPO 80'
+    );
+
+  it('loses FSA money not spent on care', () => {
+    // 3 x $100 visits, all under the deductible, leave $1,700 of $2,000 unspent
+    const result = ppo80(2000, 3);
+    expect(result.outOfPocketCosts).toBe(300);
+    expect(result.fsaForfeited).toBe(1700);
+    expect(result.totalCost).toBeCloseTo(
+      result.netAnnualPremiums + 300 + 1700 - 2000 * SAVINGS_RATE,
+      2
+    );
+    expect(result.ledger.contributionsAndSavings).toContainEqual(
+      expect.objectContaining({ type: 'forfeit', amount: -1700 })
+    );
+  });
+
+  it('loses nothing when care uses up the FSA', () => {
+    expect(ppo80(300, 3).fsaForfeited).toBe(0);
+  });
+
+  it('never loses HSA money', () => {
+    const results = calculateAllPlans(planData, inputs({ hsaContribution: 3000 }));
+    expect(byName(results, 'DMBA HSA 60').fsaForfeited).toBe(0);
+  });
+});
+
+describe('2027 copays never cost more than the bill', () => {
+  it('charges a $6 drug, not the $10 copay, on PPO 80', () => {
+    const result = byName(
+      calculateAllPlans(
+        planData,
+        inputs({
+          costs: {
+            categoryEstimates: [
+              {
+                categoryId: 'pharmacy_tier_1_retail_30',
+                estimate: { quantity: 1, costPerVisit: 6, isInNetwork: true },
+              },
+            ],
+          },
+        })
+      ),
+      'DMBA PPO 80'
+    );
+    expect(result.outOfPocketCosts).toBe(6);
   });
 });
 
@@ -129,7 +226,7 @@ describe('2027 PPO 80 copays and the deductible', () => {
   });
 
   it('charges tier 1 drug copays right away and counts them toward the deductible', () => {
-    // 50 fills x $10 = $500 meets the deductible; the PCP visit then costs just its copay
+    // 50 fills x $10 copay = $500, which meets the deductible
     const result = byName(
       calculateAllPlans(
         planData,
@@ -140,17 +237,15 @@ describe('2027 PPO 80 copays and the deductible', () => {
                 categoryId: 'pharmacy_tier_1_retail_30',
                 estimate: { quantity: 50, costPerVisit: 40, isInNetwork: true },
               },
-              {
-                categoryId: 'office_visit_pcp',
-                estimate: { quantity: 1, costPerVisit: 200, isInNetwork: true },
-              },
             ],
           },
         })
       ),
       'DMBA PPO 80'
     );
-    expect(result.outOfPocketCosts).toBe(500 + 25);
+    expect(result.outOfPocketCosts).toBe(500);
+    const fills = result.ledger.inNetworkExpenses;
+    expect(fills[fills.length - 1].deductibleRemaining).toBe(0);
   });
 });
 

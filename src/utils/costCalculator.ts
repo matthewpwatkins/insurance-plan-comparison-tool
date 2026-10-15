@@ -18,6 +18,7 @@ import {
   NetworkBenefits,
   CategoriesData,
   CostStructure,
+  CategoryEstimate,
 } from '../types';
 
 /**
@@ -71,55 +72,43 @@ export const calculatePlanCost = (
   const contributionType = isHSA ? ContributionType.HSA : ContributionType.FSA;
   execution.addContributionTaxSavings(taxSavings, contributionType);
 
-  // Process all category expenses. A category can span several rows (one per person or
-  // provider), so a visit limit counts visits across all of them.
+  // Process every visit in the order it would happen. A category can span several rows (one per
+  // person or provider), so a visit limit counts visits across all of them, and the year's last
+  // visits are the ones past the limit.
   const visitsUsed: Record<string, number> = {};
-  for (const categoryEstimate of costs.categoryEstimates) {
-    const { estimate } = categoryEstimate;
+  for (const { categoryEstimate } of visitsThroughTheYear(costs.categoryEstimates)) {
+    const { categoryId, estimate, notes } = categoryEstimate;
     const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
-    // A visit is whole, so a fractional count (from a link or old data) rounds to the nearest
-    const quantity = Math.round(estimate.quantity);
+    const quantityCap = execution.getCategoryQuantityCap(categoryId, network);
+    const capKey = `${categoryId}|${network}`;
+    const used = visitsUsed[capKey] ?? 0;
+    visitsUsed[capKey] = used + 1;
 
-    // Check for quantity cap for this category
-    const quantityCap = execution.getCategoryQuantityCap(categoryEstimate.categoryId, network);
-    const capKey = `${categoryEstimate.categoryId}|${network}`;
-    const capLeft = quantityCap ? Math.max(0, quantityCap - (visitsUsed[capKey] ?? 0)) : undefined;
-    const effectiveQuantity = capLeft !== undefined ? Math.min(quantity, capLeft) : quantity;
-    const cappedVisits = quantity - effectiveQuantity;
-    visitsUsed[capKey] = (visitsUsed[capKey] ?? 0) + effectiveQuantity;
-
-    // Process covered visits
-    for (let i = 0; i < effectiveQuantity; i++) {
-      execution.recordExpense(
-        categoryEstimate.categoryId,
-        estimate.costPerVisit,
-        network,
-        categoryEstimate.notes
-      );
-    }
-
-    // Process capped visits (user pays 100% out of pocket)
-    for (let i = 0; i < cappedVisits; i++) {
-      execution.recordCappedExpense(
-        categoryEstimate.categoryId,
-        estimate.costPerVisit,
-        network,
-        categoryEstimate.notes,
-        'quantity'
-      );
+    if (quantityCap !== undefined && quantityCap > 0 && used >= quantityCap) {
+      // Over the visit limit: user pays 100% out of pocket
+      execution.recordCappedExpense(categoryId, estimate.costPerVisit, network, notes, 'quantity');
+    } else {
+      execution.recordExpense(categoryId, estimate.costPerVisit, network, notes);
     }
   }
 
   const outOfPocketCosts = execution.getTotalOutOfPocket();
+
+  // FSA money not spent on care by year end is lost; HSA money rolls over
+  const fsaUnspent = (spent: number) => (isHSA ? 0 : Math.max(0, userContribution - spent));
+  const fsaForfeited = fsaUnspent(outOfPocketCosts);
+  execution.addFSAForfeit(fsaForfeited);
   const ledger = execution.getLedger();
 
   // Calculate total cost (using net premiums after pre-tax discount)
-  const totalCost = netAnnualPremiums + outOfPocketCosts - taxSavings - employerContribution;
+  const totalCost =
+    netAnnualPremiums + outOfPocketCosts + fsaForfeited - taxSavings - employerContribution;
 
   // Calculate maximum annual cost (worst-case scenario at OOP max)
   const oopMax = plan.out_of_pocket_maximum.in_network;
   const oopMaxValue = coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
-  const maxAnnualCost = netAnnualPremiums + oopMaxValue - taxSavings - employerContribution;
+  const maxAnnualCost =
+    netAnnualPremiums + oopMaxValue + fsaUnspent(oopMaxValue) - taxSavings - employerContribution;
 
   return {
     planName: plan.name,
@@ -132,7 +121,9 @@ export const calculatePlanCost = (
     totalContributions: userContribution + employerContribution,
     taxSavings, // HSA/FSA contribution tax savings only
     outOfPocketCosts,
+    fsaForfeited,
     totalCost: totalCost, // Can be negative if tax savings exceed costs
+    outOfPocketMax: oopMaxValue,
     maxAnnualCost,
     breakdown: {
       premiums: netAnnualPremiums, // Net premiums after pre-tax discount
@@ -140,10 +131,45 @@ export const calculatePlanCost = (
       contributionTaxSavings: -taxSavings, // Negative because it reduces total cost
       employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
+      fsaForfeited,
       net: totalCost,
     },
     ledger,
   };
+};
+
+/**
+ * Each estimate's visits spread evenly across the year, all estimates merged in date order.
+ * Estimates carry no dates, and on plans whose copays wait for the deductible a visit's price
+ * depends on whether the deductible is met yet, so this stands in for the real order of care.
+ * Where in its slot each visit lands comes from the estimate's own contents, not its place in the
+ * list, so reordering the list never changes the total.
+ */
+const visitsThroughTheYear = (
+  estimates: CategoryEstimate[]
+): { categoryEstimate: CategoryEstimate; when: number }[] =>
+  estimates
+    .flatMap(categoryEstimate => {
+      const { categoryId, estimate } = categoryEstimate;
+      // A visit is whole, so a fractional count (from a link or old data) rounds to the nearest
+      const quantity = Math.round(estimate.quantity);
+      const phase = scatter(
+        `${categoryId}|${estimate.isInNetwork}|${quantity}|${estimate.costPerVisit}`
+      );
+      return Array.from({ length: quantity }, (_, k) => ({
+        categoryEstimate,
+        when: (k + phase) / quantity,
+      }));
+    })
+    .sort((a, b) => a.when - b.when);
+
+/** A fixed number in [0, 1) for a string (FNV-1a hash), so the same text always lands alike */
+const scatter = (text: string): number => {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+  }
+  return (hash >>> 0) / 2 ** 32;
 };
 
 interface ContributionResult {
@@ -315,6 +341,19 @@ class PlanExecution {
   }
 
   /**
+   * Add FSA money left unspent at year end, which is lost, to the ledger
+   */
+  addFSAForfeit(amount: number): void {
+    if (amount > 0) {
+      this.contributionsAndSavings.push({
+        type: 'forfeit',
+        description: 'Unspent FSA money lost at year end',
+        amount: -amount,
+      });
+    }
+  }
+
+  /**
    * Record a single expense and calculate the out-of-pocket cost
    */
   recordExpense(
@@ -425,8 +464,9 @@ class PlanExecution {
 
         employeeResponsibility = deductiblePortion + copayPortion;
       } else {
-        // Copay applies right away, and may still count toward the deductible
-        actualCopay = benefits.copay;
+        // Copay applies right away, and may still count toward the deductible. A copay never
+        // costs more than the bill itself.
+        actualCopay = Math.min(benefits.copay, cost);
         if (actualCopay !== undefined) {
           employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
           this.outOfPocketSpent += employeeResponsibility;

@@ -583,8 +583,10 @@ describe('costCalculator', () => {
       const visits = result.ledger.inNetworkExpenses.filter(
         entry => entry.category !== 'initial_state'
       );
-      // Two $25 copays, then $500 to the deductible
-      expect(visits.map(entry => entry.outOfPocketRemaining)).toEqual([4975, 4950, 4450]);
+      // Two $25 copays and $500 to the deductible, in whatever order the year spreads them
+      const remaining = visits.map(entry => entry.outOfPocketRemaining);
+      expect(remaining).toEqual([...remaining].sort((a, b) => b - a));
+      expect(remaining[remaining.length - 1]).toBe(4450);
     });
 
     it('should leave the deductible alone for copay visits', () => {
@@ -851,19 +853,17 @@ describe('costCalculator', () => {
       // Total OOP: $20 + $200 = $220
       expect(result.outOfPocketCosts).toBe(220);
 
-      // Check telemedicine visit didn't touch deductible
+      // Visits are spread through the year, so check what holds in either order:
+      // telemedicine costs its coinsurance and only the office visit reduces the deductible
       const teleVisit = result.ledger.inNetworkExpenses.find(
         entry => entry.category === 'telemedicine_pcp'
       );
-      expect(teleVisit!.deductibleRemaining).toBe(1650);
-      expect(teleVisit!.outOfPocketRemaining).toBe(5980); // 6000 - 20
-
-      // Check office visit reduced deductible
-      const officeVisit = result.ledger.inNetworkExpenses.find(
-        entry => entry.category === 'office_visit_pcp'
+      expect(teleVisit!.employeeResponsibility).toBe(20);
+      const visits = result.ledger.inNetworkExpenses.filter(
+        entry => entry.category !== 'initial_state'
       );
-      expect(officeVisit!.deductibleRemaining).toBe(1450); // 1650 - 200
-      expect(officeVisit!.outOfPocketRemaining).toBe(5780); // 5980 - 200
+      expect(Math.min(...visits.map(entry => entry.deductibleRemaining))).toBe(1450); // 1650 - 200
+      expect(Math.min(...visits.map(entry => entry.outOfPocketRemaining))).toBe(5780); // 6000 - 220
     });
 
     it('should handle zero-cost scenarios in ledger', () => {

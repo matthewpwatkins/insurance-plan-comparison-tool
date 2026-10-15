@@ -1,7 +1,7 @@
 import { ContributionType } from './plan';
 
 export interface ContributionEntry {
-  type: 'contribution' | 'savings';
+  type: 'contribution' | 'savings' | 'forfeit';
   description: string;
   amount: number;
 }
@@ -46,7 +46,9 @@ export interface PlanResult {
   totalContributions: number;
   taxSavings: number; // HSA/FSA contribution tax savings only
   outOfPocketCosts: number;
+  fsaForfeited: number; // FSA money not spent on care by year end, which is lost
   totalCost: number;
+  outOfPocketMax: number; // Plan's in-network out-of-pocket max for this coverage
   maxAnnualCost: number; // Maximum possible cost in worst-case scenario (at OOP max)
   breakdown: {
     premiums: number;
@@ -54,6 +56,7 @@ export interface PlanResult {
     contributionTaxSavings: number; // HSA/FSA contribution tax savings
     employerContribution: number;
     outOfPocket: number;
+    fsaForfeited: number;
     net: number;
   };
   ledger: OrganizedLedger;

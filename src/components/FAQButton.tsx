@@ -215,7 +215,9 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                           {ledgerData.ledger.contributionsAndSavings.map((entry, index) => (
                             <tr key={index}>
                               <td>{entry.description}</td>
-                              <td className="text-success">{formatCurrency(entry.amount, true)}</td>
+                              <td className={entry.amount < 0 ? 'text-danger' : 'text-success'}>
+                                {formatCurrency(entry.amount, true)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

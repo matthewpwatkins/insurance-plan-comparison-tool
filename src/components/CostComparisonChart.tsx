@@ -442,9 +442,16 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({
           </li>
           <li>
             <strong>Dots and lines:</strong> Dots are your real totals. Lines show a typical bill,
-            using your mix of copays once the deductible is met. Copays before the deductible, free
-            care and visit limits can put a dot above or below its line. The bottom axis leaves out
-            care that is free on every plan
+            using your mix of copays once the deductible is met. Free care and visit limits can put
+            a dot above or below its line. The bottom axis leaves out care that is free on every
+            plan
+          </li>
+          <li>
+            <strong>PPO plans are an approximation:</strong> Until the deductible is met, a visit
+            costs its full bill; after that, just the copay. So when your care happens changes what
+            you pay. We spread each of your estimates evenly across the year. If your care bunches
+            up early or late in the year, your real cost on a PPO plan can be a bit higher or lower.
+            This is also why a PPO plan's dot can sit above or below its line
           </li>
           <li>
             <strong>Zoom controls:</strong> Zoom in on your spending, zoom back out, or show

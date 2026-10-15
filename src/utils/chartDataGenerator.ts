@@ -273,14 +273,13 @@ export function breakEvenSpending(
   userInputs: UserInputs,
   planResult: PlanResult
 ): number | null {
-  const baseCost =
-    planResult.netAnnualPremiums - planResult.taxSavings - planResult.employerContribution;
-  if (baseCost >= 0) {
-    return null;
-  }
   const plan = planData.plans.find(p => p.name === planResult.planName);
   if (!plan) {
     return null;
   }
-  return spendingWhereCostReaches(planLine(plan, planData, userInputs), 0);
+  const costAt = planLine(plan, planData, userInputs);
+  if (costAt(0) >= 0) {
+    return null;
+  }
+  return spendingWhereCostReaches(costAt, 0);
 }
