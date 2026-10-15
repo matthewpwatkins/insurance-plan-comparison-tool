@@ -341,13 +341,17 @@ class PlanExecution {
       // Free care - no cost to employee
       employeeResponsibility = 0;
     } else if (benefits.copay && benefits.copay > 0) {
-      // For plans with prescriptions subject to deductible, copays only apply AFTER deductible is met
+      // Copays apply right away and leave the deductible alone, unless the category says
+      // otherwise. A copay that waits for the deductible bills the full cost until it is met.
+      // Prescriptions also wait when the plan makes them subject to the deductible.
       const isPrescription = categoryId.startsWith('pharmacy_');
-      const prescriptionsSubjectToDeductible =
-        this.plan.prescriptions_subject_to_deductible || false;
+      const requiresDeductibleToBeMet =
+        benefits.requires_deductible_to_be_met ??
+        (isPrescription && Boolean(this.plan.prescriptions_subject_to_deductible));
+      const contributesToDeductible = benefits.contributes_to_deductible ?? false;
 
-      if (prescriptionsSubjectToDeductible && isPrescription && this.deductibleRemaining() > 0) {
-        // Plan with prescriptions subject to deductible: apply deductible first, then copay
+      if (requiresDeductibleToBeMet && this.deductibleRemaining() > 0) {
+        // Apply deductible first, then copay
         let remainingCost = cost;
         let deductiblePortion = 0;
 
@@ -374,11 +378,14 @@ class PlanExecution {
 
         employeeResponsibility = deductiblePortion + copayPortion;
       } else {
-        // Non-HSA plans or non-prescription items: copay applies immediately
+        // Copay applies right away, and may still count toward the deductible
         actualCopay = benefits.copay;
         if (actualCopay !== undefined) {
           employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
           this.outOfPocketSpent += employeeResponsibility;
+          if (contributesToDeductible) {
+            this.deductibleSpent += Math.min(employeeResponsibility, this.deductibleRemaining());
+          }
         }
       }
     } else {

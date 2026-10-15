@@ -1,15 +1,13 @@
 # DMBA health plans for 2027
 # yaml-language-server: $schema=../../../schema/plan-year.schema.json
 #
-# Source: DMBA 2027 Plan Comparison Information (sources/2027-summary.md). It lists three
-# plans: PPO 80 (new), HSA 80, and HSA 60. PPO 70 and PPO 90 are gone.
+# Sources: DMBA 2027 Plan Comparison Information (sources/2027-summary.md) for benefits, and
+# DMBA's 2027 open enrollment slides (sources/2027-open-enrollment.md) for premiums and
+# employer HSA contributions. Three plans: PPO 80 (new), HSA 80, and HSA 60. PPO 70 and
+# PPO 90 are gone.
 #
-# The 2027 comparison has no premiums or employer HSA contributions. Until DMBA publishes
-# 2027 rates:
-# - HSA 60 and HSA 80 premiums and employer HSA contributions are 2026's.
-# - PPO 80 premiums are a PLACEHOLDER copied from 2026 PPO 70. Replace them.
 # Visit and cost caps, preventive care at no charge, and HSA telemedicine before the
-# deductible are not in the comparison either; they carry over from 2026 (2025 SBCs).
+# deductible are in neither source; they carry over from 2026 (2025 SBCs).
 
 year: 2027
 
@@ -20,16 +18,14 @@ plans:
     # Prescriptions must meet deductible before copays apply
     prescriptions_subject_to_deductible: true
     chart_color: "#22c55e"
-    # Not in the 2027 comparison; 2026 amounts
     employer_hsa_contribution:
-      single: 1_525
-      two_party: 3_050
-      family: 3_050
-    # Not in the 2027 comparison; 2026 premiums
+      single: 625
+      two_party: 1_250
+      family: 1_250
     monthly_premiums:
-      single: 62.40
-      two_party: 103.30
-      family: 121.30
+      single: 62.50
+      two_party: 109.10
+      family: 129.10
     annual_deductible:
       in_network:
         single: 4_000
@@ -57,6 +53,9 @@ plans:
           coinsurance: 0.4
       chiropractic_therapy:
         qty_cap: 25
+      # Medically needed eye exams only, one a year. Routine exams move to the vision plan in 2027.
+      eye_exams:
+        qty_cap: 1
       colonoscopy_colorectal_screening:
         in_network_coverage:
           is_free: true
@@ -168,16 +167,14 @@ plans:
     chart_color: "#3b82f6"
     # Prescriptions must meet deductible before copays apply
     prescriptions_subject_to_deductible: true
-    # Not in the 2027 comparison; 2026 amounts
     employer_hsa_contribution:
-      single: 850
-      two_party: 1_700
-      family: 1_700
-    # Not in the 2027 comparison; 2026 premiums
+      single: 625
+      two_party: 1_250
+      family: 1_250
     monthly_premiums:
-      single: 114.60
-      two_party: 230.00
-      family: 274.20
+      single: 119.30
+      two_party: 243.50
+      family: 313.90
     annual_deductible:
       in_network:
         single: 2_500
@@ -205,6 +202,9 @@ plans:
           coinsurance: 0.2
       chiropractic_therapy:
         qty_cap: 25
+      # Medically needed eye exams only, one a year. Routine exams move to the vision plan in 2027.
+      eye_exams:
+        qty_cap: 1
       colonoscopy_colorectal_screening:
         in_network_coverage:
           is_free: true
@@ -311,14 +311,20 @@ plans:
           is_free: true
 
   # PPO 80 Plan - New for 2027. Copays like the old PPOs, but with a deductible.
+  # Copays (office visits, urgent care, ER, therapy, chiropractic) apply only after the
+  # deductible is met; until then the member pays the full allowed amount (open enrollment
+  # slides). Mental health, eye exam, and out-of-network wellness copays are assumed to work
+  # the same way. Copays count toward the out-of-pocket max.
+  # Tier 1 drugs skip the deductible but still count toward it and the out-of-pocket max.
+  # Tier 2, tier 3, and specialty drugs wait for the deductible; the slides send those
+  # questions to Navitus.
   - name: "DMBA PPO 80"
     short_name: "PPO 80"
     chart_color: "#f59e0b"
-    # PLACEHOLDER: the 2027 comparison has no premiums. These are 2026 PPO 70's.
     monthly_premiums:
-      single: 109.20
-      two_party: 221.80
-      family: 346.40
+      single: 131.80
+      two_party: 269.30
+      family: 420.60
     annual_deductible:
       in_network:
         single: 500
@@ -345,13 +351,17 @@ plans:
       behavioral_mental_health_outpatient:
         in_network_coverage:
           copay: 25
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 25
+          requires_deductible_to_be_met: true
       chiropractic_therapy:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: true
         qty_cap: 25
       colonoscopy_colorectal_screening:
         in_network_coverage:
@@ -360,11 +370,16 @@ plans:
       emergency_room:
         in_network_coverage:
           copay: 200
+          requires_deductible_to_be_met: true
+      # Medically needed eye exams only, one a year. Routine exams move to the vision plan in 2027.
       eye_exams:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: true
+        qty_cap: 1
       hearing_aids:
         cost_cap: 1200
         qty_cap: 2
@@ -395,21 +410,29 @@ plans:
       occupational_therapy_outpatient:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: true
       office_visit_pcp:
         in_network_coverage:
           copay: 25
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 40
+          requires_deductible_to_be_met: true
       office_visit_specialist:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: true
+      # The slides exempt only tier 1 drugs from the deductible, not specialty
       pharmacy_specialty_tier_1:
         in_network_coverage:
           copay: 10
+          requires_deductible_to_be_met: true
       pharmacy_specialty_tier_2:
         in_network_coverage:
           coinsurance: 0.1
@@ -417,12 +440,18 @@ plans:
       pharmacy_tier_1_mail_90:
         in_network_coverage:
           copay: 20
+          contributes_to_deductible: true
+          requires_deductible_to_be_met: false
       pharmacy_tier_1_retail_30:
         in_network_coverage:
           copay: 10
+          contributes_to_deductible: true
+          requires_deductible_to_be_met: false
       pharmacy_tier_1_retail_90:
         in_network_coverage:
           copay: 25
+          contributes_to_deductible: true
+          requires_deductible_to_be_met: false
       pharmacy_tier_2_mail_90:
         in_network_coverage:
           coinsurance: 0.2
@@ -450,33 +479,56 @@ plans:
       physical_therapy_outpatient:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: true
         qty_cap: 25
       skilled_nursing_facility:
         qty_cap: 50
       speech_therapy_outpatient:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: true
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: true
+      # Telehealth is covered before the deductible (2027 open enrollment notice). The
+      # open enrollment slides don't list telemedicine, so this is unconfirmed.
       telemedicine_pcp:
         in_network_coverage:
           copay: 25
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
         out_of_network_coverage:
           copay: 40
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
       telemedicine_specialist:
         in_network_coverage:
           copay: 50
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
       telemedicine_urgent_care:
         in_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
         out_of_network_coverage:
           copay: 60
+          requires_deductible_to_be_met: false
+          contributes_to_deductible: false
+      urgent_care:
+        in_network_coverage:
+          copay: 60
+          requires_deductible_to_be_met: true
       wellness_exam:
         in_network_coverage:
           is_free: true
         out_of_network_coverage:
           copay: 40
+          requires_deductible_to_be_met: true

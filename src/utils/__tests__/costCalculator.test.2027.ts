@@ -92,9 +92,9 @@ describe('2027 DMBA data', () => {
     // $9,000 family HSA limit less the employer's share; $3,500 FSA limit
     const hsa60 = byName(results, 'DMBA HSA 60');
     expect(hsa60.contributionType).toBe(ContributionType.HSA);
-    expect(hsa60.userContribution).toBe(9000 - 3050);
-    expect(hsa60.taxSavings).toBeCloseTo((9000 - 3050) * SAVINGS_RATE, 2);
-    expect(hsa60.totalCost).toBeCloseTo(hsa60.netAnnualPremiums - hsa60.taxSavings - 3050, 2);
+    expect(hsa60.userContribution).toBe(9000 - 1250);
+    expect(hsa60.taxSavings).toBeCloseTo((9000 - 1250) * SAVINGS_RATE, 2);
+    expect(hsa60.totalCost).toBeCloseTo(hsa60.netAnnualPremiums - hsa60.taxSavings - 1250, 2);
 
     const ppo80 = byName(results, 'DMBA PPO 80');
     expect(ppo80.contributionType).toBe(ContributionType.FSA);
@@ -103,11 +103,61 @@ describe('2027 DMBA data', () => {
   });
 });
 
+describe('2027 PPO 80 copays and the deductible', () => {
+  const ppo80OutOfPocket = (categoryId: string, quantity: number, costPerVisit: number) =>
+    byName(
+      calculateAllPlans(
+        planData,
+        inputs({
+          costs: {
+            categoryEstimates: [
+              { categoryId, estimate: { quantity, costPerVisit, isInNetwork: true } },
+            ],
+          },
+        })
+      ),
+      'DMBA PPO 80'
+    ).outOfPocketCosts;
+
+  it('bills office visits in full until the $500 deductible is met, then the copay', () => {
+    // $400 + $100 to finish the deductible, then $25 copay on the rest of visit 2 and on visit 3
+    expect(ppo80OutOfPocket('office_visit_pcp', 3, 400)).toBe(400 + 100 + 25 + 25);
+  });
+
+  it('charges the ER copay only after the deductible', () => {
+    expect(ppo80OutOfPocket('emergency_room', 1, 2000)).toBe(500 + 200);
+  });
+
+  it('charges tier 1 drug copays right away and counts them toward the deductible', () => {
+    // 50 fills x $10 = $500 meets the deductible; the PCP visit then costs just its copay
+    const result = byName(
+      calculateAllPlans(
+        planData,
+        inputs({
+          costs: {
+            categoryEstimates: [
+              {
+                categoryId: 'pharmacy_tier_1_retail_30',
+                estimate: { quantity: 50, costPerVisit: 40, isInNetwork: true },
+              },
+              {
+                categoryId: 'office_visit_pcp',
+                estimate: { quantity: 1, costPerVisit: 200, isInNetwork: true },
+              },
+            ],
+          },
+        })
+      ),
+      'DMBA PPO 80'
+    );
+    expect(result.outOfPocketCosts).toBe(500 + 25);
+  });
+});
+
 describe('2027 default year', () => {
-  it('stays on 2026 until 2027 premiums are published', () => {
+  it('defaults to 2027, the newest year', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { getDefaultYear, getAvailableDataYears } = require('../../services/planDataService');
-    expect(getAvailableDataYears('dmba')).toContain(2027);
-    expect(getDefaultYear('dmba')).toBe(2026);
+    const { getDefaultYear } = require('../../services/planDataService');
+    expect(getDefaultYear('dmba')).toBe(2027);
   });
 });

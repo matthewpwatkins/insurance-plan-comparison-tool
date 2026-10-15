@@ -63,7 +63,7 @@ describe('guided setup', () => {
   const path = () => window.location.pathname;
   /** The inputs the current results link carries. */
   const linkInputs = () => {
-    const shared = decodeUserInputs(window.location.hash, [2026, 2025]);
+    const shared = decodeUserInputs(window.location.hash, [2027, 2026, 2025]);
     if (shared.status !== 'ok') throw new Error(`Unreadable link: ${window.location.href}`);
     return shared.inputs;
   };
@@ -205,18 +205,18 @@ describe('guided setup', () => {
   describe('HSA and FSA amounts', () => {
     it('start at the most you can put in and follow coverage until edited', () => {
       renderAt('/dmba/setup/hsa');
-      // Family limit $8,750 less HSA 80's $1,700, the plan that leaves the most room
-      expect(numberInput().value).toBe('7,050');
+      // Family limit $9,000 less the $1,250 both HSA plans put in
+      expect(numberInput().value).toBe('7,750');
 
       click('Next');
       expect(text()).toContain("What's the most you'd put in an FSA?");
-      expect(numberInput().value).toBe('3,400');
+      expect(numberInput().value).toBe('3,500');
 
       browserGoesTo('/dmba/setup/coverage');
       choose(CoverageType.Single);
       browserGoesTo('/dmba/setup/hsa');
-      // Single limit $4,400 less HSA 80's $850
-      expect(numberInput().value).toBe('3,550');
+      // Single limit $4,500 less the $625 both HSA plans put in
+      expect(numberInput().value).toBe('3,875');
 
       typeNumber('1000');
       expect(numberInput().value).toBe('1,000');
@@ -232,7 +232,7 @@ describe('guided setup', () => {
 
       typeNumber('9999');
 
-      expect(numberInput().value).toBe('3,400');
+      expect(numberInput().value).toBe('3,500');
     });
   });
 
@@ -269,15 +269,15 @@ describe('guided setup', () => {
 
       click('Start over');
       browserGoesTo('/dmba/setup/hsa');
-      // Family limit $8,750 less HSA 80's $1,700
-      expect(numberInput().value).toBe('7,050');
+      // Family limit $9,000 less the $1,250 both HSA plans put in
+      expect(numberInput().value).toBe('7,750');
       browserGoesTo('/dmba/setup/fsa');
-      expect(numberInput().value).toBe('3,400');
+      expect(numberInput().value).toBe('3,500');
 
       browserGoesTo('/dmba/setup/coverage');
       choose(CoverageType.Single);
       browserGoesTo('/dmba/setup/hsa');
-      expect(numberInput().value).toBe('3,550');
+      expect(numberInput().value).toBe('3,875');
     });
 
     it('reopens a saved review at the import step, since the report is not kept', () => {
