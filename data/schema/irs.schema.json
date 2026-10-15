@@ -6,7 +6,8 @@
     "hsa_contribution_limits",
     "hsa_qualification_limits",
     "fsa_contribution_limits",
-    "payroll_tax_rates"
+    "payroll_tax_rates",
+    "healthcare_price_increase"
   ],
   "additionalProperties": false,
   "properties": {
@@ -43,6 +44,12 @@
         "social_security": { "type": "number", "description": "Percent, e.g. 6.2" },
         "medicare": { "type": "number", "description": "Percent, e.g. 1.45" }
       }
+    },
+    "healthcare_price_increase": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 20,
+      "description": "Expected yearly growth in healthcare prices going into this year, in percent. Default for growing last year's claims into this year's estimates."
     }
   },
   "definitions": {

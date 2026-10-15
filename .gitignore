@@ -46,3 +46,5 @@ Thumbs.db
 
 # ESLint cache
 .eslintcache
+# Local scratch files (may hold personal claims data)
+/tmp/

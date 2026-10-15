@@ -29,6 +29,52 @@
         "steps": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "ai_assistant": {
+      "type": "object",
+      "description": "The AI chat tool employees should use to turn a claims report into cost estimates",
+      "required": ["name", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "note": { "type": "string", "description": "Extra advice, e.g. which chat mode to use" }
+      }
+    },
+    "claims_report": {
+      "type": "object",
+      "description": "Lets people upload the claims report from claims_portal and get cost estimates",
+      "required": ["format", "service_map"],
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": ["dmba-eob"],
+          "description": "Which claims reader understands the report layout (src/claims/readers)"
+        },
+        "service_map": {
+          "type": "object",
+          "description": "The report's service label to candidate category ids, default first",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          }
+        },
+        "preventive_map": {
+          "type": "object",
+          "description": "Like service_map, for claims the report marks as preventive",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          }
+        },
+        "add_to_main_service": {
+          "type": "array",
+          "description": "Labels whose cost is added to the main service on the same claim",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "cost_estimator": {
       "type": "object",
       "required": ["provider", "name", "url"],

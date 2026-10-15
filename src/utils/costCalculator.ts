@@ -70,17 +70,22 @@ export const calculatePlanCost = (
   const contributionType = isHSA ? ContributionType.HSA : ContributionType.FSA;
   execution.addContributionTaxSavings(taxSavings, contributionType);
 
-  // Process all category expenses
+  // Process all category expenses. A category can span several rows (one per person or
+  // provider), so a visit limit counts visits across all of them.
+  const visitsUsed: Record<string, number> = {};
   for (const categoryEstimate of costs.categoryEstimates) {
     const { estimate } = categoryEstimate;
     const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
+    // A visit is whole, so a fractional count (from a link or old data) rounds to the nearest
+    const quantity = Math.round(estimate.quantity);
 
     // Check for quantity cap for this category
     const quantityCap = execution.getCategoryQuantityCap(categoryEstimate.categoryId, network);
-    const effectiveQuantity = quantityCap
-      ? Math.min(estimate.quantity, quantityCap)
-      : estimate.quantity;
-    const cappedVisits = quantityCap ? estimate.quantity - effectiveQuantity : 0;
+    const capKey = `${categoryEstimate.categoryId}|${network}`;
+    const capLeft = quantityCap ? Math.max(0, quantityCap - (visitsUsed[capKey] ?? 0)) : undefined;
+    const effectiveQuantity = capLeft !== undefined ? Math.min(quantity, capLeft) : quantity;
+    const cappedVisits = quantity - effectiveQuantity;
+    visitsUsed[capKey] = (visitsUsed[capKey] ?? 0) + effectiveQuantity;
 
     // Process covered visits
     for (let i = 0; i < effectiveQuantity; i++) {

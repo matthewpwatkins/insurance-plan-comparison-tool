@@ -278,7 +278,7 @@ describe('urlParams', () => {
       expect(mockHistory.replaceState).toHaveBeenCalledWith(
         {},
         '',
-        '/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
+        '/test-path/results?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
       );
     });
   });
@@ -288,7 +288,7 @@ describe('urlParams', () => {
       const url = getShareableURL(mockUserInputs);
 
       expect(url).toBe(
-        'https://example.com/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500&showResults=true'
+        'https://example.com/test-path/results?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
       );
     });
   });
@@ -301,7 +301,7 @@ describe('urlParams', () => {
 
       expect(result).toBe(true);
       expect(mockNavigator.clipboard.writeText).toHaveBeenCalledWith(
-        'https://example.com/test-path?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500&showResults=true'
+        'https://example.com/test-path/results?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
       );
     });
 
@@ -390,88 +390,66 @@ describe('urlParams', () => {
     });
 
     it('should maintain categoryEstimates data integrity through URL conversion cycle', () => {
-      const originalInputs = {
+      const originalInputs: UserInputs = {
         year: 2025,
         coverage: CoverageType.Single,
-        ageGroup: 'under_55' as const,
+        ageGroup: 'under_55',
         taxRate: 22,
         hsaContribution: 2000,
         fsaContribution: 0,
         costs: {
           categoryEstimates: [
             {
-              categoryId: 'primary_care',
-              inNetwork: {
-                quantity: 3,
-                costPerVisit: 200,
-              },
-              outOfNetwork: {
-                quantity: 1,
-                costPerVisit: 400,
-              },
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 3, costPerVisit: 200, isInNetwork: true },
+              notes: 'Checkups, "sick" visits & more',
             },
             {
-              categoryId: 'specialist',
-              inNetwork: {
-                quantity: 2,
-                costPerVisit: 350,
-              },
-              outOfNetwork: {
-                quantity: 0,
-                costPerVisit: 0,
-              },
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 1, costPerVisit: 400, isInNetwork: false },
+            },
+            {
+              categoryId: 'pharmacy_tier_1_retail_30',
+              estimate: { quantity: 12, costPerVisit: 12.5, isInNetwork: true },
+              notes: '',
             },
           ],
-          otherCosts: {
-            inNetwork: {
-              quantity: 1,
-              costPerVisit: 150,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
         },
       };
 
-      // Convert to URL params and back
-      const params = userInputsToURLParams(originalInputs as UserInputs);
-      const parsedInputs = urlParamsToUserInputs(params, YEARS);
+      const params = userInputsToURLParams(originalInputs);
+      // Through a real query string, the way a shared link travels
+      const parsedInputs = urlParamsToUserInputs(new URLSearchParams(params.toString()), YEARS);
 
-      // Verify basic fields
-      expect(parsedInputs.year).toBe(originalInputs.year);
-      expect(parsedInputs.coverage).toBe(originalInputs.coverage);
-      expect(parsedInputs.ageGroup).toBe(originalInputs.ageGroup);
-      expect(parsedInputs.taxRate).toBe(originalInputs.taxRate);
-      expect(parsedInputs.hsaContribution).toBe(originalInputs.hsaContribution);
-      expect(parsedInputs.fsaContribution).toBe(originalInputs.fsaContribution);
+      expect(parsedInputs.costs?.categoryEstimates).toEqual(originalInputs.costs.categoryEstimates);
+    });
 
-      // Verify categoryEstimates structure and data
-      expect(parsedInputs.costs).toBeDefined();
-      expect(parsedInputs.costs!.categoryEstimates).toBeDefined();
-      expect(parsedInputs.costs!.categoryEstimates).toHaveLength(2);
+    it('drops malformed estimates from a hand-edited link but keeps the good ones', () => {
+      const params = new URLSearchParams();
+      params.set(
+        'categoryEstimates',
+        JSON.stringify([
+          {
+            categoryId: 'office_visit_pcp',
+            estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+          },
+          { categoryId: 'office_visit_pcp', inNetwork: { quantity: 2, costPerVisit: 150 } },
+          {
+            categoryId: 'specialist',
+            estimate: { quantity: '2', costPerVisit: 150, isInNetwork: true },
+          },
+          null,
+        ])
+      );
 
-      const firstCategory = parsedInputs.costs!.categoryEstimates![0];
-      expect(firstCategory.categoryId).toBe('primary_care');
-      expect(firstCategory.inNetwork.quantity).toBe(3);
-      expect(firstCategory.inNetwork.costPerVisit).toBe(200);
-      expect(firstCategory.outOfNetwork.quantity).toBe(1);
-      expect(firstCategory.outOfNetwork.costPerVisit).toBe(400);
+      const parsed = urlParamsToUserInputs(params, YEARS);
 
-      const secondCategory = parsedInputs.costs!.categoryEstimates![1];
-      expect(secondCategory.categoryId).toBe('specialist');
-      expect(secondCategory.inNetwork.quantity).toBe(2);
-      expect(secondCategory.inNetwork.costPerVisit).toBe(350);
-      expect(secondCategory.outOfNetwork.quantity).toBe(0);
-      expect(secondCategory.outOfNetwork.costPerVisit).toBe(0);
-
-      // Verify otherCosts structure
-      expect(parsedInputs.costs!.otherCosts).toBeDefined();
-      expect(parsedInputs.costs!.otherCosts!.inNetwork.quantity).toBe(1);
-      expect(parsedInputs.costs!.otherCosts!.inNetwork.costPerVisit).toBe(150);
-      expect(parsedInputs.costs!.otherCosts!.outOfNetwork.quantity).toBe(0);
-      expect(parsedInputs.costs!.otherCosts!.outOfNetwork.costPerVisit).toBe(0);
+      expect(parsed.costs?.categoryEstimates).toEqual([
+        {
+          categoryId: 'office_visit_pcp',
+          estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+        },
+      ]);
     });
   });
 });

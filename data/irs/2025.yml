@@ -25,3 +25,8 @@ payroll_tax_rates:
   social_security: 6.2
   medicare: 1.45
 
+
+# Expected rise in healthcare prices going into this year, in percent. Default for growing
+# last year's claims into this year's estimates. BLS CPI-U medical care services, 12 months to
+# December 2024: https://data.bls.gov/timeseries/CUUR0000SAM2
+healthcare_price_increase: 3.4

@@ -1,8 +1,6 @@
 import { UserInputs, PartialUserInputs, CoverageType } from '../types';
 
-interface URLParamsResult extends PartialUserInputs {
-  showResults?: boolean;
-}
+interface URLParamsResult extends PartialUserInputs {}
 
 /**
  * Convert UserInputs to URL search parameters
@@ -105,12 +103,6 @@ export const urlParamsToUserInputs = (
     }
   }
 
-  // Parse showResults parameter
-  const showResults = searchParams.get('showResults');
-  if (showResults === 'true') {
-    updates.showResults = true;
-  }
-
   return updates;
 };
 
@@ -118,20 +110,22 @@ export const urlParamsToUserInputs = (
  * Update browser URL with current user inputs
  */
 export const updateURL = (inputs: UserInputs): void => {
-  const params = userInputsToURLParams(inputs);
-  const newURL = `${window.location.pathname}?${params.toString()}`;
-
-  // Use pushState to update URL without reloading page
-  window.history.replaceState({}, '', newURL);
+  window.history.replaceState({}, '', resultsURL(inputs));
 };
+
+/** The results page for these inputs, e.g. /dmba/results?coverage=family... */
+const resultsURL = (inputs: UserInputs): string =>
+  `/${readCompanySlugFromPath()}/results?${userInputsToURLParams(inputs).toString()}`;
+
+/** Whether the URL is a results page, which opens with the comparison already run. */
+export const isResultsPath = (pathname: string = window.location.pathname): boolean =>
+  pathname.split('/').filter(Boolean)[1] === 'results';
 
 /**
  * Get current URL with parameters for sharing
  */
 export const getShareableURL = (inputs: UserInputs): string => {
-  const params = userInputsToURLParams(inputs);
-  params.set('showResults', 'true');
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+  return `${window.location.origin}${resultsURL(inputs)}`;
 };
 
 /**

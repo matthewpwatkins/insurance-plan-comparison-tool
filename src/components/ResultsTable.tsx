@@ -15,6 +15,9 @@ interface ResultsTableProps {
   userInputs: UserInputs;
 }
 
+/** Card lines are hidden when their amount would display as $0. */
+const shows = (amount: number): boolean => Math.round(amount) !== 0;
+
 const ResultsTable: React.FC<ResultsTableProps> = ({
   results,
   onShowWork,
@@ -122,79 +125,83 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     ].reduce((sum, expense) => sum + expense.insuranceResponsibility, 0);
     const totalBills = result.outOfPocketCosts + planShare;
     const hasBenefits =
-      planShare > 0 ||
-      result.premiumDiscount > 0 ||
-      result.employerContribution > 0 ||
-      result.taxSavings > 0;
+      shows(planShare) ||
+      shows(result.premiumDiscount) ||
+      shows(result.employerContribution) ||
+      shows(result.taxSavings);
 
     return (
       <Row className="g-4">
         <Section title="Your costs" className="text-danger">
-          <Item
-            amount={result.annualPremiums}
-            title="Premiums"
-            info={
-              <div>
-                <p>
-                  Premiums are what you pay to have this plan, whether or not you use any care. They
-                  come out of your paychecks in equal amounts all year.
-                </p>
-                <MathTable
-                  rows={[
-                    ['Per month', formatCurrency(result.annualPremiums / 12)],
-                    ['× 12 months', ''],
-                  ]}
-                  total={['Premiums for the year', formatCurrency(result.annualPremiums)]}
-                />
-                <p className="mb-0">
-                  This is the full price. Because premiums come out before taxes, part of it comes
-                  back to you as tax savings, shown under Your benefits.
-                </p>
-              </div>
-            }
-          >
-            At {formatCurrency(result.annualPremiums / 12)}/month
-          </Item>
-          <Item
-            amount={result.outOfPocketCosts}
-            approx
-            title="Your share of medical costs"
-            info={
-              <div>
-                <p>
-                  This is what you'd pay this year for the total medical costs you estimated above,
-                  after the plan pays its part. It includes:
-                </p>
-                <ul>
-                  <li>
-                    <strong>Deductible:</strong> what you pay in full before the plan starts sharing
-                    costs
-                  </li>
-                  <li>
-                    <strong>Copays:</strong> flat fees for some visits and prescriptions
-                  </li>
-                  <li>
-                    <strong>Coinsurance:</strong> your percentage of the bill after the deductible
-                  </li>
-                </ul>
-                <p className="mb-0">
-                  Medical costs include doctor visits, prescriptions, tests, procedures, and
-                  therapy. Of the {formatCurrency(totalBills)} in total medical costs you estimated
-                  above, the plan pays {formatCurrency(planShare)} and you pay{' '}
-                  {formatCurrency(result.outOfPocketCosts)}. Your share never goes above the plan's{' '}
-                  {formatCurrency(outOfPocketMax)} out-of-pocket max. Click <strong>Details</strong>{' '}
-                  on this card to see every visit.
-                </p>
-              </div>
-            }
-          >
-            What you pay at the counter for the {formatCurrency(totalBills)} in total medical costs
-            you estimated above
-          </Item>
+          {shows(result.annualPremiums) && (
+            <Item
+              amount={result.annualPremiums}
+              title="Premiums"
+              info={
+                <div>
+                  <p>
+                    Premiums are what you pay to have this plan, whether or not you use any care.
+                    They come out of your paychecks in equal amounts all year.
+                  </p>
+                  <MathTable
+                    rows={[
+                      ['Per month', formatCurrency(result.annualPremiums / 12)],
+                      ['× 12 months', ''],
+                    ]}
+                    total={['Premiums for the year', formatCurrency(result.annualPremiums)]}
+                  />
+                  <p className="mb-0">
+                    This is the full price. Because premiums come out before taxes, part of it comes
+                    back to you as tax savings, shown under Your benefits.
+                  </p>
+                </div>
+              }
+            >
+              At {formatCurrency(result.annualPremiums / 12)}/month
+            </Item>
+          )}
+          {shows(result.outOfPocketCosts) && (
+            <Item
+              amount={result.outOfPocketCosts}
+              approx
+              title="Your share of medical costs"
+              info={
+                <div>
+                  <p>
+                    This is what you'd pay this year for the total medical costs you estimated
+                    above, after the plan pays its part. It includes:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Deductible:</strong> what you pay in full before the plan starts
+                      sharing costs
+                    </li>
+                    <li>
+                      <strong>Copays:</strong> flat fees for some visits and prescriptions
+                    </li>
+                    <li>
+                      <strong>Coinsurance:</strong> your percentage of the bill after the deductible
+                    </li>
+                  </ul>
+                  <p className="mb-0">
+                    Medical costs include doctor visits, prescriptions, tests, procedures, and
+                    therapy. Of the {formatCurrency(totalBills)} in total medical costs you
+                    estimated above, the plan pays {formatCurrency(planShare)} and you pay{' '}
+                    {formatCurrency(result.outOfPocketCosts)}. Your share never goes above the
+                    plan's {formatCurrency(outOfPocketMax)} out-of-pocket max. Click{' '}
+                    <strong>Details</strong> on this card to see every expense.
+                  </p>
+                </div>
+              }
+            >
+              What you pay at the counter for the {formatCurrency(totalBills)} in total medical
+              costs you estimated above
+            </Item>
+          )}
         </Section>
 
         <Section title="Your benefits" className="text-success">
-          {result.premiumDiscount > 0 && (
+          {shows(result.premiumDiscount) && (
             <Item
               amount={result.premiumDiscount}
               amountClassName="text-success"
@@ -223,7 +230,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               Because premiums are taken before taxes
             </Item>
           )}
-          {result.employerContribution > 0 && (
+          {shows(result.employerContribution) && (
             <Item
               amount={result.employerContribution}
               title={`Employer ${account} contribution`}
@@ -258,7 +265,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               {isHSA ? 'Free, and yours to keep forever' : 'Free, use it by year end'}
             </Item>
           )}
-          {result.taxSavings > 0 && (
+          {shows(result.taxSavings) && (
             <Item
               amount={result.taxSavings}
               amountClassName="text-success"
@@ -306,7 +313,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               On your {formatCurrency(result.userContribution)} contribution
             </Item>
           )}
-          {planShare > 0 && (
+          {shows(planShare) && (
             <Item
               amount={planShare}
               approx
@@ -328,7 +335,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                   <p className="mb-0">
                     It isn't subtracted from your total healthcare cost, because you never pay it in
                     the first place. It shows how much this plan does for you. Click{' '}
-                    <strong>Details</strong> on this card to see every visit.
+                    <strong>Details</strong> on this card to see every expense.
                   </p>
                 </div>
               }
@@ -476,7 +483,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                 transformOrigin: 'center',
                 position: 'relative',
                 zIndex: 10,
-                backgroundColor: '#d1e7dd',
+                overflow: 'hidden',
+                // Green behind the header so scaling can't leave a light seam at its edges
+                backgroundColor: 'var(--bs-success)',
               }
             : {}
         }
@@ -503,7 +512,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
             </Badge>
           </div>
         </Card.Header>
-        <Card.Body>
+        <Card.Body style={isLowestCost ? { backgroundColor: '#d1e7dd' } : undefined}>
           <PlanCardBody result={result} />
         </Card.Body>
       </Card>

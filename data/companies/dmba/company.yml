@@ -9,8 +9,71 @@ claims_portal:
   steps:
     - Navigate to My Health > Claims
     - Click "Create Claims History Report"
-    - Select all family members and both prescription and medical categories
-    - Include the past 2 years and select a "Detail" report
+    - Select all family members
+    - Check both the Medical and Prescriptions boxes
+    - Choose the "Last 2 years" time frame and the "Detail" report type
+    - Download the report as a PDF
+
+# Reads the "Detail" report above. Labels are DMBA's names for each service; each maps to
+# the categories it could be, default first. Labels with more than one choice, or none,
+# are shown to the person to confirm for each provider.
+claims_report:
+  format: dmba-eob
+  service_map:
+    OFFICE VISIT:
+      - office_visit_pcp
+      - office_visit_specialist
+      - urgent_care
+      - behavioral_mental_health_outpatient
+      - telemedicine_pcp
+      - telemedicine_specialist
+      - telemedicine_urgent_care
+      - eye_exams
+      - chiropractic_therapy
+      - acupuncture
+    LAB / PATHOLOGY: [laboratory_outpatient]
+    RADIOLOGY DIAGNOSTIC: [imaging_diagnostic_professional, imaging_diagnostic_facility]
+    PRESCRIPTION DRUGS:
+      - pharmacy_tier_1_retail_30
+      - pharmacy_tier_2_retail_30
+      - pharmacy_tier_3_retail_30
+      - pharmacy_tier_1_retail_90
+      - pharmacy_tier_1_mail_90
+      - pharmacy_specialty_tier_1
+    SURGERY: [surgery]
+    ANESTHESIA: [anesthesia]
+    PSYCHOTHERAPY: [behavioral_mental_health_outpatient]
+    EMERGENCY ROOM: [emergency_room]
+    HOSPITAL VISIT: [emergency_room_physician, hospital_inpatient]
+    EDUCATION/TRAINING: [nutritional_education]
+    IMMUNIZATION & ADMIN: [injections_iv_therapy]
+    MEDICAL SUPPLIES: [durable_medical_equipment]
+    NEUROMUSCULAR: [office_visit_specialist]
+    EAR/NOSE/THROAT: [office_visit_specialist]
+    PULMONARY SERVICE: [office_visit_specialist]
+    CARDIOVASCULAR: [office_visit_specialist]
+  # Claims DMBA paid as preventive. Each counts as one visit, named by its biggest charge.
+  preventive_map:
+    OFFICE VISIT: [wellness_exam]
+    LAB / PATHOLOGY: [wellness_exam]
+    IMMUNIZATION & ADMIN: [immunizations]
+    MISC SERVICE: [wellness_exam]
+    NEUROMUSCULAR: [wellness_exam]
+  # Small charges billed alongside a visit; their cost is added to that visit
+  add_to_main_service:
+    - MISC SERVICE
+    - MEDICAL SUPPLIES
+    - PRESCRIPTION DRUGS
+    - IMMUNIZATION & ADMIN
+    - NEUROMUSCULAR
+    - EAR/NOSE/THROAT
+    - PULMONARY SERVICE
+    - CARDIOVASCULAR
+
+ai_assistant:
+  name: Microsoft Copilot
+  url: https://copilot.cloud.microsoft/chat
+  note: Sign in with your work account and start a temporary chat so the conversation isn't saved.
 
 cost_estimator:
   provider: University of Utah

@@ -96,6 +96,21 @@ for (const slug of companyDirs) {
     : {};
   const categories = { ...sharedCategories, ...companyCategories };
 
+  const serviceMaps = [
+    ...Object.entries(company?.claims_report?.service_map ?? {}),
+    ...Object.entries(company?.claims_report?.preventive_map ?? {}),
+  ];
+  for (const [label, categoryIds] of serviceMaps) {
+    for (const categoryId of categoryIds) {
+      if (!categories[categoryId]) {
+        errors.push(
+          `${relative(path.join(dir, 'company.yml'))}: claims_report label "${label}" ` +
+            `uses unknown category "${categoryId}"`
+        );
+      }
+    }
+  }
+
   const years = {};
   const files = yearFiles(path.join(dir, 'plan_years'));
   if (files.length === 0) {

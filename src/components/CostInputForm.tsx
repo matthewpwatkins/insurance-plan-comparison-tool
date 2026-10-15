@@ -1,9 +1,14 @@
-import React from 'react';
-import { Form } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Button, Card, Form } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileArrowUp } from '@fortawesome/free-solid-svg-icons';
+import EstimateImporter from './EstimateImporter';
 import BasicInfoSection from './BasicInfoSection';
 import HSAFSASection from './HSAFSASection';
 import HealthcareCategoriesSection from './HealthcareCategoriesSection';
+import CollapsibleCard from './CollapsibleCard';
 import HelpIcon from './HelpIcon';
+import { formatCurrency } from '../utils/formatters';
 import { UserInputs, PlanData, Company } from '../types';
 
 interface CostInputFormProps {
@@ -11,21 +16,49 @@ interface CostInputFormProps {
   onChange: (updates: Partial<UserInputs>) => void;
   planData: PlanData | null;
   company: Company;
+  /** Whether the sections start open */
+  defaultOpen?: boolean;
 }
 
-const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planData, company }) => {
+const CostInputForm: React.FC<CostInputFormProps> = ({
+  inputs,
+  onChange,
+  planData,
+  company,
+  defaultOpen = true,
+}) => {
+  const count = inputs.costs.categoryEstimates.length;
+  const yearlyTotal = inputs.costs.categoryEstimates.reduce(
+    (sum, { estimate }) => sum + estimate.quantity * estimate.costPerVisit,
+    0
+  );
+  const [showImporter, setShowImporter] = useState(false);
   const insurerName = company.insurer_name ?? company.name;
   const { claims_portal: claimsPortal, cost_estimator: costEstimator } = company;
 
   return (
     <>
-      <BasicInfoSection inputs={inputs} onChange={onChange} planData={planData} company={company} />
+      <BasicInfoSection
+        inputs={inputs}
+        onChange={onChange}
+        planData={planData}
+        company={company}
+        defaultOpen={defaultOpen}
+      />
 
-      <HSAFSASection inputs={inputs} onChange={onChange} planData={planData} company={company} />
+      <HSAFSASection
+        inputs={inputs}
+        onChange={onChange}
+        planData={planData}
+        company={company}
+        defaultOpen={defaultOpen}
+      />
 
-      <div className="mb-4">
-        <h3 className="d-flex justify-content-between align-items-center">
-          <span>Annual Cost Estimates</span>
+      <CollapsibleCard
+        title="Annual Cost Estimates"
+        summary={`${count} ${count === 1 ? 'expense' : 'expenses'} · ${formatCurrency(yearlyTotal)}/yr before insurance`}
+        defaultOpen={defaultOpen}
+        help={
           <HelpIcon
             title="How to Estimate Your Healthcare Costs"
             content={
@@ -114,16 +147,54 @@ const CostInputForm: React.FC<CostInputFormProps> = ({ inputs, onChange, planDat
               </div>
             }
           />
-        </h3>
+        }
+      >
         <p className="text-muted mb-4">
           No way around it, you have to use your magic ball now. Don't fret about getting it exact,
           just take a guess and use your previous health history and EOBs to estimate how many times
           you'll need each service and how much is the {insurerName}-negotiated rate on average.
         </p>
+        {planData && (
+          <div className="mb-3">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => setShowImporter(!showImporter)}
+            >
+              <FontAwesomeIcon icon={faFileArrowUp} className="me-2" />
+              Fill from file
+            </Button>
+            {showImporter && (
+              <Card body className="mt-2">
+                <p className="small text-muted">
+                  Load a CSV with the columns{' '}
+                  <code>category,network,visits,cost_per_visit,notes</code>, like the one the AI
+                  assistant creates in the guided setup.
+                </p>
+                <EstimateImporter
+                  categories={planData.categories}
+                  existingCount={inputs.costs.categoryEstimates.length}
+                  onImport={(estimates, mode) => {
+                    onChange({
+                      costs: {
+                        ...inputs.costs,
+                        categoryEstimates:
+                          mode === 'add'
+                            ? [...inputs.costs.categoryEstimates, ...estimates]
+                            : estimates,
+                      },
+                    });
+                    setShowImporter(false);
+                  }}
+                />
+              </Card>
+            )}
+          </div>
+        )}
         <Form>
           <HealthcareCategoriesSection inputs={inputs} onChange={onChange} planData={planData} />
         </Form>
-      </div>
+      </CollapsibleCard>
     </>
   );
 };

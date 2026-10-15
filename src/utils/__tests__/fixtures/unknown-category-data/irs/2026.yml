@@ -25,3 +25,5 @@ payroll_tax_rates:
   social_security: 6.2
   medicare: 1.45
 
+
+healthcare_price_increase: 3.5

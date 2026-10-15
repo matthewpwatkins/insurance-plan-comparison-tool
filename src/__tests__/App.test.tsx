@@ -51,6 +51,20 @@ describe('App routing', () => {
     expect(container.textContent).not.toContain('Choose your company');
   });
 
+  it('starts first-time visitors on the guided setup', () => {
+    renderAt('/dmba');
+
+    expect(container.textContent).toContain("Let's go");
+    expect(container.textContent).not.toContain('Basic Information');
+  });
+
+  it('opens the full form for a link with inputs', () => {
+    renderAt('/dmba?coverage=single');
+
+    expect(container.textContent).toContain('Basic Information');
+    expect(container.textContent).not.toContain("Let's go");
+  });
+
   it('treats the slug case-insensitively', () => {
     renderAt('/DMBA');
 

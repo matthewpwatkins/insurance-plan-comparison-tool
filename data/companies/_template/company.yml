@@ -22,6 +22,22 @@ name: Example Co
 #     - Open Claims > History
 #     - Download a detailed report for the past 2 years
 
+# Optional. The AI chat tool employees should use to turn their claims report into estimates.
+# The guided setup links to it and hands the user a prompt to paste in.
+# ai_assistant:
+#   name: Example AI Chat
+#   url: https://example.com/chat
+#   note: Start a temporary chat so the conversation isn't saved.
+
+# Optional. Lets people load the claims report above and get estimates from it, if a
+# reader exists for its layout (see "Reading claims reports" in CONTRIBUTING.md).
+# claims_report:
+#   format: dmba-eob
+#   service_map:
+#     OFFICE VISIT: [office_visit_pcp, office_visit_specialist]
+#     LAB / PATHOLOGY: [laboratory_outpatient]
+#   add_to_main_service: [MEDICAL SUPPLIES]
+
 # Optional. A third-party price lookup tool for future procedures.
 # cost_estimator:
 #   provider: Example Hospital

@@ -1,1 +1,5 @@
 name: Odd Co
+claims_report:
+  format: dmba-eob
+  service_map:
+    OFFICE VISIT: [office_visit_pcp, imaginary_visit]

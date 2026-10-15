@@ -10,41 +10,66 @@ import ResultsTable from './components/ResultsTable';
 import CostComparisonChart from './components/CostComparisonChart';
 import NavigationHeader from './components/NavigationHeader';
 import { FAQButtonRef } from './components/FAQButton';
+import GuidedSetup from './components/guided/GuidedSetup';
+import PrivacyNote from './components/PrivacyNote';
 import { loadPlanData, getDefaultYear, getAvailableDataYears } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
-import { readURLParamsOnLoad, updateURL, copyURLToClipboard } from './utils/urlParams';
+import {
+  readURLParamsOnLoad,
+  updateURL,
+  copyURLToClipboard,
+  isResultsPath,
+} from './utils/urlParams';
+import {
+  clearGuided,
+  loadGuidedInputs,
+  readGuidedStepFromPath,
+  saveGuidedInputs,
+} from './utils/guidedStorage';
 import { PlanData, UserInputs, PlanResult, CoverageType, Company } from './types';
 
 interface CompanyAppProps {
   company: Company;
 }
 
+const defaultInputs = (slug: string): UserInputs => ({
+  year: getDefaultYear(slug),
+  coverage: CoverageType.Family,
+  ageGroup: 'under_55',
+  taxRate: 26.45, // 22% federal + 4.45% Utah (2026)
+  costs: {
+    categoryEstimates: [],
+  },
+  hsaContribution: 0,
+  fsaContribution: 0,
+});
+
+/** First-time visitors (no inputs in the URL) and guided step links get the guided setup. */
+const isGuidedURL = () =>
+  !isResultsPath() && (window.location.search === '' || readGuidedStepFromPath() !== null);
+
 function CompanyApp({ company }: CompanyAppProps) {
   const [planData, setPlanData] = useState<PlanData | null>(null);
-  const [userInputs, setUserInputs] = useState<UserInputs>({
-    year: getDefaultYear(company.slug),
-    coverage: CoverageType.Family,
-    ageGroup: 'under_55',
-    taxRate: 26.55, // Default 22% federal + 4.55% state marginal tax rate (common UT)
-    costs: {
-      categoryEstimates: [],
-    },
-    hsaContribution: 0,
-    fsaContribution: 0,
+  const [userInputs, setUserInputs] = useState<UserInputs>(() => {
+    const defaults = defaultInputs(company.slug);
+    const saved = isGuidedURL() ? loadGuidedInputs(company.slug) : null;
+    if (!saved || !getAvailableDataYears(company.slug).includes(saved.year)) return defaults;
+    return { ...defaults, ...saved };
   });
   const [results, setResults] = useState<PlanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [resultsOutOfDate, setResultsOutOfDate] = useState(false);
   const [hasCalculatedOnce, setHasCalculatedOnce] = useState(false);
-  const [isHelpTextDismissed, setIsHelpTextDismissed] = useState(() => {
-    // Initialize from localStorage to prevent flicker
-    const dismissed = localStorage.getItem('helpTextDismissed');
-    return dismissed === 'true';
-  });
   const [showShareToast, setShowShareToast] = useState(false);
   const [shareToastMessage, setShareToastMessage] = useState('');
-  const [shouldAutoShowResults, setShouldAutoShowResults] = useState(false);
+  // A results link opens with the comparison already run
+  const [shouldAutoShowResults, setShouldAutoShowResults] = useState(isResultsPath);
+  // Form sections start closed under results, open for someone who skipped straight to the form
+  const [sectionsOpen, setSectionsOpen] = useState(() => !isResultsPath());
+  const [isGuided, setIsGuided] = useState(isGuidedURL);
+  const [compareRequested, setCompareRequested] = useState(false);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
   const faqButtonRef = useRef<FAQButtonRef | null>(null);
 
   // Read URL parameters on component mount
@@ -73,11 +98,6 @@ function CompanyApp({ company }: CompanyAppProps) {
       });
     }
 
-    // Check if we should auto-show results
-    if (urlParams.showResults) {
-      setShouldAutoShowResults(true);
-    }
-
     setIsInitialized(true);
   }, [company.slug]);
 
@@ -104,13 +124,20 @@ function CompanyApp({ company }: CompanyAppProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInputs, isInitialized]); // Don't include hasCalculatedOnce to avoid marking as out-of-date immediately after calculation
 
+  // Save guided answers in this browser so the person can pick up where they left off
+  useEffect(() => {
+    if (isGuided) saveGuidedInputs(company.slug, userInputs);
+  }, [isGuided, company.slug, userInputs]);
+
+  // Browser back and forward move between guided steps and the form
+  useEffect(() => {
+    const onPopState = () => setIsGuided(isGuidedURL());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   const handleInputChange = (newInputs: Partial<UserInputs>) => {
     setUserInputs(prev => ({ ...prev, ...newInputs }));
-  };
-
-  const handleDismissHelpText = () => {
-    setIsHelpTextDismissed(true);
-    localStorage.setItem('helpTextDismissed', 'true');
   };
 
   const handleShare = async () => {
@@ -145,7 +172,7 @@ function CompanyApp({ company }: CompanyAppProps) {
     }
   };
 
-  // Auto-show results when URL contains showResults=true
+  // Auto-show results on a results link
   useEffect(() => {
     if (shouldAutoShowResults && planData && isInitialized && !hasCalculatedOnce) {
       handleComparePlans();
@@ -154,6 +181,32 @@ function CompanyApp({ company }: CompanyAppProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoShowResults, planData, isInitialized, hasCalculatedOnce]);
 
+  // Finishing the guided setup compares once its last input change has landed in state
+  useEffect(() => {
+    if (compareRequested && planData) {
+      handleComparePlans();
+      setCompareRequested(false);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareRequested, planData, userInputs]);
+
+  const leaveGuided = () => {
+    window.history.pushState({}, '', `/${company.slug}`);
+    setIsGuided(false);
+  };
+
+  const handleSkipGuided = () => {
+    setSectionsOpen(true);
+    leaveGuided();
+  };
+
+  const handleFinishGuided = () => {
+    setSectionsOpen(false);
+    leaveGuided();
+    setCompareRequested(true);
+  };
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Container className="mt-4 flex-grow-1">
@@ -161,30 +214,19 @@ function CompanyApp({ company }: CompanyAppProps) {
           <Col>
             <NavigationHeader company={company} onFAQRef={ref => (faqButtonRef.current = ref)} />
 
-            {!isHelpTextDismissed && (
-              <div className="mb-4 p-3 bg-light rounded position-relative">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  className="position-absolute top-0 end-0 mt-2 me-2"
-                  onClick={handleDismissHelpText}
-                  style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
-                >
-                  ×
-                </Button>
-                <p className="mb-0 text-muted pe-5">
-                  {company.welcome ?? (
-                    <>
-                      <strong>Welcome to open enrollment!</strong> Finding the perfect health plan
-                      doesn't have to be overwhelming. This tool makes it easy to compare all your{' '}
-                      {company.name} health plan options and see which one could save you the most
-                      money. Just enter your expected healthcare costs, and we'll crunch the numbers
-                      for you - including premiums, deductibles, tax savings, and employer
-                      contributions. Let's find your perfect plan!
-                    </>
-                  )}
-                </p>
-              </div>
+            {isGuided && (
+              <GuidedSetup
+                company={company}
+                planData={planData}
+                inputs={userInputs}
+                onChange={handleInputChange}
+                onFinish={handleFinishGuided}
+                onSkip={handleSkipGuided}
+                onStartOver={() => {
+                  clearGuided(company.slug);
+                  setUserInputs(defaultInputs(company.slug));
+                }}
+              />
             )}
 
             {error && (
@@ -193,14 +235,17 @@ function CompanyApp({ company }: CompanyAppProps) {
               </Alert>
             )}
 
-            <CostInputForm
-              inputs={userInputs}
-              onChange={handleInputChange}
-              planData={planData}
-              company={company}
-            />
+            {!isGuided && (
+              <CostInputForm
+                inputs={userInputs}
+                onChange={handleInputChange}
+                planData={planData}
+                company={company}
+                defaultOpen={sectionsOpen}
+              />
+            )}
 
-            <div className="mt-4">
+            <div className={isGuided ? 'd-none' : 'mt-4'}>
               <Button
                 variant="success"
                 size="lg"
@@ -220,7 +265,11 @@ function CompanyApp({ company }: CompanyAppProps) {
             </div>
 
             {results.length > 0 && (
-              <div className="mt-4" style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}>
+              <div
+                ref={resultsRef}
+                className="mt-4"
+                style={{ opacity: resultsOutOfDate ? 0.5 : 1 }}
+              >
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h2 className="mb-0">Plan Comparison Results</h2>
                   <Button
@@ -270,6 +319,7 @@ function CompanyApp({ company }: CompanyAppProps) {
 
       <footer className="mt-auto py-4 border-top text-center text-muted bg-light">
         <Container>
+          <PrivacyNote className="justify-content-center mb-2" />
           <p className="mb-1">
             Made with ❤️ by{' '}
             <a
@@ -280,7 +330,7 @@ function CompanyApp({ company }: CompanyAppProps) {
             >
               Matthew Watkins
             </a>
-            , 2025 •{' '}
+            , {new Date().getFullYear()} •{' '}
             <a
               href="https://github.com/matthewpwatkins/insurance-plan-comparison-tool"
               target="_blank"

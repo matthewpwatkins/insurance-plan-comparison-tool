@@ -34,7 +34,7 @@ export interface ChartDataResult {
 export function calculateUserSpending(planData: PlanData, userInputs: UserInputs): number {
   return userInputs.costs.categoryEstimates.reduce((total, categoryEstimate) => {
     const costForCategory =
-      categoryEstimate.estimate.quantity * categoryEstimate.estimate.costPerVisit;
+      Math.round(categoryEstimate.estimate.quantity) * categoryEstimate.estimate.costPerVisit;
     return total + costForCategory;
   }, 0);
 }

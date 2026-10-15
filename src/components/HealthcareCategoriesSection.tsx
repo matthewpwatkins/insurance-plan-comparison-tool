@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Form, Row, Col, Button, Badge, InputGroup } from 'react-bootstrap';
+import { Form, Row, Col, Button, ButtonGroup, Badge, InputGroup, ListGroup } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencil } from '@fortawesome/free-solid-svg-icons';
+import { faNoteSticky, faTrash } from '@fortawesome/free-solid-svg-icons';
 import FormattedNumberInput from './FormattedNumberInput';
 import HelpIcon from './HelpIcon';
 import { UserInputs, CategoryEstimate, PlanData } from '../types';
@@ -54,8 +54,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
   ): number | undefined => {
     if (!planData) return undefined;
 
-    // Find the minimum quantity cap across all plans that have this category
-    // This ensures we cap at the most restrictive plan's limit
+    // The strictest plan's limit, shown as a hint; counts above it are allowed and billed in full
     const plansWithCategory = planData.plans.filter(plan => plan.categories[categoryId]);
     if (plansWithCategory.length === 0) return undefined;
 
@@ -119,221 +118,195 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     return displayNameA.localeCompare(displayNameB);
   });
 
+  // Preventive care first, otherwise in the order entered
+  const isPreventive = (estimate: CategoryEstimate) =>
+    categoriesData[estimate.categoryId]?.preventive ? 0 : 1;
+  const displayOrder = inputs.costs.categoryEstimates
+    .map((_, index) => index)
+    .sort(
+      (a, b) =>
+        isPreventive(inputs.costs.categoryEstimates[a]) -
+          isPreventive(inputs.costs.categoryEstimates[b]) || a - b
+    );
+
+  const networkOf = (estimate: CategoryEstimate) =>
+    estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network';
+
   return (
     <>
-      {/* Category Estimates */}
-      {inputs.costs.categoryEstimates.map((estimate, index) => (
-        <Card key={index} className="mb-3">
-          <Card.Body>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <div className="d-flex align-items-center">
+      {inputs.costs.categoryEstimates.length > 0 && (
+        <>
+          {/* Column labels for wider screens; phones label each field instead */}
+          <Row className="g-2 d-none d-md-flex small text-muted px-3 mb-1">
+            <Col md>Note</Col>
+            <Col md={2}>In network</Col>
+            <Col md={2}>Per year</Col>
+            <Col md={2} className="text-nowrap">
+              Price each{' '}
+              <HelpIcon
+                title="Entering an expense"
+                content={
+                  <div>
+                    <p>
+                      <strong>Per year:</strong> How many visits, fills or tests you expect
+                      annually.
+                    </p>
+                    <p>
+                      <strong>Price each:</strong> The full negotiated price each time (not your
+                      copay). Your claims history shows these prices.
+                    </p>
+                    <p>
+                      <strong>In-network</strong> providers have contracts with your plan, so they
+                      cost less and are covered better. <strong>Out-of-network</strong> providers
+                      don't.
+                    </p>
+                    <p className="mb-0">
+                      Preventive care, like in-network checkups, costs you $0, but enter its real
+                      price anyway: you pay it for visits over a plan's yearly limit.
+                    </p>
+                  </div>
+                }
+              />
+            </Col>
+          </Row>
+          <ListGroup className="mb-3">
+            {displayOrder.map(index => {
+              const estimate = inputs.costs.categoryEstimates[index];
+              const category = categoriesData[estimate.categoryId];
+              const network = networkOf(estimate);
+              const free = isCategoryFree(estimate.categoryId, network);
+              const cap = getCategoryQuantityCap(estimate.categoryId, network);
+              const deleteButton = (
                 <Button
-                  variant="danger"
+                  variant="link"
                   size="sm"
                   onClick={() => removeCategory(index)}
-                  title="Remove category"
-                  className="me-2"
+                  title="Remove"
+                  aria-label="Remove"
+                  className="text-danger p-0"
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </Button>
-                <h6 className="mb-0 d-flex align-items-center">
-                  {categoriesData[estimate.categoryId]?.name || estimate.categoryId}
-                  {categoriesData[estimate.categoryId]?.notes && (
-                    <span className="text-primary">*</span>
-                  )}
-                  {categoriesData[estimate.categoryId]?.preventive && (
-                    <Badge bg="success" className="ms-2">
-                      Preventive
-                    </Badge>
-                  )}
-                </h6>
-              </div>
-              {categoriesData[estimate.categoryId]?.description && (
-                <HelpIcon
-                  title={categoriesData[estimate.categoryId].name}
-                  content={
-                    <div>
-                      {categoriesData[estimate.categoryId].description}
-                      {categoriesData[estimate.categoryId]?.notes && (
-                        <div className="mt-3 pt-2 border-top">
-                          <p className="mb-1">
-                            <strong>* Important Notes:</strong>
-                          </p>
-                          <ul className="mb-0">
-                            {categoriesData[estimate.categoryId].notes?.map((note, noteIndex) => (
-                              <li key={noteIndex}>{note}</li>
-                            ))}
-                          </ul>
-                        </div>
+              );
+              const update = (changes: Partial<CategoryEstimate['estimate']>) =>
+                updateCategoryEstimate(index, 'estimate', { ...estimate.estimate, ...changes });
+              return (
+                <ListGroup.Item key={index} className="py-2">
+                  {/* Name across the whole row, with the badge and delete button at its right */}
+                  <div className="d-flex align-items-start gap-2 mb-1">
+                    <span className="flex-grow-1" style={{ minWidth: 0 }}>
+                      <span className="fw-semibold me-2">
+                        {category?.name || estimate.categoryId}
+                        {category?.notes && <span className="text-primary">*</span>}
+                      </span>
+                      {category?.description && (
+                        <HelpIcon
+                          title={category.name}
+                          content={
+                            <div>
+                              {category.description}
+                              {category.notes && (
+                                <div className="mt-3 pt-2 border-top">
+                                  <p className="mb-1">
+                                    <strong>* Important Notes:</strong>
+                                  </p>
+                                  <ul className="mb-0">
+                                    {category.notes.map((note, noteIndex) => (
+                                      <li key={noteIndex}>{note}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          }
+                        />
                       )}
-                    </div>
-                  }
-                />
-              )}
-            </div>
-
-            {/* First Row: Network Radio + Notes */}
-            <Row className="align-items-center mb-2">
-              <Col md={3} className="mb-3">
-                <div>
-                  <Form.Check
-                    type="radio"
-                    id={`in-network-${index}`}
-                    name={`network-${index}`}
-                    label="In-Network"
-                    checked={estimate.estimate.isInNetwork}
-                    onChange={() =>
-                      updateCategoryEstimate(index, 'estimate', {
-                        ...estimate.estimate,
-                        isInNetwork: true,
-                      })
-                    }
-                  />
-                  <Form.Check
-                    type="radio"
-                    id={`out-network-${index}`}
-                    name={`network-${index}`}
-                    label="Out-of-Network"
-                    checked={!estimate.estimate.isInNetwork}
-                    onChange={() =>
-                      updateCategoryEstimate(index, 'estimate', {
-                        ...estimate.estimate,
-                        isInNetwork: false,
-                      })
-                    }
-                  />
-                  {isCategoryFree(
-                    estimate.categoryId,
-                    estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
-                  ) && (
-                    <Badge bg="primary" className="mt-1">
-                      Free
-                    </Badge>
-                  )}
-                </div>
-              </Col>
-
-              <Col md={9} className="mb-3">
-                <InputGroup>
-                  <InputGroup.Text>
-                    <FontAwesomeIcon icon={faPencil} className="text-muted" />
-                  </InputGroup.Text>
-                  <Form.Control
-                    type="text"
-                    placeholder="Optional notes: ex. Jill's allergy medicine"
-                    value={estimate.notes || ''}
-                    maxLength={100}
-                    onChange={e => updateCategoryEstimate(index, 'notes', e.target.value)}
-                    style={{ backgroundColor: '#fffbef', border: '1px solid #f0e68c' }}
-                  />
-                </InputGroup>
-              </Col>
-            </Row>
-
-            {/* Second Row: Quantity + Cost + Help */}
-            <Row className="align-items-center">
-              <Col md={3} className="mb-3">
-                <Form.Group>
-                  <Form.Label className="small text-muted">Visits</Form.Label>
-                  <FormattedNumberInput
-                    value={estimate.estimate.quantity}
-                    onChange={(value: number) =>
-                      updateCategoryEstimate(index, 'estimate', {
-                        ...estimate.estimate,
-                        quantity: value,
-                      })
-                    }
-                    min={0}
-                    max={getCategoryQuantityCap(
-                      estimate.categoryId,
-                      estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
-                    )}
-                    step={1}
-                  />
-                  {getCategoryQuantityCap(
-                    estimate.categoryId,
-                    estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
-                  ) && (
-                    <Form.Text className="text-muted small">
-                      Max{' '}
-                      {getCategoryQuantityCap(
-                        estimate.categoryId,
-                        estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
-                      )}{' '}
-                      visits per year
-                    </Form.Text>
-                  )}
-                </Form.Group>
-              </Col>
-
-              <Col md={9} className="mb-3 position-relative">
-                <Form.Group>
-                  <Form.Label className="small text-muted">Cost Per Visit</Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>$</InputGroup.Text>
-                    <FormattedNumberInput
-                      value={
-                        isCategoryFree(
-                          estimate.categoryId,
-                          estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
-                        )
-                          ? 0
-                          : estimate.estimate.costPerVisit
-                      }
-                      onChange={(value: number) =>
-                        updateCategoryEstimate(index, 'estimate', {
-                          ...estimate.estimate,
-                          costPerVisit: value,
-                        })
-                      }
-                      min={0}
-                      step={10}
-                      disabled={isCategoryFree(
-                        estimate.categoryId,
-                        estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network'
-                      )}
-                    />
-                  </InputGroup>
-                </Form.Group>
-                <div className="position-absolute" style={{ top: '0', right: '0' }}>
-                  <HelpIcon
-                    title="Cost Estimate"
-                    content={
-                      <div>
-                        <p>
-                          <strong>Quantity:</strong> How many times you expect to use this service
-                          annually.
-                        </p>
-                        <p>
-                          <strong>Cost per visit:</strong> The full amount charged by the provider
-                          (not your copay).
-                        </p>
-                        <p>
-                          <strong>Network:</strong>
-                        </p>
-                        <ul>
-                          <li>
-                            <strong>In-Network:</strong> Providers with contracts with your
-                            insurance plan. Lower costs, better coverage.
-                          </li>
-                          <li>
-                            <strong>Out-of-Network:</strong> Providers without contracts. Higher
-                            costs, less coverage.
-                          </li>
-                        </ul>
-                        <p>
-                          <strong>Tip:</strong> Check your EOBs for negotiated rates to get accurate
-                          cost estimates.
-                        </p>
-                      </div>
-                    }
-                  />
-                </div>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      ))}
+                    </span>
+                    <span className="d-flex flex-shrink-0 align-items-center gap-2">
+                      {category?.preventive && <Badge bg="success">Preventive</Badge>}
+                      {deleteButton}
+                    </span>
+                  </div>
+                  {/* Bottom-aligned so the note box and the other inputs sit on one line */}
+                  <Row className="g-2 align-items-end">
+                    <Col xs={12} md>
+                      <InputGroup size="sm">
+                        <InputGroup.Text>
+                          <FontAwesomeIcon icon={faNoteSticky} className="text-muted" />
+                        </InputGroup.Text>
+                        <Form.Control
+                          type="text"
+                          aria-label="Notes"
+                          placeholder="Add a note"
+                          value={estimate.notes || ''}
+                          maxLength={100}
+                          onChange={e => updateCategoryEstimate(index, 'notes', e.target.value)}
+                        />
+                      </InputGroup>
+                    </Col>
+                    <Col xs={4} md={2}>
+                      <Form.Label className="d-md-none small text-muted mb-0">
+                        In network
+                      </Form.Label>
+                      <ButtonGroup size="sm" className="w-100" aria-label="In network">
+                        {[true, false].map(inNetwork => (
+                          <Button
+                            key={String(inNetwork)}
+                            variant={
+                              estimate.estimate.isInNetwork === inNetwork
+                                ? 'primary'
+                                : 'outline-primary'
+                            }
+                            aria-pressed={estimate.estimate.isInNetwork === inNetwork}
+                            title={inNetwork ? 'In-network' : 'Out-of-network'}
+                            onClick={() => update({ isInNetwork: inNetwork })}
+                          >
+                            {inNetwork ? 'Yes' : 'No'}
+                          </Button>
+                        ))}
+                      </ButtonGroup>
+                    </Col>
+                    <Col xs={3} md={2}>
+                      <Form.Label className="d-md-none small text-muted mb-0">Per year</Form.Label>
+                      <FormattedNumberInput
+                        size="sm"
+                        aria-label="Per year"
+                        value={estimate.estimate.quantity}
+                        onChange={(value: number) => update({ quantity: Math.round(value) })}
+                        min={0}
+                        step={1}
+                        title={
+                          cap !== undefined
+                            ? `Some plans cover only ${cap} a year; more than that is full price`
+                            : undefined
+                        }
+                      />
+                    </Col>
+                    <Col xs={5} md={2}>
+                      <Form.Label className="d-md-none small text-muted mb-0">
+                        Price each
+                      </Form.Label>
+                      <InputGroup
+                        size="sm"
+                        title={free ? 'Every plan pays this in full, so you pay $0' : undefined}
+                      >
+                        <InputGroup.Text>$</InputGroup.Text>
+                        <FormattedNumberInput
+                          aria-label="Price each"
+                          value={estimate.estimate.costPerVisit}
+                          onChange={(value: number) => update({ costPerVisit: value })}
+                          min={0}
+                          step={10}
+                        />
+                      </InputGroup>
+                    </Col>
+                  </Row>
+                </ListGroup.Item>
+              );
+            })}
+          </ListGroup>
+        </>
+      )}
 
       {/* Add Category Section */}
       <Row className="mb-3">
