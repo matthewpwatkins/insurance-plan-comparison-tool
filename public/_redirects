@@ -1,1 +1,4 @@
+# Send the old Netlify address to the real domain, keeping the path
+https://health-plans.netlify.app/*  https://health-plans.watkins.dev/:splat  301!
+
 /*  /index.html  200
