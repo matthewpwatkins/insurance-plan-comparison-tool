@@ -1,456 +1,306 @@
+import { deflateSync } from 'fflate';
 import {
-  userInputsToURLParams,
-  urlParamsToUserInputs,
+  encodeUserInputs,
+  decodeUserInputs,
   updateURL,
   getShareableURL,
   copyURLToClipboard,
-  readURLParamsOnLoad,
+  readSharedInputs,
   readCompanySlugFromPath,
+  isResultsPath,
 } from '../urlParams';
-import { UserInputs, CoverageType } from '../../types';
+import { buildShareDictionaryText, SHARE_DICTIONARY } from '../shareDictionary';
+import { UserInputs, CoverageType, CategoryEstimate } from '../../types';
 
 const YEARS = [2026, 2025];
 
-// Mock window.location and window.history
-const mockLocation = {
-  pathname: '/test-path',
-  origin: 'https://example.com',
-  search: '',
-};
+const inputs = (overrides: Partial<UserInputs> = {}): UserInputs => ({
+  year: 2025,
+  coverage: CoverageType.Single,
+  ageGroup: 'under_55',
+  taxRate: 22,
+  costs: { categoryEstimates: [] },
+  hsaContribution: 2000,
+  fsaContribution: 1500,
+  ...overrides,
+});
 
-const mockHistory = {
-  replaceState: jest.fn(),
-};
+// Made-up people and providers, shaped like the notes the claims import writes
+const PEOPLE = ['Avery', 'Jordan', 'Rowan', 'Sky', 'Quinn', 'Harper'];
+const PROVIDERS = [
+  'Riverbend Family Medicine',
+  'Cedar Ridge Pediatrics',
+  'Northgate Imaging Center',
+  'Quest Diagnostics',
+  'Lakeside Physical Therapy',
+  'Summit Orthopedic Specialists',
+  'Walgreens Pharmacy',
+  'Maple Valley Dermatology',
+  'Brightview Behavioral Health',
+  "St. Aldric Children's Hospital",
+];
+const CATEGORY_IDS = [
+  'office_visit_pcp',
+  'office_visit_specialist',
+  'wellness_exam',
+  'laboratory_outpatient',
+  'pharmacy_tier_1_retail_30',
+  'pharmacy_tier_2_mail_90',
+  'imaging_diagnostic_facility',
+  'physical_therapy_outpatient',
+  'urgent_care',
+  'behavioral_mental_health_outpatient',
+  'emergency_room',
+  'eye_exams',
+];
 
-const mockNavigator = {
-  clipboard: {
-    writeText: jest.fn(),
-  },
-};
-
-// Store original values
-const originalLocation = window.location;
-const originalHistory = window.history;
-const originalNavigator = window.navigator;
-
-describe('urlParams', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-    // Mock window objects
-    Object.defineProperty(window, 'location', {
-      value: mockLocation,
-      writable: true,
-    });
-    Object.defineProperty(window, 'history', {
-      value: mockHistory,
-      writable: true,
-    });
-    Object.defineProperty(window, 'navigator', {
-      value: mockNavigator,
-      writable: true,
-    });
-  });
-
-  afterAll(() => {
-    // Restore original values
-    Object.defineProperty(window, 'location', {
-      value: originalLocation,
-      writable: true,
-    });
-    Object.defineProperty(window, 'history', {
-      value: originalHistory,
-      writable: true,
-    });
-    Object.defineProperty(window, 'navigator', {
-      value: originalNavigator,
-      writable: true,
-    });
-  });
-
-  const mockUserInputs: UserInputs = {
-    year: 2025,
-    coverage: CoverageType.Single,
-    ageGroup: 'under_55',
-    taxRate: 22,
-    costs: {
-      categoryEstimates: [],
+const sampleEstimates = (count: number): CategoryEstimate[] =>
+  Array.from({ length: count }, (_, i) => ({
+    categoryId: CATEGORY_IDS[i % CATEGORY_IDS.length],
+    estimate: {
+      quantity: (i % 6) + 1,
+      costPerVisit: 35 + ((i * 137) % 900),
+      isInNetwork: i % 7 !== 3,
     },
-    hsaContribution: 2000,
-    fsaContribution: 1500,
-  };
+    notes: `${PEOPLE[i % PEOPLE.length]}: ${PROVIDERS[(i * 3) % PROVIDERS.length]}`,
+  }));
 
-  describe('userInputsToURLParams', () => {
-    it('should convert user inputs to URL parameters correctly', () => {
-      const params = userInputsToURLParams(mockUserInputs);
-
-      expect(params.get('year')).toBe('2025');
-      expect(params.get('coverage')).toBe('single');
-      expect(params.get('ageGroup')).toBe('under_55');
-      expect(params.get('taxRate')).toBe('22');
-      expect(params.get('hsaContribution')).toBe('2000');
-      expect(params.get('fsaContribution')).toBe('1500');
-    });
-
-    it('should handle different coverage types', () => {
-      const inputs = { ...mockUserInputs, coverage: CoverageType.Family };
-      const params = userInputsToURLParams(inputs);
-      expect(params.get('coverage')).toBe('family');
-    });
-
-    it('should handle different age groups', () => {
-      const inputs = { ...mockUserInputs, ageGroup: '55_plus' as const };
-      const params = userInputsToURLParams(inputs);
-      expect(params.get('ageGroup')).toBe('55_plus');
-    });
-
-    it('should handle decimal tax rates', () => {
-      const inputs = { ...mockUserInputs, taxRate: 22.5 };
-      const params = userInputsToURLParams(inputs);
-      expect(params.get('taxRate')).toBe('22.5');
-    });
-
-    it('should handle zero contributions', () => {
-      const inputs = { ...mockUserInputs, hsaContribution: 0, fsaContribution: 0 };
-      const params = userInputsToURLParams(inputs);
-      expect(params.get('hsaContribution')).toBe('0');
-      expect(params.get('fsaContribution')).toBe('0');
-    });
+const sampleInputs = (count: number) =>
+  inputs({
+    year: 2026,
+    coverage: CoverageType.Family,
+    taxRate: 26.45,
+    hsaContribution: 0,
+    fsaContribution: 3300,
+    costs: { categoryEstimates: sampleEstimates(count) },
   });
 
-  describe('urlParamsToUserInputs', () => {
-    it('should parse valid URL parameters correctly', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('year', '2025');
-      searchParams.set('coverage', 'single');
-      searchParams.set('ageGroup', 'under_55');
-      searchParams.set('taxRate', '22');
-      searchParams.set('hsaContribution', '2000');
-      searchParams.set('fsaContribution', '1500');
-
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.year).toBe(2025);
-      expect(result.coverage).toBe(CoverageType.Single);
-      expect(result.ageGroup).toBe('under_55');
-      expect(result.taxRate).toBe(22);
-      expect(result.hsaContribution).toBe(2000);
-      expect(result.fsaContribution).toBe(1500);
-    });
-
-    it('should handle missing parameters gracefully', () => {
-      const searchParams = new URLSearchParams();
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(Object.keys(result)).toHaveLength(0);
-    });
-
-    it('should ignore invalid year values', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('year', '2024'); // Not in allowed list
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.year).toBeUndefined();
-    });
-
-    it('should accept valid years', () => {
-      const searchParams1 = new URLSearchParams();
-      searchParams1.set('year', '2025');
-      const result1 = urlParamsToUserInputs(searchParams1, YEARS);
-      expect(result1.year).toBe(2025);
-
-      const searchParams2 = new URLSearchParams();
-      searchParams2.set('year', '2026');
-      const result2 = urlParamsToUserInputs(searchParams2, YEARS);
-      expect(result2.year).toBe(2026);
-    });
-
-    it('should ignore invalid coverage values', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('coverage', 'invalid');
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.coverage).toBeUndefined();
-    });
-
-    it('should accept valid coverage values', () => {
-      const validCoverages = [
-        { input: 'single', expected: CoverageType.Single },
-        { input: 'two_party', expected: CoverageType.TwoParty },
-        { input: 'family', expected: CoverageType.Family },
-      ];
-
-      validCoverages.forEach(({ input, expected }) => {
-        const searchParams = new URLSearchParams();
-        searchParams.set('coverage', input);
-        const result = urlParamsToUserInputs(searchParams, YEARS);
-        expect(result.coverage).toBe(expected);
-      });
-    });
-
-    it('should ignore invalid age group values', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('ageGroup', 'invalid');
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.ageGroup).toBeUndefined();
-    });
-
-    it('should accept valid age group values', () => {
-      const validAgeGroups = ['under_55', '55_plus'];
-
-      validAgeGroups.forEach(ageGroup => {
-        const searchParams = new URLSearchParams();
-        searchParams.set('ageGroup', ageGroup);
-        const result = urlParamsToUserInputs(searchParams, YEARS);
-        expect(result.ageGroup).toBe(ageGroup);
-      });
-    });
-
-    it('should validate tax rate range', () => {
-      const searchParams1 = new URLSearchParams();
-      searchParams1.set('taxRate', '-5'); // Below 0
-      const result1 = urlParamsToUserInputs(searchParams1, YEARS);
-      expect(result1.taxRate).toBeUndefined();
-
-      const searchParams2 = new URLSearchParams();
-      searchParams2.set('taxRate', '105'); // Above 100
-      const result2 = urlParamsToUserInputs(searchParams2, YEARS);
-      expect(result2.taxRate).toBeUndefined();
-
-      const searchParams3 = new URLSearchParams();
-      searchParams3.set('taxRate', '22'); // Valid
-      const result3 = urlParamsToUserInputs(searchParams3, YEARS);
-      expect(result3.taxRate).toBe(22);
-    });
-
-    it('should handle invalid tax rate strings', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('taxRate', 'abc');
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.taxRate).toBeUndefined();
-    });
-
-    it('should validate contribution amounts', () => {
-      const searchParams1 = new URLSearchParams();
-      searchParams1.set('hsaContribution', '-100'); // Negative
-      const result1 = urlParamsToUserInputs(searchParams1, YEARS);
-      expect(result1.hsaContribution).toBeUndefined();
-
-      const searchParams2 = new URLSearchParams();
-      searchParams2.set('fsaContribution', 'abc'); // Non-numeric
-      const result2 = urlParamsToUserInputs(searchParams2, YEARS);
-      expect(result2.fsaContribution).toBeUndefined();
-
-      const searchParams3 = new URLSearchParams();
-      searchParams3.set('hsaContribution', '2000'); // Valid
-      searchParams3.set('fsaContribution', '1500'); // Valid
-      const result3 = urlParamsToUserInputs(searchParams3, YEARS);
-      expect(result3.hsaContribution).toBe(2000);
-      expect(result3.fsaContribution).toBe(1500);
-    });
-
-    it('should handle decimal contributions', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('hsaContribution', '2000.50');
-      searchParams.set('fsaContribution', '1500.25');
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.hsaContribution).toBe(2000.5);
-      expect(result.fsaContribution).toBe(1500.25);
-    });
-
-    it('should handle zero contributions', () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('hsaContribution', '0');
-      searchParams.set('fsaContribution', '0');
-      const result = urlParamsToUserInputs(searchParams, YEARS);
-
-      expect(result.hsaContribution).toBe(0);
-      expect(result.fsaContribution).toBe(0);
-    });
+/** A v1 link around arbitrary JSON, to test what the decoder does with it. */
+const encodeRaw = (raw: unknown): string => {
+  const payload = deflateSync(new TextEncoder().encode(JSON.stringify(raw)), {
+    level: 9,
+    dictionary: SHARE_DICTIONARY,
   });
+  let binary = '';
+  payload.forEach(byte => (binary += String.fromCharCode(byte)));
+  return `v1.${btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+};
 
-  describe('updateURL', () => {
-    it('should call window.history.replaceState with correct URL', () => {
-      updateURL(mockUserInputs);
-
-      expect(mockHistory.replaceState).toHaveBeenCalledWith(
-        {},
-        '',
-        '/test-path/results?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
-      );
-    });
-  });
-
-  describe('getShareableURL', () => {
-    it('should return full URL with parameters', () => {
-      const url = getShareableURL(mockUserInputs);
-
-      expect(url).toBe(
-        'https://example.com/test-path/results?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
-      );
-    });
-  });
-
-  describe('copyURLToClipboard', () => {
-    it('should copy URL to clipboard and return true on success', async () => {
-      mockNavigator.clipboard.writeText.mockResolvedValue(undefined);
-
-      const result = await copyURLToClipboard(mockUserInputs);
-
-      expect(result).toBe(true);
-      expect(mockNavigator.clipboard.writeText).toHaveBeenCalledWith(
-        'https://example.com/test-path/results?year=2025&coverage=single&ageGroup=under_55&taxRate=22&hsaContribution=2000&fsaContribution=1500'
-      );
+describe('share links', () => {
+  describe('encode and decode', () => {
+    it('round-trips every field', () => {
+      const original = sampleInputs(8);
+      const result = decodeUserInputs(encodeUserInputs(original), YEARS);
+      expect(result).toEqual({ status: 'ok', inputs: original });
     });
 
-    it('should return false on clipboard error', async () => {
-      mockNavigator.clipboard.writeText.mockRejectedValue(new Error('Clipboard error'));
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-      const result = await copyURLToClipboard(mockUserInputs);
-
-      expect(result).toBe(false);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to copy URL to clipboard:',
-        expect.any(Error)
-      );
-
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('readURLParamsOnLoad', () => {
-    it('should read parameters from window.location.search', () => {
-      Object.defineProperty(window, 'location', {
-        value: {
-          ...mockLocation,
-          search: '?year=2025&coverage=family&taxRate=25',
-        },
-        writable: true,
-      });
-
-      const result = readURLParamsOnLoad(YEARS);
-
-      expect(result.year).toBe(2025);
-      expect(result.coverage).toBe(CoverageType.Family);
-      expect(result.taxRate).toBe(25);
-    });
-
-    it('should handle empty search string', () => {
-      Object.defineProperty(window, 'location', {
-        value: {
-          ...mockLocation,
-          search: '',
-        },
-        writable: true,
-      });
-
-      const result = readURLParamsOnLoad(YEARS);
-
-      expect(Object.keys(result)).toHaveLength(0);
-    });
-  });
-
-  describe('Round-trip consistency', () => {
-    it('should maintain data integrity through URL conversion cycle', () => {
-      const originalInputs = {
-        year: 2026,
-        coverage: CoverageType.Family,
-        ageGroup: '55_plus' as const,
-        taxRate: 32.5,
-        hsaContribution: 4000,
-        fsaContribution: 0,
-        costs: {
-          categoryEstimates: [],
-          otherCosts: {
-            inNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-            outOfNetwork: {
-              quantity: 0,
-              costPerVisit: 0,
-            },
-          },
-        },
-      };
-
-      // Convert to URL params and back
-      const params = userInputsToURLParams(originalInputs as UserInputs);
-      const parsedInputs = urlParamsToUserInputs(params, YEARS);
-
-      expect(parsedInputs.year).toBe(originalInputs.year);
-      expect(parsedInputs.coverage).toBe(originalInputs.coverage);
-      expect(parsedInputs.ageGroup).toBe(originalInputs.ageGroup);
-      expect(parsedInputs.taxRate).toBe(originalInputs.taxRate);
-      expect(parsedInputs.hsaContribution).toBe(originalInputs.hsaContribution);
-      expect(parsedInputs.fsaContribution).toBe(originalInputs.fsaContribution);
-    });
-
-    it('should maintain categoryEstimates data integrity through URL conversion cycle', () => {
-      const originalInputs: UserInputs = {
-        year: 2025,
-        coverage: CoverageType.Single,
-        ageGroup: 'under_55',
-        taxRate: 22,
-        hsaContribution: 2000,
-        fsaContribution: 0,
+    it('round-trips notes with unicode, quotes and symbols', () => {
+      const original = inputs({
         costs: {
           categoryEstimates: [
             {
               categoryId: 'office_visit_pcp',
-              estimate: { quantity: 3, costPerVisit: 200, isInNetwork: true },
-              notes: 'Checkups, "sick" visits & more',
+              estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+              notes: 'Zoë\'s "annual" checkup – 東京 clinic 🦷 & co. \\ #1 ?x=y',
             },
             {
-              categoryId: 'office_visit_pcp',
-              estimate: { quantity: 1, costPerVisit: 400, isInNetwork: false },
-            },
-            {
-              categoryId: 'pharmacy_tier_1_retail_30',
-              estimate: { quantity: 12, costPerVisit: 12.5, isInNetwork: true },
-              notes: '',
+              categoryId: 'eye_exams',
+              estimate: { quantity: 1, costPerVisit: 80.5, isInNetwork: false },
             },
           ],
         },
+      });
+      const result = decodeUserInputs(encodeUserInputs(original), YEARS);
+      expect(result).toEqual({ status: 'ok', inputs: original });
+    });
+
+    it('uses the versioned, url-safe format', () => {
+      expect(encodeUserInputs(sampleInputs(40))).toMatch(/^v1\.[A-Za-z0-9_-]+$/);
+    });
+
+    it('makes the same link for the same inputs whatever their key order', () => {
+      const original = sampleInputs(2);
+      const { year, costs, ...rest } = original;
+      const reordered: UserInputs = { costs, ...rest, year };
+      expect(encodeUserInputs(reordered)).toBe(encodeUserInputs(original));
+    });
+
+    it('accepts the hash with its leading #', () => {
+      const encoded = encodeUserInputs(sampleInputs(2));
+      expect(decodeUserInputs(`#${encoded}`, YEARS).status).toBe('ok');
+    });
+
+    it('treats an empty hash as no link', () => {
+      expect(decodeUserInputs('', YEARS)).toEqual({ status: 'none' });
+      expect(decodeUserInputs('#', YEARS)).toEqual({ status: 'none' });
+    });
+  });
+
+  describe('unreadable links', () => {
+    it('rejects bad base64', () => {
+      expect(decodeUserInputs('v1.not*base64!', YEARS)).toEqual({ status: 'invalid' });
+    });
+
+    it('rejects valid base64 that is not our compressed data', () => {
+      expect(decodeUserInputs('v1.aGVsbG8gd29ybGQ', YEARS)).toEqual({ status: 'invalid' });
+    });
+
+    it('rejects a truncated link', () => {
+      const encoded = encodeUserInputs(sampleInputs(8));
+      expect(decodeUserInputs(encoded.slice(0, 40), YEARS)).toEqual({ status: 'invalid' });
+    });
+
+    it('rejects an unknown version', () => {
+      const encoded = encodeUserInputs(sampleInputs(2));
+      expect(decodeUserInputs(encoded.replace(/^v1\./, 'v2.'), YEARS)).toEqual({
+        status: 'invalid',
+      });
+      expect(decodeUserInputs(encoded.replace(/^v1\./, ''), YEARS)).toEqual({ status: 'invalid' });
+    });
+
+    it('rejects compressed JSON that is not an object', () => {
+      expect(decodeUserInputs(encodeRaw([1, 2, 3]), YEARS)).toEqual({ status: 'invalid' });
+      expect(decodeUserInputs(encodeRaw(null), YEARS)).toEqual({ status: 'invalid' });
+    });
+  });
+
+  describe('validation', () => {
+    const decodeRaw = (raw: unknown) => {
+      const result = decodeUserInputs(encodeRaw(raw), YEARS);
+      if (result.status !== 'ok') throw new Error(`Expected ok, got ${result.status}`);
+      return result.inputs;
+    };
+
+    it('drops a year the company has no data for', () => {
+      const result = decodeUserInputs(encodeUserInputs(inputs({ year: 2031 })), YEARS);
+      expect(result.status).toBe('ok');
+      expect(result.status === 'ok' && result.inputs.year).toBeUndefined();
+      expect(result.status === 'ok' && result.inputs.coverage).toBe('single');
+    });
+
+    it('accepts any year the company has data for', () => {
+      const result = decodeUserInputs(encodeUserInputs(inputs({ year: 2031 })), [2031, 2030]);
+      expect(result.status === 'ok' && result.inputs.year).toBe(2031);
+    });
+
+    it('drops invalid coverage, age group, tax rate and contributions', () => {
+      expect(
+        decodeRaw({
+          year: 2026,
+          coverage: 'everyone',
+          ageGroup: '40_plus',
+          taxRate: 150,
+          hsaContribution: -1,
+          fsaContribution: 'lots',
+        })
+      ).toEqual({ year: 2026 });
+    });
+
+    it('keeps only well-formed estimates', () => {
+      const good = {
+        categoryId: 'office_visit_pcp',
+        estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
       };
-
-      const params = userInputsToURLParams(originalInputs);
-      // Through a real query string, the way a shared link travels
-      const parsedInputs = urlParamsToUserInputs(new URLSearchParams(params.toString()), YEARS);
-
-      expect(parsedInputs.costs?.categoryEstimates).toEqual(originalInputs.costs.categoryEstimates);
-    });
-
-    it('drops malformed estimates from a hand-edited link but keeps the good ones', () => {
-      const params = new URLSearchParams();
-      params.set(
-        'categoryEstimates',
-        JSON.stringify([
-          {
-            categoryId: 'office_visit_pcp',
-            estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
-          },
-          { categoryId: 'office_visit_pcp', inNetwork: { quantity: 2, costPerVisit: 150 } },
-          {
-            categoryId: 'specialist',
-            estimate: { quantity: '2', costPerVisit: 150, isInNetwork: true },
-          },
-          null,
-        ])
-      );
-
-      const parsed = urlParamsToUserInputs(params, YEARS);
-
-      expect(parsed.costs?.categoryEstimates).toEqual([
-        {
-          categoryId: 'office_visit_pcp',
-          estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+      const result = decodeRaw({
+        costs: {
+          categoryEstimates: [
+            good,
+            { categoryId: 'x', estimate: { quantity: '2', costPerVisit: 1, isInNetwork: true } },
+            { categoryId: 'x', estimate: { quantity: 2, costPerVisit: 1 } },
+            { estimate: { quantity: 2, costPerVisit: 1, isInNetwork: true } },
+            {
+              categoryId: 'x',
+              estimate: { quantity: 2, costPerVisit: 1, isInNetwork: true },
+              notes: 5,
+            },
+            null,
+          ],
         },
-      ]);
+      });
+      expect(result.costs?.categoryEstimates).toEqual([good]);
     });
+  });
+
+  describe('dictionary', () => {
+    it('is built the same way every time', () => {
+      const text = buildShareDictionaryText();
+      expect(buildShareDictionaryText()).toBe(text);
+      expect(new TextDecoder().decode(SHARE_DICTIONARY)).toBe(text);
+    });
+
+    it('ends with the JSON every link starts with and fits in the deflate window', () => {
+      const text = buildShareDictionaryText();
+      expect(text).toContain('{"categoryId":"office_visit_pcp","estimate":{"quantity":1');
+      expect(text.endsWith('"hsaContribution":0,"fsaContribution":0}')).toBe(true);
+      expect(SHARE_DICTIONARY.length).toBeLessThanOrEqual(32 * 1024);
+    });
+
+    it('keeps a 40-expense link with names in the notes under 900 characters', () => {
+      window.history.pushState({}, '', '/dmba');
+      expect(getShareableURL(sampleInputs(40)).length).toBeLessThan(900);
+    });
+  });
+});
+
+describe('results URL', () => {
+  const originalClipboard = navigator.clipboard;
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, configurable: true });
+    window.history.pushState({}, '', '/');
+  });
+
+  it('updateURL replaces the URL with the results page and the inputs in the hash', () => {
+    window.history.pushState({}, '', '/dmba/setup/edit');
+    const lengthBefore = window.history.length;
+    updateURL(sampleInputs(2));
+
+    expect(window.location.pathname).toBe('/dmba/results');
+    expect(window.location.search).toBe('');
+    expect(window.location.hash).toBe(`#${encodeUserInputs(sampleInputs(2))}`);
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('getShareableURL is absolute', () => {
+    window.history.pushState({}, '', '/dmba');
+    expect(getShareableURL(sampleInputs(2))).toBe(
+      `${window.location.origin}/dmba/results#${encodeUserInputs(sampleInputs(2))}`
+    );
+  });
+
+  it('copyURLToClipboard copies the share link', async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    window.history.pushState({}, '', '/dmba');
+
+    await expect(copyURLToClipboard(sampleInputs(2))).resolves.toBe(true);
+    expect(writeText).toHaveBeenCalledWith(getShareableURL(sampleInputs(2)));
+  });
+
+  it('copyURLToClipboard reports failure', async () => {
+    const writeText = jest.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(copyURLToClipboard(sampleInputs(2))).resolves.toBe(false);
+  });
+
+  it('readSharedInputs reads the hash on a results page only', () => {
+    const encoded = encodeUserInputs(sampleInputs(2));
+    window.history.pushState({}, '', `/dmba/results#${encoded}`);
+    expect(readSharedInputs(YEARS)).toEqual({ status: 'ok', inputs: sampleInputs(2) });
+
+    window.history.pushState({}, '', `/dmba#${encoded}`);
+    expect(readSharedInputs(YEARS)).toEqual({ status: 'none' });
+
+    window.history.pushState({}, '', '/dmba/results#garbage');
+    expect(readSharedInputs(YEARS)).toEqual({ status: 'invalid' });
+  });
+
+  it('isResultsPath matches only /<slug>/results', () => {
+    expect(isResultsPath('/dmba/results')).toBe(true);
+    expect(isResultsPath('/dmba')).toBe(false);
+    expect(isResultsPath('/dmba/setup/year')).toBe(false);
   });
 });
 
@@ -467,17 +317,5 @@ describe('readCompanySlugFromPath', () => {
 
   it('returns an empty string on the root', () => {
     expect(readCompanySlugFromPath('/')).toBe('');
-  });
-});
-
-describe('urlParamsToUserInputs year check', () => {
-  it('accepts any year the company has data for', () => {
-    const result = urlParamsToUserInputs(new URLSearchParams('year=2031'), [2031, 2030]);
-    expect(result.year).toBe(2031);
-  });
-
-  it('ignores a year the company has no data for', () => {
-    const result = urlParamsToUserInputs(new URLSearchParams('year=2025'), [2031, 2030]);
-    expect(result.year).toBeUndefined();
   });
 });

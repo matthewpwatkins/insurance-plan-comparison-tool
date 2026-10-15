@@ -17,6 +17,7 @@ import {
   readGuidedStepFromPath,
   saveGuidedProgress,
 } from '../../utils/guidedStorage';
+import { isResultsPath } from '../../utils/urlParams';
 import { EditStep, EstimateChoice, EstimateChoiceStep, ImportStep, skipLabel } from './CostStep';
 import {
   getAvailableDataYears,
@@ -117,7 +118,7 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
   useEffect(() => {
     const onPopState = () => {
       const fromPath = readGuidedStepFromPath() as StepId | null;
-      if (fromPath || window.location.search === '') setStep(fromPath ?? 'welcome');
+      if (fromPath || !isResultsPath()) setStep(fromPath ?? 'welcome');
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);

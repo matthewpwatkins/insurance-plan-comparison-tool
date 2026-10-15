@@ -1,6 +1,11 @@
 import { act } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import App from '../App';
+import { CoverageType } from '../types';
+import { encodeUserInputs } from '../utils/urlParams';
+
+// Chart.js needs a real canvas
+jest.mock('../components/CostComparisonChart', () => ({ __esModule: true, default: () => null }));
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -58,8 +63,17 @@ describe('App routing', () => {
     expect(container.textContent).not.toContain('Basic Information');
   });
 
-  it('opens the full form for a link with inputs', () => {
-    renderAt('/dmba?coverage=single');
+  it('opens the full form for a results link', () => {
+    const shared = encodeUserInputs({
+      year: 2026,
+      coverage: CoverageType.Single,
+      ageGroup: 'under_55',
+      taxRate: 22,
+      costs: { categoryEstimates: [] },
+      hsaContribution: 0,
+      fsaContribution: 0,
+    });
+    renderAt(`/dmba/results#${shared}`);
 
     expect(container.textContent).toContain('Basic Information');
     expect(container.textContent).not.toContain("Let's go");

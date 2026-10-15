@@ -217,11 +217,10 @@ export const suggestCarryOver = (
 const titleCase = (text: string): string =>
   text.toLowerCase().replace(/(^|[\s/&-])([a-z])/g, (_, gap, letter) => gap + letter.toUpperCase());
 
-/** "Jane: Pat Q Example, office visit", for the estimate's notes. */
+/** "Jane: Pat Q Example", for the estimate's notes. The category already says what it was. */
 export const describeExpense = (expense: PastExpense): string => {
   const firstName = titleCase(expense.patient.split(' ')[0] ?? '');
-  const service = expense.service.toLowerCase();
-  return `${firstName}: ${titleCase(expense.provider)}, ${service}`.slice(0, 100);
+  return `${firstName}: ${titleCase(expense.provider)}`.slice(0, 100);
 };
 
 /** One estimate per past expense the person kept. */

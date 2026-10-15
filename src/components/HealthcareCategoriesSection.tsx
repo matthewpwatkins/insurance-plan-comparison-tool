@@ -104,7 +104,11 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     handleCostChange('categoryEstimates', updatedEstimates);
   };
 
-  const updateCategoryEstimate = (index: number, field: 'estimate' | 'notes', value: any) => {
+  const updateCategoryEstimate = (
+    index: number,
+    field: 'categoryId' | 'estimate' | 'notes',
+    value: any
+  ) => {
     const updatedEstimates = inputs.costs.categoryEstimates.map((est, i) =>
       i === index ? { ...est, [field]: value } : est
     );
@@ -195,10 +199,46 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   {/* Name across the whole row, with the badge and delete button at its right */}
                   <div className="d-flex align-items-start gap-2 mb-1">
                     <span className="flex-grow-1" style={{ minWidth: 0 }}>
-                      <span className="fw-semibold me-2">
-                        {category?.name || estimate.categoryId}
-                        {category?.notes && <span className="text-primary">*</span>}
+                      {/* The name doubles as the category picker. A hidden copy of the name sets
+                          its width, so the arrow sits right after the text. */}
+                      <span
+                        className="d-inline-grid align-items-center me-1 align-middle"
+                        style={{ maxWidth: 'calc(100% - 1.75rem)' }}
+                      >
+                        <span
+                          aria-hidden
+                          className="fw-semibold invisible text-nowrap overflow-hidden"
+                          style={{ gridArea: '1 / 1', paddingRight: '1.75rem' }}
+                        >
+                          {category?.name ?? estimate.categoryId}
+                        </span>
+                        <Form.Select
+                          size="sm"
+                          aria-label="Category"
+                          value={estimate.categoryId}
+                          onChange={e =>
+                            updateCategoryEstimate(index, 'categoryId', e.target.value)
+                          }
+                          className="fw-semibold fs-6 border-0 bg-transparent shadow-none ps-0 py-0"
+                          style={{
+                            gridArea: '1 / 1',
+                            width: 0,
+                            minWidth: '100%',
+                            paddingRight: '1.5rem',
+                            backgroundPosition: 'right 0.25rem center',
+                          }}
+                        >
+                          {!category && (
+                            <option value={estimate.categoryId}>{estimate.categoryId}</option>
+                          )}
+                          {availableCategories.map(categoryId => (
+                            <option key={categoryId} value={categoryId}>
+                              {categoriesData[categoryId].name}
+                            </option>
+                          ))}
+                        </Form.Select>
                       </span>
+                      {category?.notes && <span className="text-primary me-1">*</span>}
                       {category?.description && (
                         <HelpIcon
                           title={category.name}

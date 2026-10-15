@@ -1,8 +1,5 @@
-import React, { useState } from 'react';
-import { Button, Card, Form } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileArrowUp } from '@fortawesome/free-solid-svg-icons';
-import EstimateImporter from './EstimateImporter';
+import React from 'react';
+import { Form } from 'react-bootstrap';
 import BasicInfoSection from './BasicInfoSection';
 import HSAFSASection from './HSAFSASection';
 import HealthcareCategoriesSection from './HealthcareCategoriesSection';
@@ -32,7 +29,6 @@ const CostInputForm: React.FC<CostInputFormProps> = ({
     (sum, { estimate }) => sum + estimate.quantity * estimate.costPerVisit,
     0
   );
-  const [showImporter, setShowImporter] = useState(false);
   const insurerName = company.insurer_name ?? company.name;
   const { claims_portal: claimsPortal, cost_estimator: costEstimator } = company;
 
@@ -154,43 +150,6 @@ const CostInputForm: React.FC<CostInputFormProps> = ({
           just take a guess and use your previous health history and EOBs to estimate how many times
           you'll need each service and how much is the {insurerName}-negotiated rate on average.
         </p>
-        {planData && (
-          <div className="mb-3">
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={() => setShowImporter(!showImporter)}
-            >
-              <FontAwesomeIcon icon={faFileArrowUp} className="me-2" />
-              Fill from file
-            </Button>
-            {showImporter && (
-              <Card body className="mt-2">
-                <p className="small text-muted">
-                  Load a CSV with the columns{' '}
-                  <code>category,network,visits,cost_per_visit,notes</code>, like the one the AI
-                  assistant creates in the guided setup.
-                </p>
-                <EstimateImporter
-                  categories={planData.categories}
-                  existingCount={inputs.costs.categoryEstimates.length}
-                  onImport={(estimates, mode) => {
-                    onChange({
-                      costs: {
-                        ...inputs.costs,
-                        categoryEstimates:
-                          mode === 'add'
-                            ? [...inputs.costs.categoryEstimates, ...estimates]
-                            : estimates,
-                      },
-                    });
-                    setShowImporter(false);
-                  }}
-                />
-              </Card>
-            )}
-          </div>
-        )}
         <Form>
           <HealthcareCategoriesSection inputs={inputs} onChange={onChange} planData={planData} />
         </Form>

@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import App from '../App';
 import { UserInputs, CoverageType } from '../types';
+import { decodeUserInputs, encodeUserInputs } from '../utils/urlParams';
 
 // Chart.js needs a real canvas; the results table is enough to see a comparison ran
 jest.mock('../components/CostComparisonChart', () => ({ __esModule: true, default: () => null }));
@@ -60,6 +61,12 @@ describe('guided setup', () => {
 
   const text = () => container.textContent ?? '';
   const path = () => window.location.pathname;
+  /** The inputs the current results link carries. */
+  const linkInputs = () => {
+    const shared = decodeUserInputs(window.location.hash, [2026, 2025]);
+    if (shared.status !== 'ok') throw new Error(`Unreadable link: ${window.location.href}`);
+    return shared.inputs;
+  };
 
   const button = (label: string): HTMLButtonElement => {
     const match = Array.from(container.querySelectorAll('button')).find(
@@ -181,8 +188,9 @@ describe('guided setup', () => {
       expect(text()).toContain("What's your combined income tax rate?");
       expect(text()).not.toContain('Basic Information');
 
-      browserGoesTo('/dmba?coverage=single');
+      browserGoesTo(`/dmba/results#${encodeUserInputs(savedInputs())}`);
       expect(text()).toContain('Basic Information');
+      expect(text()).not.toContain("What's your combined income tax rate?");
     });
 
     it('waits for an answer before leaving the estimate question', () => {
@@ -313,10 +321,11 @@ describe('guided setup', () => {
       expect(path()).toBe('/dmba/setup/coverage');
     });
 
-    it('still opens the full form', () => {
-      renderAt('/dmba?coverage=single');
+    it('still opens a shared link', () => {
+      renderAt(`/dmba/results#${encodeUserInputs(savedInputs())}`);
 
       expect(text()).toContain('Basic Information');
+      expect(text()).toContain('Plan Comparison Results');
     });
 
     it('opens the full form with every section open when skipping the guide', () => {
@@ -342,12 +351,13 @@ describe('guided setup', () => {
 
       expect(text()).toContain('Plan Comparison Results');
       expect(path()).toBe('/dmba/results');
-      expect(window.location.search).toContain('year=2026');
+      expect(window.location.search).toBe('');
+      expect(linkInputs().year).toBe(2026);
       // The inputs above the results start closed
       const toggles = container.querySelectorAll('.card-header [aria-expanded]');
       expect(toggles).toHaveLength(3);
       toggles.forEach(toggle => expect(toggle.getAttribute('aria-expanded')).toBe('false'));
-      expect(window.location.search).not.toContain('categoryEstimates');
+      expect(linkInputs().costs?.categoryEstimates).toEqual([]);
     });
 
     it('stays on the expense editor when Enter submits its one form', () => {
@@ -374,24 +384,56 @@ describe('guided setup', () => {
       click('See my results');
 
       expect(text()).toContain('Plan Comparison Results');
-      const params = new URLSearchParams(window.location.search);
-      expect(JSON.parse(params.get('categoryEstimates') ?? '[]')).toEqual(
-        savedInputs().costs.categoryEstimates
-      );
-      expect(params.get('taxRate')).toBe('26.45');
+      expect(linkInputs().costs?.categoryEstimates).toEqual(savedInputs().costs.categoryEstimates);
+      expect(linkInputs().taxRate).toBe(26.45);
+
+      // Browser back from the results returns to the guide
+      browserGoesTo('/dmba/setup/edit');
+      expect(text()).toContain('What health expenses do you expect in 2026?');
+      expect(text()).not.toContain('Basic Information');
     });
 
     it('opens a shared link straight to its results', () => {
-      const estimates = JSON.stringify(savedInputs().costs.categoryEstimates);
-      renderAt(
-        `/dmba/results?year=2026&coverage=single&taxRate=22&categoryEstimates=${encodeURIComponent(
-          estimates
-        )}`
-      );
+      const shared = savedInputs({ coverage: CoverageType.Single, taxRate: 22 });
+      renderAt(`/dmba/results#${encodeUserInputs(shared)}`);
 
       expect(text()).not.toContain("Let's go");
       expect(text()).toContain('Plan Comparison Results');
       expect(text()).toContain('DMBA HSA 60');
+      expect(text()).not.toContain("couldn't be read");
+      expect(linkInputs()).toEqual(shared);
+    });
+
+    it('opens the form with defaults and a note when a link cannot be read', () => {
+      saveProgress('edit');
+      renderAt('/dmba/results#v1.garbage');
+
+      expect(text()).toContain("This link couldn't be read.");
+      expect(text()).toContain('Basic Information');
+      expect(text()).not.toContain('Plan Comparison Results');
+      expect(text()).not.toContain('Checkups');
+    });
+
+    it('treats a link from a newer or older format as unreadable', () => {
+      renderAt(`/dmba/results#${encodeUserInputs(savedInputs()).replace(/^v1\./, 'v9.')}`);
+
+      expect(text()).toContain("This link couldn't be read.");
+      expect(text()).not.toContain('Plan Comparison Results');
+    });
+
+    it('loads a results link pasted into the same tab', () => {
+      renderAt('/dmba/results#v1.garbage');
+
+      const shared = savedInputs({ coverage: CoverageType.Single });
+      act(() => {
+        window.history.pushState({}, '', `/dmba/results#${encodeUserInputs(shared)}`);
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+      });
+
+      expect(text()).not.toContain("couldn't be read");
+      expect(text()).toContain('Plan Comparison Results');
+      // 4 visits at $180 from the pasted link
+      expect(text()).toContain('for the $720 in total medical costs');
     });
   });
 });

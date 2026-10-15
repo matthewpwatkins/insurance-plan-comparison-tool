@@ -15,18 +15,21 @@ import PrivacyNote from './components/PrivacyNote';
 import { loadPlanData, getDefaultYear, getAvailableDataYears } from './services/planDataService';
 import { calculateAllPlans } from './utils/costCalculator';
 import {
-  readURLParamsOnLoad,
+  readSharedInputs,
   updateURL,
   copyURLToClipboard,
   isResultsPath,
+  SharedInputs,
 } from './utils/urlParams';
+import { clearGuided, loadGuidedInputs, saveGuidedInputs } from './utils/guidedStorage';
 import {
-  clearGuided,
-  loadGuidedInputs,
-  readGuidedStepFromPath,
-  saveGuidedInputs,
-} from './utils/guidedStorage';
-import { PlanData, UserInputs, PlanResult, CoverageType, Company } from './types';
+  PlanData,
+  UserInputs,
+  PartialUserInputs,
+  PlanResult,
+  CoverageType,
+  Company,
+} from './types';
 
 interface CompanyAppProps {
   company: Company;
@@ -44,61 +47,69 @@ const defaultInputs = (slug: string): UserInputs => ({
   fsaContribution: 0,
 });
 
-/** First-time visitors (no inputs in the URL) and guided step links get the guided setup. */
-const isGuidedURL = () =>
-  !isResultsPath() && (window.location.search === '' || readGuidedStepFromPath() !== null);
+const withShared = (defaults: UserInputs, shared: PartialUserInputs): UserInputs => ({
+  ...defaults,
+  ...shared,
+  costs: { ...defaults.costs, ...shared.costs },
+});
+
+const UNREADABLE_LINK_MESSAGE =
+  "This link couldn't be read. It may be from an older version of the tool.";
+
+/** Everything but a results link (the welcome page and each step) gets the guided setup. */
+const isGuidedURL = () => !isResultsPath();
 
 function CompanyApp({ company }: CompanyAppProps) {
   const [planData, setPlanData] = useState<PlanData | null>(null);
+  // A results link carries its inputs in the hash; read it once on load
+  const [shared] = useState<SharedInputs>(() =>
+    readSharedInputs(getAvailableDataYears(company.slug))
+  );
+  // A results link that opens with the comparison already run
+  const opensResults = isResultsPath() && shared.status !== 'invalid';
   const [userInputs, setUserInputs] = useState<UserInputs>(() => {
     const defaults = defaultInputs(company.slug);
+    if (shared.status === 'ok') return withShared(defaults, shared.inputs);
     const saved = isGuidedURL() ? loadGuidedInputs(company.slug) : null;
     if (!saved || !getAvailableDataYears(company.slug).includes(saved.year)) return defaults;
     return { ...defaults, ...saved };
   });
   const [results, setResults] = useState<PlanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(
+    shared.status === 'invalid' ? UNREADABLE_LINK_MESSAGE : null
+  );
   const [isInitialized, setIsInitialized] = useState(false);
   const [resultsOutOfDate, setResultsOutOfDate] = useState(false);
   const [hasCalculatedOnce, setHasCalculatedOnce] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [shareToastMessage, setShareToastMessage] = useState('');
-  // A results link opens with the comparison already run
-  const [shouldAutoShowResults, setShouldAutoShowResults] = useState(isResultsPath);
+  const [shouldAutoShowResults, setShouldAutoShowResults] = useState(opensResults);
   // Form sections start closed under results, open for someone who skipped straight to the form
-  const [sectionsOpen, setSectionsOpen] = useState(() => !isResultsPath());
+  const [sectionsOpen, setSectionsOpen] = useState(!opensResults);
   const [isGuided, setIsGuided] = useState(isGuidedURL);
   const [compareRequested, setCompareRequested] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const faqButtonRef = useRef<FAQButtonRef | null>(null);
 
-  // Read URL parameters on component mount
   useEffect(() => {
-    const urlParams = readURLParamsOnLoad(getAvailableDataYears(company.slug));
-    if (Object.keys(urlParams).length > 0) {
-      setUserInputs(prev => {
-        const merged: UserInputs = { ...prev };
-
-        // Update non-costs fields
-        if (urlParams.year !== undefined) merged.year = urlParams.year;
-        if (urlParams.coverage !== undefined) merged.coverage = urlParams.coverage;
-        if (urlParams.ageGroup !== undefined) merged.ageGroup = urlParams.ageGroup;
-        if (urlParams.taxRate !== undefined) merged.taxRate = urlParams.taxRate;
-        if (urlParams.hsaContribution !== undefined)
-          merged.hsaContribution = urlParams.hsaContribution;
-        if (urlParams.fsaContribution !== undefined)
-          merged.fsaContribution = urlParams.fsaContribution;
-
-        // Handle nested costs object properly
-        if (urlParams.costs) {
-          merged.costs = { ...prev.costs, ...urlParams.costs };
-        }
-
-        return merged;
-      });
-    }
-
     setIsInitialized(true);
+  }, []);
+
+  // A results link pasted into this tab only changes the hash, so load it without a reload
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = readSharedInputs(getAvailableDataYears(company.slug));
+      if (next.status === 'ok') {
+        setLinkError(null);
+        setUserInputs(withShared(defaultInputs(company.slug), next.inputs));
+        setCompareRequested(true);
+      } else if (next.status === 'invalid') {
+        setLinkError(UNREADABLE_LINK_MESSAGE);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, [company.slug]);
 
   // Load plan data on component mount and when year changes
@@ -227,6 +238,17 @@ function CompanyApp({ company }: CompanyAppProps) {
                   setUserInputs(defaultInputs(company.slug));
                 }}
               />
+            )}
+
+            {linkError && (
+              <Alert
+                variant="warning"
+                className="mb-4"
+                dismissible
+                onClose={() => setLinkError(null)}
+              >
+                {linkError}
+              </Alert>
             )}
 
             {error && (

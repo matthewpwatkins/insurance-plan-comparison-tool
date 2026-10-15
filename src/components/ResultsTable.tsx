@@ -135,6 +135,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         <Section title="Your costs" className="text-danger">
           {shows(result.annualPremiums) && (
             <Item
+              amountClassName="text-danger"
               amount={result.annualPremiums}
               title="Premiums"
               info={
@@ -162,6 +163,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           )}
           {shows(result.outOfPocketCosts) && (
             <Item
+              amountClassName="text-danger"
               amount={result.outOfPocketCosts}
               approx
               title="Your share of medical costs"
@@ -349,11 +351,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           )}
         </Section>
 
-        <Section title="Your total healthcare picture" className="text-primary">
+        <Section title="Your total healthcare cost" className="text-primary">
           <Item
             amount={result.totalCost}
             title={result.totalCost < 0 ? 'Earned' : 'Spent'}
-            infoTitle="Your total healthcare picture"
+            infoTitle="Your total healthcare cost"
             amountClassName={result.totalCost < 0 ? 'text-success' : 'text-danger'}
             approx
             amountNode={formatCurrency(Math.abs(result.totalCost))}
@@ -521,8 +523,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 
   return (
     <>
-      {/* Card View for All Screen Sizes */}
-      <div>
+      {/* Card View for All Screen Sizes. Top padding leaves room for the enlarged best plan. */}
+      <div className="pt-4">
         {results.map(result => {
           const isLowestCost = result.totalCost === lowestCostAmount;
           return <PlanCard key={result.planName} result={result} isLowestCost={isLowestCost} />;
