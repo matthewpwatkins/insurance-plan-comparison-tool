@@ -96,58 +96,59 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     </table>
   );
 
-  /** What the estimate assumes you put in an HSA or FSA, and what we'd suggest instead */
+  /** What to put in an HSA or FSA on this plan, when it differs from what was entered */
   const ContributionCallout: React.FC<{ result: PlanResult }> = ({ result }) => {
     const isHSA = result.contributionType === ContributionType.HSA;
     const account = isHSA ? 'HSA' : 'FSA';
     const entered = isHSA ? userInputs.hsaContribution : userInputs.fsaContribution;
     const advice = result.contributionAdvice;
-    const usedDiffers = result.userContribution !== entered;
-    if (!advice && !usedDiffers) {
+    // An HSA past the legal limit is the only case without advice that still needs a note
+    const overLimit = isHSA && result.userContribution < entered;
+    if (!advice && !overLimit) {
       return null;
     }
 
-    const usedNote = isHSA
-      ? `the most you can add after your employer's ${formatCurrency(result.employerContribution)}`
-      : `enough for your expected care plus what rolls into next year`;
     const range =
       advice &&
       (advice.recommendedLow === advice.recommendedHigh
         ? formatCurrency(advice.recommendedLow)
-        : `${formatCurrency(advice.recommendedLow)} to ${formatCurrency(advice.recommendedHigh)}`);
+        : `${formatCurrency(advice.recommendedLow)}–${formatCurrency(advice.recommendedHigh)}`);
 
     return (
       <Alert variant="info" className="small mb-0">
-        <p className="fw-bold mb-2">💡 Your {account} on this plan</p>
-        {usedDiffers && (
-          <p className="mb-2">
-            Used in this estimate: {formatCurrency(result.userContribution)}, {usedNote} (you
-            entered {isHSA ? '' : 'up to '}
-            {formatCurrency(entered)}).
-          </p>
-        )}
         {advice && advice.avoidedLoss > 0 && (
-          <p className="mb-2">
-            Given the data you provided, we recommend you only contribute {range} to your FSA so you
-            don't lose {formatCurrency(advice.avoidedLoss)} at the end of the year.
-          </p>
+          <>
+            <p className="fw-bold mb-1">
+              💡 Contribute {range} to your FSA, not {formatCurrency(entered)}.
+            </p>
+            <p className="mb-1">
+              That covers your expected {formatCurrency(advice.recommendedLow)} in care plus{' '}
+              {formatCurrency(advice.recommendedHigh - advice.recommendedLow)} that rolls over.
+              Anything more is lost at year end. This estimate assumes{' '}
+              {formatCurrency(result.userContribution)}.
+            </p>
+            <p className="text-muted mb-0">
+              (Only the {formatCurrency(advice.recommendedLow)} you spend counts as tax savings. The
+              rollover's tax break just moves from next year to this one.)
+            </p>
+          </>
         )}
         {advice && advice.extraSavings > 0 && (
-          <p className="mb-2">
-            Given the data you provided, we recommend you contribute {range} to your {account}.
-            You'll pay about {formatCurrency(result.outOfPocketCosts)} out of pocket for care either
-            way, so you might as well get a tax break on it: that saves you{' '}
-            {formatCurrency(advice.extraSavings)} more.
-            {isHSA &&
-              " And unlike an FSA, HSA money is never lost at the end of the year. It's yours to keep forever."}
-          </p>
+          <>
+            <p className="fw-bold mb-1">
+              💡 Contribute {range} to your {account} to save {formatCurrency(advice.extraSavings)}{' '}
+              more in taxes.
+            </p>
+            <p className="mb-0">
+              You'll pay that for care anyway, so you might as well do it tax-free.
+              {isHSA && " Unlike an FSA, it's yours to keep forever."}
+            </p>
+          </>
         )}
-        {!isHSA && advice && advice.recommendedHigh > advice.recommendedLow && (
+        {overLimit && (
           <p className="mb-0">
-            Why isn't the top of that range counted as savings? Up to{' '}
-            {formatCurrency(advice.rollover)} left over rolls into next year. It's a tax break this
-            year, but you'd then put that much less in next year, so it moves a tax break rather
-            than adding one.
+            💡 This estimate assumes {formatCurrency(result.userContribution)}, the most you can add
+            after your employer's {formatCurrency(result.employerContribution)}.
           </p>
         )}
       </Alert>
@@ -534,7 +535,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           )}
           <ContributionCallout result={result} />
           {isHSA && (
-            <p className="small text-muted mb-0">
+            <Alert variant="success" className="small mb-0">
               <span className="me-1">📈</span>
               <strong>Hidden superpower not shown here:</strong> your HSA can be invested like a
               401(k) and grow for decades, then pay for medical care completely tax-free. Unspent
@@ -542,7 +543,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
                 Here's how it works
               </a>
-            </p>
+            </Alert>
           )}
         </Section>
       </Row>
