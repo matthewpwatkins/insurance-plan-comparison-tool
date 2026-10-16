@@ -226,13 +226,15 @@ const accountFor = (plan: HealthPlan, planData: PlanData, userInputs: UserInputs
         taxSavings: enteredContribution * savingsRate,
       }),
       advice: spent => {
-        // Enough of your own money, with the employer's, to cover your share of care
-        const recommended = Math.min(room, Math.max(0, spent - employerContribution));
-        if (recommended <= enteredContribution) return undefined;
+        // Every dollar up to the limit saves taxes and is never lost, so anything under it helps
+        if (enteredContribution >= room) return undefined;
+        // At least enough of your own money, with the employer's, to cover your share of care
+        const coversCare = Math.min(room, Math.max(0, spent - employerContribution));
         return {
-          recommendedLow: recommended,
-          recommendedHigh: recommended,
-          extraSavings: (recommended - enteredContribution) * savingsRate,
+          recommendedLow: coversCare,
+          recommendedHigh: room,
+          extraSavings: Math.max(0, coversCare - enteredContribution) * savingsRate,
+          maxSavings: (room - enteredContribution) * savingsRate,
           avoidedLoss: 0,
           rollover: 0,
         };
@@ -264,6 +266,8 @@ const accountFor = (plan: HealthPlan, planData: PlanData, userInputs: UserInputs
         recommendedLow: low,
         recommendedHigh: high,
         extraSavings: Math.max(0, low - enteredContribution) * savingsRate,
+        // The rollover saves no taxes this year, so the top of the range saves no more
+        maxSavings: Math.max(0, low - enteredContribution) * savingsRate,
         avoidedLoss: Math.max(0, enteredContribution - high),
         rollover,
       };

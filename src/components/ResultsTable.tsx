@@ -96,17 +96,24 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     </table>
   );
 
+  /** What was entered for this plan's HSA or FSA */
+  const enteredFor = (result: PlanResult): number =>
+    result.contributionType === ContributionType.HSA
+      ? userInputs.hsaContribution
+      : userInputs.fsaContribution;
+
+  /** Whether to suggest a different HSA or FSA amount on this plan */
+  const hasContributionTip = (result: PlanResult): boolean => !!result.contributionAdvice;
+
   /** What to put in an HSA or FSA on this plan, when it differs from what was entered */
-  const ContributionCallout: React.FC<{ result: PlanResult }> = ({ result }) => {
-    const isHSA = result.contributionType === ContributionType.HSA;
-    const account = isHSA ? 'HSA' : 'FSA';
-    const entered = isHSA ? userInputs.hsaContribution : userInputs.fsaContribution;
-    const advice = result.contributionAdvice;
-    // An HSA past the legal limit is the only case without advice that still needs a note
-    const overLimit = isHSA && result.userContribution < entered;
-    if (!advice && !overLimit) {
+  const ContributionTip: React.FC<{ result: PlanResult }> = ({ result }) => {
+    if (!hasContributionTip(result)) {
       return null;
     }
+    const isHSA = result.contributionType === ContributionType.HSA;
+    const account = isHSA ? 'HSA' : 'FSA';
+    const entered = enteredFor(result);
+    const advice = result.contributionAdvice;
 
     const range =
       advice &&
@@ -114,44 +121,102 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
         ? formatCurrency(advice.recommendedLow)
         : `${formatCurrency(advice.recommendedLow)}–${formatCurrency(advice.recommendedHigh)}`);
 
-    return (
-      <Alert variant="info" className="small mb-0">
-        {advice && advice.avoidedLoss > 0 && (
-          <>
-            <p className="fw-bold mb-1">
-              💡 Contribute {range} to your FSA, not {formatCurrency(entered)}.
-            </p>
-            <p className="mb-1">
-              That covers your expected {formatCurrency(advice.recommendedLow)} in care plus{' '}
-              {formatCurrency(advice.recommendedHigh - advice.recommendedLow)} that rolls over.
-              Anything more is lost at year end. This estimate assumes{' '}
-              {formatCurrency(result.userContribution)}.
-            </p>
-            <p className="text-muted mb-0">
-              (Only the {formatCurrency(advice.recommendedLow)} you spend counts as tax savings. The
-              rollover's tax break just moves from next year to this one.)
-            </p>
-          </>
-        )}
-        {advice && advice.extraSavings > 0 && (
-          <>
-            <p className="fw-bold mb-1">
-              💡 Contribute {range} to your {account} to save {formatCurrency(advice.extraSavings)}{' '}
-              more in taxes.
-            </p>
-            <p className="mb-0">
-              You'll pay that for care anyway, so you might as well do it tax-free.
-              {isHSA && " Unlike an FSA, it's yours to keep forever."}
-            </p>
-          </>
-        )}
-        {overLimit && (
-          <p className="mb-0">
-            💡 This estimate assumes {formatCurrency(result.userContribution)}, the most you can add
-            after your employer's {formatCurrency(result.employerContribution)}.
+    // What they chose, then the problem, then the fix
+    const youSaid =
+      entered > 0
+        ? `You said you'd contribute up to ${formatCurrency(entered)} to your ${account}. `
+        : `You said you wouldn't contribute to your ${account}. `;
+    const outOfPocket = formatCurrency(result.outOfPocketCosts);
+
+    if (!advice) {
+      return null;
+    }
+
+    if (advice.avoidedLoss > 0) {
+      const between =
+        advice.recommendedLow === advice.recommendedHigh
+          ? formatCurrency(advice.recommendedLow)
+          : `between ${formatCurrency(advice.recommendedLow)} and ${formatCurrency(advice.recommendedHigh)}`;
+      return (
+        <>
+          <p className="mb-2">
+            ⚠️ <strong>Your money's at risk.</strong>{' '}
+            {`${youSaid}But you'll only pay about ${outOfPocket} out of pocket for care on this plan. `}
+            {`Up to ${formatCurrency(advice.rollover)} can be rolled over to next year if you stay employed here, but `}
+            <strong>{formatCurrency(advice.avoidedLoss)}</strong>
+            {
+              ' of your money would be forfeited at the end of the year (or end of your employment).'
+            }
           </p>
-        )}
-      </Alert>
+          <p className="mb-2">
+            {`You should probably only contribute ${between} to your FSA. We've used ${formatCurrency(result.userContribution)} in this plan estimate and only counted tax savings for what you estimated you'd spend in medical care this year.`}
+          </p>
+        </>
+      );
+    }
+
+    // Income tax plus Social Security and Medicare, as a share of each dollar earned
+    const ratePercent =
+      userInputs.taxRate +
+      planData.payroll_tax_rates.social_security +
+      planData.payroll_tax_rates.medicare;
+    const keepForever =
+      'And remember: unlike the FSA, your entire HSA is yours to keep forever-- even if you change jobs.';
+    const maxOut = (
+      <>
+        max out your {formatCurrency(advice.recommendedHigh)} HSA contribution and save{' '}
+        <strong>{formatCurrency(advice.maxSavings)}</strong> in taxes this year. That's some serious
+        dough!
+      </>
+    );
+
+    // The problem, then the fix, then (for an HSA) why it's safe to put in more
+    let problem: string;
+    let fix: React.ReactNode;
+    if (advice.extraSavings > 0) {
+      // Care paid out of your own already-taxed pay, past what the account (and employer) covers
+      const gap = advice.recommendedLow - entered;
+      const earn = formatCurrency(gap / (1 - ratePercent / 100));
+      const fromYou =
+        isHSA && result.employerContribution > 0
+          ? `Your employer's ${formatCurrency(result.employerContribution)} covers part of it. The other ${formatCurrency(gap)} comes from you, and at your tax rate, you'd have to earn about ${earn} to pay it.`
+          : entered > 0
+            ? `The ${formatCurrency(gap)} your ${account} doesn't cover comes from you, and at your tax rate, you'd have to earn about ${earn} to pay it.`
+            : `That comes from you, and at your tax rate, you'd have to earn about ${earn} to pay it.`;
+      problem = `But you also estimated that you'll pay about ${outOfPocket} in out-of-pocket medical costs under this plan. ${fromYou}`;
+      fix = (
+        <>
+          So give yourself a break... a <em>tax</em> break. 😉{' '}
+          {isHSA ? (
+            <>
+              {`Contribute at least ${formatCurrency(advice.recommendedLow)} to your HSA this year to cover out-of-pocket medical expenses and save `}
+              <strong>{formatCurrency(advice.extraSavings)}</strong>
+              {" in taxes in the process-- it's "}
+              <em>free money!</em>
+              {' Or better yet, '}
+              {maxOut}
+            </>
+          ) : (
+            <>
+              {`Contribute ${range} to your FSA to save about `}
+              <strong>{formatCurrency(advice.extraSavings)}</strong>.
+            </>
+          )}
+        </>
+      );
+    } else {
+      problem = `That covers your expected care, but every dollar under the max is pay you're taxed on.`;
+      fix = <>So better yet, {maxOut}</>;
+    }
+    return (
+      <>
+        <p className="mb-2">
+          💡 <strong>You could save more.</strong> {youSaid}
+          {problem}
+        </p>
+        <p className="mb-2">{fix}</p>
+        {isHSA && <p className="mb-2">{keepForever}</p>}
+      </>
     );
   };
 
@@ -517,7 +582,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
             Worst case {netAmount(result.maxAnnualCost)}
           </Item>
           {bestCase < 0 && (
-            <Alert variant="success" className="small py-2 mb-4" style={{ marginTop: '-1rem' }}>
+            <Alert variant="info" className="small py-2 mb-0" style={{ marginTop: '-1rem' }}>
               <span className="fs-5 me-1">💰</span>
               <span>
                 <strong>That's not a typo!</strong> This plan can pay you more than it costs.{' '}
@@ -533,19 +598,25 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
               </span>
             </Alert>
           )}
-          <ContributionCallout result={result} />
-          {isHSA && (
-            <Alert variant="success" className="small mb-0">
-              <span className="me-1">📈</span>
-              <strong>Hidden superpower not shown here:</strong> your HSA can be invested like a
-              401(k) and grow for decades, then pay for medical care completely tax-free. Unspent
-              money is yours forever, even if you change jobs.{' '}
-              <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
-                Here's how it works
-              </a>
-            </Alert>
-          )}
         </Section>
+
+        {(isHSA || hasContributionTip(result)) && (
+          <Col xs={12} className="border-top pt-3">
+            <h6 className="text-uppercase small fw-bold mb-3 text-secondary">Tips for this plan</h6>
+            <ContributionTip result={result} />
+            {isHSA && (
+              <p className="mb-2">
+                <span className="me-1">📈</span>
+                <strong>The hidden superpower.</strong> This comparison tool only looks at a single
+                plan year, so it leaves out the biggest perk of the HSA: you can invest it like a
+                401(k) and let it grow for decades, then pay for medical care completely tax-free.{' '}
+                <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
+                  Here's how it works
+                </a>
+              </p>
+            )}
+          </Col>
+        )}
       </Row>
     );
   };

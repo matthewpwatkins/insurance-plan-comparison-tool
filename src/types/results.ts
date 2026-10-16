@@ -38,8 +38,9 @@ export interface OrganizedLedger {
 /** How much to put in an HSA or FSA on this plan, when it differs from what you entered */
 export interface ContributionAdvice {
   recommendedLow: number;
-  recommendedHigh: number; // Same as low for an HSA
-  extraSavings: number; // More tax savings from raising your contribution into the range
+  recommendedHigh: number; // The HSA limit for an HSA
+  extraSavings: number; // More tax savings from raising your contribution to cover expected care
+  maxSavings: number; // More tax savings from raising your contribution to the top of the range
   avoidedLoss: number; // FSA money you'd lose by putting in all you entered
   rollover: number; // Most unused FSA money that rolls into next year
 }

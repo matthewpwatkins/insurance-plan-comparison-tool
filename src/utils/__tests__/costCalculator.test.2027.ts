@@ -163,6 +163,7 @@ describe('2027 how much to put in an HSA or FSA', () => {
       recommendedLow: 300,
       recommendedHigh: 1000,
       extraSavings: 0,
+      maxSavings: 0,
       avoidedLoss: 1000,
       rollover: 700,
     });
@@ -186,8 +187,17 @@ describe('2027 how much to put in an HSA or FSA', () => {
     expect(hsa60.outOfPocketCosts).toBe(3000);
     expect(hsa60.contributionAdvice?.recommendedLow).toBe(2375);
     expect(hsa60.contributionAdvice?.extraSavings).toBeCloseTo(2375 * SAVINGS_RATE, 2);
+    // The single limit is $4,500, less the employer's $625
+    expect(hsa60.contributionAdvice?.recommendedHigh).toBe(3875);
+    expect(hsa60.contributionAdvice?.maxSavings).toBeCloseTo(3875 * SAVINGS_RATE, 2);
+  });
+
+  it('suggests the HSA max whenever the HSA entered is under it', () => {
+    const covered = byName(run({ hsaContribution: 3000 }, 3, 1000), 'DMBA HSA 60');
+    expect(covered.contributionAdvice?.extraSavings).toBe(0);
+    expect(covered.contributionAdvice?.maxSavings).toBeCloseTo(875 * SAVINGS_RATE, 2);
     expect(
-      byName(run({ hsaContribution: 3000 }, 3, 1000), 'DMBA HSA 60').contributionAdvice
+      byName(run({ hsaContribution: 3875 }, 3, 1000), 'DMBA HSA 60').contributionAdvice
     ).toBeUndefined();
   });
 });
