@@ -50,7 +50,7 @@ export const calculatePlanCost = (
   const account = accountFor(plan, planData, userInputs);
   const { employerContribution, enteredContribution } = account;
 
-  // Calculate premium discount (if premiums are pre-tax through Section 125)
+  // Taxes skipped on premiums, which come out of pay before taxes (Section 125)
   const premiumsArePreTax = plan.premiums_are_pre_tax ?? true; // Default to true
   const payrollTaxRate =
     (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
@@ -62,7 +62,7 @@ export const calculatePlanCost = (
   // Create plan execution to track expenses
   const execution = new PlanExecution(plan, coverage, planData.categories);
 
-  // Add monthly premiums to ledger (with pre-tax discount)
+  // Add monthly premiums to ledger, and the taxes skipped on them
   execution.addMonthlyPremiums(plan.monthly_premiums[coverage], premiumDiscount / 12);
 
   // Add employer contribution to ledger
@@ -95,7 +95,7 @@ export const calculatePlanCost = (
   execution.addContributionTaxSavings(taxSavings, account.type);
   const ledger = execution.getLedger();
 
-  // Calculate total cost (using net premiums after pre-tax discount)
+  // Calculate total cost (premiums less the taxes skipped on them)
   const totalCost = netAnnualPremiums + outOfPocketCosts - taxSavings - employerContribution;
 
   // Calculate maximum annual cost (worst-case scenario at OOP max)
@@ -125,7 +125,7 @@ export const calculatePlanCost = (
     outOfPocketMax: oopMaxValue,
     maxAnnualCost,
     breakdown: {
-      premiums: netAnnualPremiums, // Net premiums after pre-tax discount
+      premiums: netAnnualPremiums, // Premiums less the taxes skipped on them
       premiumDiscount: -premiumDiscount, // Negative because it reduces premiums
       contributionTaxSavings: -taxSavings, // Negative because it reduces total cost
       employerContribution: -employerContribution, // Negative because it reduces total cost
@@ -345,7 +345,7 @@ class PlanExecution {
   }
 
   /**
-   * Add monthly premium entries to the ledger with pre-tax discount
+   * Add monthly premium entries to the ledger, and the taxes skipped on them as a benefit
    */
   addMonthlyPremiums(monthlyGrossPremium: number, monthlyDiscount: number): void {
     // Add all 12 months of gross premiums
@@ -357,12 +357,12 @@ class PlanExecution {
       });
     }
 
-    // Add total pre-tax benefit as a single line item at the end
+    // Taking premiums out of pay before taxes is a benefit, listed with the others
     if (monthlyDiscount > 0) {
-      this.premiums.push({
-        type: 'premium',
-        description: 'Premium Net Discount',
-        amount: -(monthlyDiscount * 12),
+      this.contributionsAndSavings.push({
+        type: 'savings',
+        description: 'Tax savings on premiums',
+        amount: monthlyDiscount * 12,
       });
     }
   }
@@ -387,7 +387,7 @@ class PlanExecution {
     if (amount > 0) {
       this.contributionsAndSavings.push({
         type: 'savings',
-        description: `Tax savings from ${contributionType} contributions`,
+        description: `Tax savings on your ${contributionType} contributions`,
         amount: amount,
       });
     }
@@ -619,7 +619,7 @@ class PlanExecution {
       type: 'expense',
       network: 'in_network',
       category: 'initial_state',
-      categoryDisplayName: 'Initial state',
+      categoryDisplayName: 'Start of year',
       isPreventive: false,
       isFree: false,
       billedAmount: 0,

@@ -484,13 +484,13 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       const firstEntry = result.ledger.inNetworkExpenses[0];
-      expect(firstEntry.categoryDisplayName).toBe('Initial state');
+      expect(firstEntry.categoryDisplayName).toBe('Start of year');
       expect(firstEntry.employeeResponsibility).toBe(0);
       expect(firstEntry.deductibleRemaining).toBe(500); // Single deductible
       expect(firstEntry.outOfPocketRemaining).toBe(5000); // Single OOP
     });
 
-    it('should track monthly premiums then the pre-tax discount', () => {
+    it('should track monthly premiums, with the taxes skipped on them as a benefit', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       const months = result.ledger.premiums.slice(0, 12);
@@ -500,10 +500,11 @@ describe('costCalculator', () => {
       });
 
       // 2400 * (22% income + 7.65% payroll)
-      const discount = result.ledger.premiums[12];
-      expect(discount.description).toBe('Premium Net Discount');
-      expect(discount.amount).toBeCloseTo(-711.6, 2);
-      expect(result.ledger.premiums).toHaveLength(13);
+      expect(result.ledger.premiums).toHaveLength(12);
+      const premiumSavings = result.ledger.contributionsAndSavings.find(
+        entry => entry.description === 'Tax savings on premiums'
+      );
+      expect(premiumSavings?.amount).toBeCloseTo(711.6, 2);
       expect(result.netAnnualPremiums).toBeCloseTo(2400 - 711.6, 2);
     });
 
@@ -529,7 +530,7 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       const taxSavingsEntry = result.ledger.contributionsAndSavings.find(
-        entry => entry.description === 'Tax savings from FSA contributions'
+        entry => entry.description === 'Tax savings on your FSA contributions'
       );
       expect(taxSavingsEntry?.amount).toBeCloseTo(163.075, 2); // $550 spent on care
     });
@@ -538,7 +539,7 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockHSAPlan, mockPlanData, mockUserInputs);
 
       const taxSavingsEntry = result.ledger.contributionsAndSavings.find(
-        entry => entry.description === 'Tax savings from HSA contributions'
+        entry => entry.description === 'Tax savings on your HSA contributions'
       );
       expect(taxSavingsEntry?.amount).toBeCloseTo(593, 2);
     });
@@ -880,10 +881,13 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, zeroCostInputs);
 
-      expect(result.ledger.premiums).toHaveLength(13); // 12 months + pre-tax discount
+      expect(result.ledger.premiums).toHaveLength(12);
       expect(result.ledger.inNetworkExpenses).toEqual([]);
       expect(result.ledger.outOfNetworkExpenses).toEqual([]);
-      expect(result.ledger.contributionsAndSavings).toEqual([]);
+      // Only the taxes skipped on premiums
+      expect(result.ledger.contributionsAndSavings.map(entry => entry.description)).toEqual([
+        'Tax savings on premiums',
+      ]);
     });
   });
 });

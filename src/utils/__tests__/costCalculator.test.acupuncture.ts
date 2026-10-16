@@ -58,7 +58,7 @@ describe('costCalculator - Acupuncture Test', () => {
     console.log(`Out of Pocket Costs: $${hsa60!.outOfPocketCosts.toFixed(2)}`);
     console.log(`Total Cost: $${hsa60!.totalCost.toFixed(2)}`);
     console.log(`Annual Premiums: $${hsa60!.annualPremiums.toFixed(2)}`);
-    console.log(`Net Annual Premiums: $${hsa60!.netAnnualPremiums.toFixed(2)}`);
+    console.log(`Premiums less tax savings: $${hsa60!.netAnnualPremiums.toFixed(2)}`);
     console.log(`Tax Savings: $${hsa60!.taxSavings.toFixed(2)}`);
     console.log(`Employer Contribution: $${hsa60!.employerContribution.toFixed(2)}`);
 

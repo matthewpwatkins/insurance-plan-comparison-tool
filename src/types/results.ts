@@ -48,9 +48,9 @@ export interface ContributionAdvice {
 export interface PlanResult {
   planName: string;
   contributionType: ContributionType;
-  annualPremiums: number; // Gross premiums before pre-tax benefit
-  netAnnualPremiums: number; // Net premiums after pre-tax benefit
-  premiumDiscount: number; // Pre-tax benefit discount amount
+  annualPremiums: number; // Premiums for the year
+  netAnnualPremiums: number; // Premiums less the taxes skipped on them
+  premiumDiscount: number; // Tax savings on premiums
   userContribution: number; // What the estimate assumes you put in
   enteredContribution: number; // What you said you'd put in at most, within the legal limit
   employerContribution: number;

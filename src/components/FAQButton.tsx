@@ -176,7 +176,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
             <Modal.Title>
               {modalMode === 'faq'
                 ? 'Frequently Asked Questions'
-                : `Cost Calculation Details - ${ledgerData?.planName}`}
+                : `How we got the total for ${ledgerData?.planName}`}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -195,50 +195,9 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
             ) : (
               <div>
                 <p className="mb-4">
-                  This breakdown shows all the components that contribute to your total annual cost
-                  for <strong>{ledgerData?.planName}</strong>.
+                  Every cost and benefit that adds up to your total healthcare cost for{' '}
+                  <strong>{ledgerData?.planName}</strong>.
                 </p>
-
-                {/* Contributions and Savings Table */}
-                {ledgerData?.ledger.contributionsAndSavings &&
-                  ledgerData.ledger.contributionsAndSavings.length > 0 && (
-                    <>
-                      <h5 className="mb-3">Contributions and Savings</h5>
-                      <Table striped bordered hover responsive className="mb-4">
-                        <thead>
-                          <tr>
-                            <th>Description</th>
-                            <th style={{ width: '120px' }}>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {ledgerData.ledger.contributionsAndSavings.map((entry, index) => (
-                            <tr key={index}>
-                              <td>{entry.description}</td>
-                              <td className="text-success">{formatCurrency(entry.amount, true)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="table-active">
-                            <td>
-                              <strong>Total Contributions and Savings</strong>
-                            </td>
-                            <td className="text-success">
-                              <strong>
-                                {formatCurrency(
-                                  ledgerData.ledger.contributionsAndSavings.reduce(
-                                    (sum, entry) => sum + entry.amount,
-                                    0
-                                  )
-                                )}
-                              </strong>
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </Table>
-                    </>
-                  )}
 
                 {/* Premiums Table */}
                 <h5 className="mb-3">Premiums</h5>
@@ -250,68 +209,17 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                     </tr>
                   </thead>
                   <tbody>
-                    {ledgerData?.ledger.premiums.map((entry, index) => {
-                      const isDiscount = entry.amount < 0;
-                      const isPremiumNetDiscount = entry.description === 'Premium Net Discount';
-                      return (
-                        <tr key={index}>
-                          <td>
-                            {entry.description}
-                            {isPremiumNetDiscount && (
-                              <>
-                                {' '}
-                                <HelpIcon
-                                  title="The Premium Net Discount"
-                                  content={
-                                    <div>
-                                      <p>
-                                        <strong>You're going to pay this amount either way.</strong>
-                                      </p>
-                                      <p>
-                                        When your employer takes premium payments out of your
-                                        paycheck, they do it{' '}
-                                        <strong>before calculating taxes</strong>. This means the
-                                        price of the premiums never gets taxed.
-                                      </p>
-                                      <p>
-                                        If you didn't pay for health insurance through your
-                                        employer, you'd receive this money in your paycheck
-                                        instead—and you'd pay taxes on it. Either way, this amount
-                                        is leaving your pocket:
-                                      </p>
-                                      <ul>
-                                        <li>
-                                          <strong>Pay it as premiums:</strong> Goes to your health
-                                          insurance
-                                        </li>
-                                        <li>
-                                          <strong>Pay it as taxes:</strong> Goes to the government
-                                        </li>
-                                      </ul>
-                                      <p>
-                                        The <strong>Premium Net Discount</strong> is the tax you
-                                        would have paid on this income. Since you're using it for
-                                        insurance premiums instead, it effectively reduces your net
-                                        premium cost for purposes of comparing different health
-                                        plans.
-                                      </p>
-                                    </div>
-                                  }
-                                />
-                              </>
-                            )}
-                          </td>
-                          <td className={isDiscount ? 'text-success' : 'text-danger'}>
-                            {formatCurrency(entry.amount, true)}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {ledgerData?.ledger.premiums.map((entry, index) => (
+                      <tr key={index}>
+                        <td>{entry.description}</td>
+                        <td className="text-danger">{formatCurrency(entry.amount, true)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr className="table-active">
                       <td>
-                        <strong>Net Premiums</strong>
+                        <strong>Premiums for the year</strong>
                       </td>
                       <td>
                         <strong>
@@ -344,9 +252,9 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                                 <th style={{ width: '90px' }}>Cost</th>
                                 {showCopayColumn && <th style={{ width: '80px' }}>Copay</th>}
                                 <th style={{ width: '90px' }}>Your cost</th>
-                                <th style={{ width: '90px' }}>Ins. cost</th>
-                                <th style={{ width: '90px' }}>Deductible</th>
-                                <th style={{ width: '80px' }}>OOP</th>
+                                <th style={{ width: '90px' }}>Plan pays</th>
+                                <th style={{ width: '90px' }}>Deductible left</th>
+                                <th style={{ width: '90px' }}>Left until out-of-pocket max</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -453,9 +361,9 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                                 <th style={{ width: '90px' }}>Cost</th>
                                 {showCopayColumn && <th style={{ width: '80px' }}>Copay</th>}
                                 <th style={{ width: '90px' }}>Your cost</th>
-                                <th style={{ width: '90px' }}>Ins. cost</th>
-                                <th style={{ width: '90px' }}>Deductible</th>
-                                <th style={{ width: '80px' }}>OOP</th>
+                                <th style={{ width: '90px' }}>Plan pays</th>
+                                <th style={{ width: '90px' }}>Deductible left</th>
+                                <th style={{ width: '90px' }}>Left until out-of-pocket max</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -545,6 +453,66 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                     </>
                   )}
 
+                {/* Benefits Table */}
+                {ledgerData?.ledger.contributionsAndSavings &&
+                  ledgerData.ledger.contributionsAndSavings.length > 0 && (
+                    <>
+                      <h5 className="mb-3">Your benefits</h5>
+                      <Table striped bordered hover responsive className="mb-4">
+                        <thead>
+                          <tr>
+                            <th>Description</th>
+                            <th style={{ width: '120px' }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ledgerData.ledger.contributionsAndSavings.map((entry, index) => (
+                            <tr key={index}>
+                              <td>
+                                {entry.description}
+                                {entry.description === 'Tax savings on premiums' && (
+                                  <>
+                                    {' '}
+                                    <HelpIcon
+                                      title="Tax savings on premiums"
+                                      content={
+                                        <p className="mb-0">
+                                          This isn't a refund or a check. Your employer takes
+                                          premiums out of your pay <em>before</em> figuring your
+                                          taxes, so you're taxed on less money and your take-home
+                                          pay is higher than if you paid the same premiums after
+                                          taxes.
+                                        </p>
+                                      }
+                                    />
+                                  </>
+                                )}
+                              </td>
+                              <td className="text-success">{formatCurrency(entry.amount, true)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="table-active">
+                            <td>
+                              <strong>Total benefits</strong>
+                            </td>
+                            <td className="text-success">
+                              <strong>
+                                {formatCurrency(
+                                  ledgerData.ledger.contributionsAndSavings.reduce(
+                                    (sum, entry) => sum + entry.amount,
+                                    0
+                                  )
+                                )}
+                              </strong>
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </Table>
+                    </>
+                  )}
+
                 {/* Final Summary Table */}
                 <h5 className="mb-3">Summary</h5>
                 <Table striped bordered hover responsive>
@@ -556,7 +524,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                   </thead>
                   <tbody>
                     <tr>
-                      <td>Net Annual Premiums</td>
+                      <td>Premiums</td>
                       <td className="text-danger">
                         {formatCurrency(
                           ledgerData?.ledger.premiums.reduce(
@@ -569,7 +537,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                     {ledgerData?.ledger.inNetworkExpenses &&
                       ledgerData.ledger.inNetworkExpenses.length > 0 && (
                         <tr>
-                          <td>In-Network Out-of-Pocket Costs</td>
+                          <td>Your share of in-network medical costs</td>
                           <td className="text-danger">
                             {formatCurrency(
                               ledgerData.ledger.inNetworkExpenses.reduce(
@@ -583,7 +551,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                     {ledgerData?.ledger.outOfNetworkExpenses &&
                       ledgerData.ledger.outOfNetworkExpenses.length > 0 && (
                         <tr>
-                          <td>Out-of-Network Out-of-Pocket Costs</td>
+                          <td>Your share of out-of-network medical costs</td>
                           <td className="text-danger">
                             {formatCurrency(
                               ledgerData.ledger.outOfNetworkExpenses.reduce(
@@ -597,7 +565,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                     {ledgerData?.ledger.contributionsAndSavings &&
                       ledgerData.ledger.contributionsAndSavings.length > 0 && (
                         <tr>
-                          <td>Total Contributions and Savings</td>
+                          <td>Your benefits</td>
                           <td className="text-success">
                             -
                             {formatCurrency(
@@ -613,7 +581,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                   <tfoot>
                     <tr className="table-active">
                       <td>
-                        <strong>Your Total Annual Cost</strong>
+                        <strong>Your total healthcare cost</strong>
                       </td>
                       <td>
                         <strong className="fs-4 fw-bold text-primary">
