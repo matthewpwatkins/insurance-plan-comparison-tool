@@ -26,6 +26,10 @@ hsa_qualification_limits:
 # Replace with the figure from the IRS's fall 2026 inflation-adjustment revenue procedure.
 fsa_contribution_limits:
   healthcare_fsa: 3_500
+  # Most unused money that rolls into the next plan year. PROVISIONAL like the limit above:
+  # the projected 2027 figure, https://mycafehealth.com/post/fsa-contribution-limit-2027
+  # Employers may allow less; DMBA has allowed the full amount.
+  carryover: 700
 
 # Payroll Tax Rates (set by IRS/SSA annually)
 # Employee rates are set by statute: https://www.irs.gov/taxtopics/tc751

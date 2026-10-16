@@ -8,6 +8,8 @@ export interface HSAContributionLimits {
 
 export interface FSAContributionLimits {
   healthcare_fsa: number;
+  /** Most unused money that rolls into the next plan year */
+  carryover: number;
 }
 
 export interface HSAQualificationLimits {

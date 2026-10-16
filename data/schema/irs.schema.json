@@ -32,9 +32,12 @@
     },
     "fsa_contribution_limits": {
       "type": "object",
-      "required": ["healthcare_fsa"],
+      "required": ["healthcare_fsa", "carryover"],
       "additionalProperties": false,
-      "properties": { "healthcare_fsa": { "type": "number" } }
+      "properties": {
+        "healthcare_fsa": { "type": "number" },
+        "carryover": { "type": "number" }
+      }
     },
     "payroll_tax_rates": {
       "type": "object",

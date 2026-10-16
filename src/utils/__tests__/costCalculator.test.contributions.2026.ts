@@ -77,10 +77,12 @@ describe('HSA and FSA contributions with 2026 DMBA data', () => {
       inputs({ hsaContribution: 5000, fsaContribution: 10000 })
     );
 
+    // With no care, you'd put in only the $680 that rolls over, which saves nothing this year
     const ppo = byName(results, 'DMBA PPO 70');
-    expect(ppo.userContribution).toBe(3400);
+    expect(ppo.enteredContribution).toBe(3400);
+    expect(ppo.userContribution).toBe(680);
     expect(ppo.employerContribution).toBe(0);
-    expect(ppo.taxSavings).toBeCloseTo(3400 * SAVINGS_RATE, 2);
+    expect(ppo.taxSavings).toBe(0);
   });
 
   it('adds every part into the total and sorts cheapest first', () => {
@@ -103,11 +105,7 @@ describe('HSA and FSA contributions with 2026 DMBA data', () => {
     for (const r of results) {
       expect(r.netAnnualPremiums).toBeCloseTo(r.annualPremiums * (1 - SAVINGS_RATE), 2);
       expect(r.totalCost).toBeCloseTo(
-        r.netAnnualPremiums +
-          r.outOfPocketCosts +
-          r.fsaForfeited -
-          r.taxSavings -
-          r.employerContribution,
+        r.netAnnualPremiums + r.outOfPocketCosts - r.taxSavings - r.employerContribution,
         2
       );
     }

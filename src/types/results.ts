@@ -1,7 +1,7 @@
 import { ContributionType } from './plan';
 
 export interface ContributionEntry {
-  type: 'contribution' | 'savings' | 'forfeit';
+  type: 'contribution' | 'savings';
   description: string;
   amount: number;
 }
@@ -35,18 +35,31 @@ export interface OrganizedLedger {
   outOfNetworkExpenses: ExpenseEntry[];
 }
 
+/** How much to put in an HSA or FSA on this plan, when it differs from what you entered */
+export interface ContributionAdvice {
+  recommendedLow: number;
+  recommendedHigh: number; // Same as low for an HSA
+  extraSavings: number; // More tax savings from raising your contribution into the range
+  avoidedLoss: number; // FSA money you'd lose by putting in all you entered
+  rollover: number; // Most unused FSA money that rolls into next year
+}
+
 export interface PlanResult {
   planName: string;
   contributionType: ContributionType;
   annualPremiums: number; // Gross premiums before pre-tax benefit
   netAnnualPremiums: number; // Net premiums after pre-tax benefit
   premiumDiscount: number; // Pre-tax benefit discount amount
-  userContribution: number;
+  userContribution: number; // What the estimate assumes you put in
+  enteredContribution: number; // What you said you'd put in at most, within the legal limit
   employerContribution: number;
   totalContributions: number;
   taxSavings: number; // HSA/FSA contribution tax savings only
+  taxSavedOn: number; // The part of your contribution that earns this year's tax savings
+  bestCaseTaxSavings: number; // Tax savings with no care beyond free care
+  worstCaseTaxSavings: number; // Tax savings at the out-of-pocket max
+  contributionAdvice?: ContributionAdvice;
   outOfPocketCosts: number;
-  fsaForfeited: number; // FSA money not spent on care by year end, which is lost
   totalCost: number;
   outOfPocketMax: number; // Plan's in-network out-of-pocket max for this coverage
   maxAnnualCost: number; // Maximum possible cost in worst-case scenario (at OOP max)
@@ -56,7 +69,6 @@ export interface PlanResult {
     contributionTaxSavings: number; // HSA/FSA contribution tax savings
     employerContribution: number;
     outOfPocket: number;
-    fsaForfeited: number;
     net: number;
   };
   ledger: OrganizedLedger;

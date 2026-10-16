@@ -19,6 +19,7 @@ import {
   CategoriesData,
   CostStructure,
   CategoryEstimate,
+  ContributionAdvice,
 } from '../types';
 
 /**
@@ -45,9 +46,9 @@ export const calculatePlanCost = (
   // Calculate annual premiums
   const annualPremiums = plan.monthly_premiums[coverage] * 12;
 
-  // Calculate user's HSA/FSA contributions and tax savings
-  const { userContribution, employerContribution, taxSavings } =
-    calculateContributionsAndTaxSavings(plan, planData, userInputs, taxRateDecimal);
+  // The HSA or FSA, and how much of the entered contribution fits within the legal limit
+  const account = accountFor(plan, planData, userInputs);
+  const { employerContribution, enteredContribution } = account;
 
   // Calculate premium discount (if premiums are pre-tax through Section 125)
   const premiumsArePreTax = plan.premiums_are_pre_tax ?? true; // Default to true
@@ -66,11 +67,6 @@ export const calculatePlanCost = (
 
   // Add employer contribution to ledger
   execution.addEmployerContribution(employerContribution);
-
-  // Add HSA/FSA contribution tax savings to ledger
-  const isHSA = isHSAQualified(plan, planData, coverage);
-  const contributionType = isHSA ? ContributionType.HSA : ContributionType.FSA;
-  execution.addContributionTaxSavings(taxSavings, contributionType);
 
   // Process every visit in the order it would happen. A category can span several rows (one per
   // person or provider), so a visit limit counts visits across all of them, and the year's last
@@ -94,34 +90,37 @@ export const calculatePlanCost = (
 
   const outOfPocketCosts = execution.getTotalOutOfPocket();
 
-  // FSA money not spent on care by year end is lost; HSA money rolls over
-  const fsaUnspent = (spent: number) => (isHSA ? 0 : Math.max(0, userContribution - spent));
-  const fsaForfeited = fsaUnspent(outOfPocketCosts);
-  execution.addFSAForfeit(fsaForfeited);
+  // Add HSA/FSA contribution tax savings to ledger
+  const { userContribution, taxSavedOn, taxSavings } = account.contributing(outOfPocketCosts);
+  execution.addContributionTaxSavings(taxSavings, account.type);
   const ledger = execution.getLedger();
 
   // Calculate total cost (using net premiums after pre-tax discount)
-  const totalCost =
-    netAnnualPremiums + outOfPocketCosts + fsaForfeited - taxSavings - employerContribution;
+  const totalCost = netAnnualPremiums + outOfPocketCosts - taxSavings - employerContribution;
 
   // Calculate maximum annual cost (worst-case scenario at OOP max)
   const oopMax = plan.out_of_pocket_maximum.in_network;
   const oopMaxValue = coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
+  const worstCaseTaxSavings = account.contributing(oopMaxValue).taxSavings;
   const maxAnnualCost =
-    netAnnualPremiums + oopMaxValue + fsaUnspent(oopMaxValue) - taxSavings - employerContribution;
+    netAnnualPremiums + oopMaxValue - worstCaseTaxSavings - employerContribution;
 
   return {
     planName: plan.name,
-    contributionType: contributionType,
+    contributionType: account.type,
     annualPremiums,
     netAnnualPremiums,
     premiumDiscount,
     userContribution,
+    enteredContribution,
     employerContribution,
     totalContributions: userContribution + employerContribution,
     taxSavings, // HSA/FSA contribution tax savings only
+    taxSavedOn,
+    bestCaseTaxSavings: account.contributing(0).taxSavings,
+    worstCaseTaxSavings,
+    contributionAdvice: account.advice(outOfPocketCosts),
     outOfPocketCosts,
-    fsaForfeited,
     totalCost: totalCost, // Can be negative if tax savings exceed costs
     outOfPocketMax: oopMaxValue,
     maxAnnualCost,
@@ -131,7 +130,6 @@ export const calculatePlanCost = (
       contributionTaxSavings: -taxSavings, // Negative because it reduces total cost
       employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
-      fsaForfeited,
       net: totalCost,
     },
     ledger,
@@ -172,54 +170,105 @@ const scatter = (text: string): number => {
   return (hash >>> 0) / 2 ** 32;
 };
 
-interface ContributionResult {
-  userContribution: number;
-  employerContribution: number;
+interface Contributing {
+  userContribution: number; // What you'd put in
+  taxSavedOn: number; // The part spent on this year's care, which earns this year's tax savings
   taxSavings: number;
 }
 
-/**
- * Calculate user and employer contributions and resulting tax savings
- */
-const calculateContributionsAndTaxSavings = (
-  plan: HealthPlan,
-  planData: PlanData,
-  userInputs: UserInputs,
-  taxRateDecimal: number
-): ContributionResult => {
-  const { coverage, ageGroup } = userInputs;
+interface Account {
+  type: ContributionType;
+  employerContribution: number;
+  /** What you said you'd put in at most, within the legal limit */
+  enteredContribution: number;
+  /** Income tax plus Social Security and Medicare, skipped on every dollar put in */
+  savingsRate: number;
+  /** Your contribution and its tax savings when your share of care costs is `spent` */
+  contributing: (spent: number) => Contributing;
+  /** How much to put in instead, if that would help */
+  advice: (spent: number) => ContributionAdvice | undefined;
+}
 
-  let userContribution = 0;
-  let employerContribution = 0;
-  let taxSavings = 0;
+/**
+ * The plan's HSA or FSA.
+ *
+ * An HSA is yours forever, so you put in all you entered and every dollar saves taxes.
+ *
+ * An FSA you lose at year end, past what rolls into next year, so the entered amount is the most
+ * you're willing to put in: you'd put in only enough for this year's care plus what rolls over.
+ * Only the part spent on this year's care counts as savings. The rollover saves taxes now but
+ * means putting that much less in next year, so it moves a tax break rather than adding one.
+ */
+const accountFor = (plan: HealthPlan, planData: PlanData, userInputs: UserInputs): Account => {
+  const { coverage, ageGroup } = userInputs;
+  const savingsRate =
+    (userInputs.taxRate +
+      planData.payroll_tax_rates.social_security +
+      planData.payroll_tax_rates.medicare) /
+    100;
 
   if (isHSAQualified(plan, planData, coverage)) {
-    // HSA-qualified plans
-    employerContribution = getEmployerHSAContribution(plan, coverage);
-    const maxHSAContribution = getMaxHSAContribution(planData, coverage, ageGroup);
-
-    // userInputs.hsaContribution now represents employee contribution only
-    userContribution = Math.min(
-      userInputs.hsaContribution,
-      maxHSAContribution - employerContribution
+    const employerContribution = getEmployerHSAContribution(plan, coverage);
+    // The IRS limit includes the employer's contribution
+    const room = Math.max(
+      0,
+      getMaxHSAContribution(planData, coverage, ageGroup) - employerContribution
     );
-
-    // Tax savings on employee HSA contributions include income tax + payroll taxes
-    const payrollTaxRate =
-      (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
-    taxSavings = userContribution * (taxRateDecimal + payrollTaxRate);
-  } else {
-    // PPO plans with FSA
-    const maxFSAContribution = getMaxFSAContribution(planData);
-    userContribution = Math.min(userInputs.fsaContribution, maxFSAContribution);
-
-    // Tax savings on user FSA contributions include income tax + payroll taxes
-    const payrollTaxRate =
-      (planData.payroll_tax_rates.social_security + planData.payroll_tax_rates.medicare) / 100;
-    taxSavings = userContribution * (taxRateDecimal + payrollTaxRate);
+    const enteredContribution = Math.min(userInputs.hsaContribution, room);
+    return {
+      type: ContributionType.HSA,
+      employerContribution,
+      enteredContribution,
+      savingsRate,
+      contributing: () => ({
+        userContribution: enteredContribution,
+        taxSavedOn: enteredContribution,
+        taxSavings: enteredContribution * savingsRate,
+      }),
+      advice: spent => {
+        // Enough of your own money, with the employer's, to cover your share of care
+        const recommended = Math.min(room, Math.max(0, spent - employerContribution));
+        if (recommended <= enteredContribution) return undefined;
+        return {
+          recommendedLow: recommended,
+          recommendedHigh: recommended,
+          extraSavings: (recommended - enteredContribution) * savingsRate,
+          avoidedLoss: 0,
+          rollover: 0,
+        };
+      },
+    };
   }
 
-  return { userContribution, employerContribution, taxSavings };
+  const limit = getMaxFSAContribution(planData);
+  const rollover = planData.fsa_contribution_limits?.carryover ?? 0;
+  const enteredContribution = Math.min(userInputs.fsaContribution, limit);
+  const range = (spent: number) => ({
+    low: Math.min(limit, spent),
+    high: Math.min(limit, spent + rollover),
+  });
+  return {
+    type: ContributionType.FSA,
+    employerContribution: 0,
+    enteredContribution,
+    savingsRate,
+    contributing: spent => {
+      const userContribution = Math.min(enteredContribution, range(spent).high);
+      const taxSavedOn = Math.min(userContribution, spent);
+      return { userContribution, taxSavedOn, taxSavings: taxSavedOn * savingsRate };
+    },
+    advice: spent => {
+      const { low, high } = range(spent);
+      if (enteredContribution >= low && enteredContribution <= high) return undefined;
+      return {
+        recommendedLow: low,
+        recommendedHigh: high,
+        extraSavings: Math.max(0, low - enteredContribution) * savingsRate,
+        avoidedLoss: Math.max(0, enteredContribution - high),
+        rollover,
+      };
+    },
+  };
 };
 
 /**
@@ -336,19 +385,6 @@ class PlanExecution {
         type: 'savings',
         description: `Tax savings from ${contributionType} contributions`,
         amount: amount,
-      });
-    }
-  }
-
-  /**
-   * Add FSA money left unspent at year end, which is lost, to the ledger
-   */
-  addFSAForfeit(amount: number): void {
-    if (amount > 0) {
-      this.contributionsAndSavings.push({
-        type: 'forfeit',
-        description: 'Unspent FSA money lost at year end',
-        amount: -amount,
       });
     }
   }

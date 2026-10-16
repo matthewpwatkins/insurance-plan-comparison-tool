@@ -98,10 +98,11 @@ describe('2027 DMBA data', () => {
 
     const ppo80 = byName(results, 'DMBA PPO 80');
     expect(ppo80.contributionType).toBe(ContributionType.FSA);
-    expect(ppo80.userContribution).toBe(3500);
-    // With no care, the whole FSA is unspent and lost
-    expect(ppo80.fsaForfeited).toBe(3500);
-    expect(ppo80.totalCost).toBeCloseTo(ppo80.netAnnualPremiums - ppo80.taxSavings + 3500, 2);
+    // With no care, you'd put in only the $700 that rolls over, which saves nothing this year
+    expect(ppo80.enteredContribution).toBe(3500);
+    expect(ppo80.userContribution).toBe(700);
+    expect(ppo80.taxSavings).toBe(0);
+    expect(ppo80.totalCost).toBeCloseTo(ppo80.netAnnualPremiums, 2);
   });
 });
 
@@ -134,47 +135,60 @@ describe('2027 timing of care through the year', () => {
   });
 });
 
-describe('2027 unspent FSA money', () => {
-  const ppo80 = (fsaContribution: number, pcpVisits: number) =>
-    byName(
-      calculateAllPlans(
-        planData,
-        inputs({
-          fsaContribution,
-          costs: {
-            categoryEstimates: [
-              {
-                categoryId: 'office_visit_pcp',
-                estimate: { quantity: pcpVisits, costPerVisit: 100, isInNetwork: true },
-              },
-            ],
-          },
-        })
-      ),
-      'DMBA PPO 80'
+describe('2027 how much to put in an HSA or FSA', () => {
+  // 3 x $100 PCP visits, all under the deductible, so $300 out of pocket on every plan
+  const run = (overrides: Partial<UserInputs>, visits = 3, costPerVisit = 100) =>
+    calculateAllPlans(
+      planData,
+      inputs({
+        ...overrides,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: visits, costPerVisit, isInNetwork: true },
+            },
+          ],
+        },
+      })
     );
 
-  it('loses FSA money not spent on care', () => {
-    // 3 x $100 visits, all under the deductible, leave $1,700 of $2,000 unspent
-    const result = ppo80(2000, 3);
-    expect(result.outOfPocketCosts).toBe(300);
-    expect(result.fsaForfeited).toBe(1700);
-    expect(result.totalCost).toBeCloseTo(
-      result.netAnnualPremiums + 300 + 1700 - 2000 * SAVINGS_RATE,
-      2
-    );
-    expect(result.ledger.contributionsAndSavings).toContainEqual(
-      expect.objectContaining({ type: 'forfeit', amount: -1700 })
-    );
+  it('puts in only expected FSA costs plus the rollover, and saves taxes only on the costs', () => {
+    const ppo80 = byName(run({ fsaContribution: 2000 }), 'DMBA PPO 80');
+    expect(ppo80.outOfPocketCosts).toBe(300);
+    expect(ppo80.userContribution).toBe(300 + 700);
+    expect(ppo80.taxSavedOn).toBe(300);
+    expect(ppo80.taxSavings).toBeCloseTo(300 * SAVINGS_RATE, 2);
+    expect(ppo80.contributionAdvice).toEqual({
+      recommendedLow: 300,
+      recommendedHigh: 1000,
+      extraSavings: 0,
+      avoidedLoss: 1000,
+      rollover: 700,
+    });
   });
 
-  it('loses nothing when care uses up the FSA', () => {
-    expect(ppo80(300, 3).fsaForfeited).toBe(0);
+  it('suggests a bigger FSA when costs run past what was entered', () => {
+    const ppo80 = byName(run({ fsaContribution: 100 }), 'DMBA PPO 80');
+    expect(ppo80.userContribution).toBe(100);
+    expect(ppo80.taxSavings).toBeCloseTo(100 * SAVINGS_RATE, 2);
+    expect(ppo80.contributionAdvice?.extraSavings).toBeCloseTo(200 * SAVINGS_RATE, 2);
+    expect(ppo80.contributionAdvice?.avoidedLoss).toBe(0);
   });
 
-  it('never loses HSA money', () => {
-    const results = calculateAllPlans(planData, inputs({ hsaContribution: 3000 }));
-    expect(byName(results, 'DMBA HSA 60').fsaForfeited).toBe(0);
+  it('has no advice when the FSA entered is within the range', () => {
+    expect(byName(run({ fsaContribution: 500 }), 'DMBA PPO 80').contributionAdvice).toBeUndefined();
+  });
+
+  it('suggests enough HSA, with the employer money, to cover expected costs', () => {
+    // $3,000 out of pocket on HSA 60, less the employer's $625
+    const hsa60 = byName(run({ hsaContribution: 0 }, 3, 1000), 'DMBA HSA 60');
+    expect(hsa60.outOfPocketCosts).toBe(3000);
+    expect(hsa60.contributionAdvice?.recommendedLow).toBe(2375);
+    expect(hsa60.contributionAdvice?.extraSavings).toBeCloseTo(2375 * SAVINGS_RATE, 2);
+    expect(
+      byName(run({ hsaContribution: 3000 }, 3, 1000), 'DMBA HSA 60').contributionAdvice
+    ).toBeUndefined();
   });
 });
 

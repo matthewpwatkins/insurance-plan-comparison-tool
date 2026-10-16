@@ -19,6 +19,9 @@ hsa_qualification_limits:
 # FSA Contribution Limits (set by IRS annually)
 fsa_contribution_limits:
   healthcare_fsa: 3_300
+  # Most unused money that rolls into the next plan year (Rev. Proc. 2024-40). Employers may
+  # allow less; DMBA allows the full amount.
+  carryover: 660
 
 # Payroll Tax Rates (set by IRS/SSA annually)
 payroll_tax_rates:

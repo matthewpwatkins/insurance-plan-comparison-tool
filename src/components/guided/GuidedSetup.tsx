@@ -420,9 +420,9 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
                 you can use {company.fsa_name ?? 'a Flexible Spending Account (FSA)'} instead.
               </p>
               <p>
-                What you put in comes out of your paycheck <em>before</em> taxes, but you have to
-                spend it by the end of the year or lose it, so stick to costs you're sure you'll
-                have.
+                What you put in comes out of your paycheck <em>before</em> taxes, but money left at
+                the end of the year is lost, past a small amount that rolls over. No need to get it
+                exact: we'll work out how much makes sense for each plan from your expected costs.
               </p>
               <p className="mb-0">
                 If you went that route, what's the most you'd be willing to contribute?

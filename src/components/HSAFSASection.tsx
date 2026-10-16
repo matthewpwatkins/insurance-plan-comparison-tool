@@ -370,7 +370,11 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({
                       </p>
                       <p>
                         <strong>Remember:</strong> FSAs are "use it or lose it" - funds must be
-                        spent by the end of the plan year.
+                        spent by the end of the plan year, past a small amount that rolls over.
+                      </p>
+                      <p>
+                        We work out how much of this makes sense for each plan from your expected
+                        care, and show it with the results.
                       </p>
                     </div>
                   }

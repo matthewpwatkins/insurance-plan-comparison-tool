@@ -56,6 +56,7 @@ describe('costCalculator', () => {
     },
     fsa_contribution_limits: {
       healthcare_fsa: 3300,
+      carryover: 660,
     },
     payroll_tax_rates: {
       social_security: 6.2,
@@ -159,9 +160,10 @@ describe('costCalculator', () => {
       expect(result.planName).toBe('Test PPO Plan');
       expect(result.contributionType).toBe(ContributionType.FSA);
       expect(result.annualPremiums).toBe(2400); // 200 * 12
-      expect(result.userContribution).toBe(1500); // FSA contribution
+      // FSA: $550 of care plus the $660 rollover, less than the $1,500 entered
+      expect(result.userContribution).toBe(550 + 660);
       expect(result.employerContribution).toBe(0); // No employer contribution for PPO
-      expect(result.taxSavings).toBe(444.75); // 1500 * (0.22 + 0.0765)
+      expect(result.taxSavings).toBeCloseTo(163.075, 6); // Spent on care: 550 * (0.22 + 0.0765)
 
       // Out of pocket calculation:
       // 2 copays: $25 * 2 = $50 (copays do NOT count toward deductible)
@@ -529,7 +531,7 @@ describe('costCalculator', () => {
       const taxSavingsEntry = result.ledger.contributionsAndSavings.find(
         entry => entry.description === 'Tax savings from FSA contributions'
       );
-      expect(taxSavingsEntry?.amount).toBeCloseTo(444.75, 2);
+      expect(taxSavingsEntry?.amount).toBeCloseTo(163.075, 2); // $550 spent on care
     });
 
     it('should track tax savings for HSA plans', () => {

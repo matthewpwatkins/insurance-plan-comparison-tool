@@ -64,7 +64,7 @@ describe('costCalculator - 2026 Real Data Bug Test', () => {
     // 1. PPO 70: $6,061 total, $10,916 worst case
     // 2. HSA 80: $6,435 total, $8,607 worst case
     // 3. HSA 60: $8,792 total, $12,166 worst case
-    // 4. PPO 90: $10,639 total, $14,239 worst case
+    // 4. PPO 90: $9,932 total, $14,239 worst case
     // HSA 60 out of pocket, family deductible $6,100 then 40% coinsurance:
     //   ER $5,000 (all deductible) + chiro 25 x $250 ($1,100 deductible + 40% of $5,150)
     //   + inpatient mental health 40% of $8,750 + 12 fills at the $15 copay = $11,840.
@@ -100,9 +100,9 @@ describe('costCalculator - 2026 Real Data Bug Test', () => {
     expect(Math.round(hsa80!.totalCost)).toBe(6435);
     expect(Math.round(hsa80!.maxAnnualCost)).toBe(8607);
 
-    // PPO 90 care costs $2,395, so $1,005 of the $3,400 FSA goes unspent and is lost
-    expect(ppo90!.fsaForfeited).toBeCloseTo(1005, 2);
-    expect(Math.round(ppo90!.totalCost)).toBe(9634 + 1005);
+    // PPO 90 care costs $2,395, so only that much of the $3,400 FSA saves taxes this year
+    expect(ppo90!.taxSavedOn).toBeCloseTo(2395, 2);
+    expect(Math.round(ppo90!.totalCost)).toBe(Math.round(9634 + (3400 - 2395) * 0.2965));
     expect(Math.round(ppo90!.maxAnnualCost)).toBe(14239);
   });
 });
