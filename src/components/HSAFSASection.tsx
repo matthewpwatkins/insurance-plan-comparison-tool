@@ -9,6 +9,7 @@ import {
 import FormattedNumberInput from './FormattedNumberInput';
 import CollapsibleCard from './CollapsibleCard';
 import HelpIcon from './HelpIcon';
+import MedicareNote from './MedicareNote';
 import { formatCurrency } from '../utils/formatters';
 import { UserInputs, PlanData, CoverageType, Company } from '../types';
 
@@ -394,6 +395,7 @@ const HSAFSASection: React.FC<HSAFSASectionProps> = ({
             </Form.Group>
           </Col>
         </Row>
+        {inputs.ageGroup === '55_plus' && <MedicareNote className="mt-3 mb-0" />}
       </Form>
     </CollapsibleCard>
   );

@@ -3,6 +3,7 @@ import { Button, Card, Form, InputGroup, ProgressBar, Table } from 'react-bootst
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import FormattedNumberInput from '../FormattedNumberInput';
+import MedicareNote from '../MedicareNote';
 import PrivacyNote from '../PrivacyNote';
 import TaxRateGuide from '../TaxRateGuide';
 import {
@@ -339,15 +340,18 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
           intro:
             'People 55 and up can put an extra $1,000 a year into an HSA. This is the only thing your age changes.',
           body: (
-            <Form.Select
-              size="lg"
-              value={inputs.ageGroup}
-              onChange={e => onChange({ ageGroup: e.target.value as UserInputs['ageGroup'] })}
-              autoFocus
-            >
-              <option value="55_plus">55 or older</option>
-              <option value="under_55">Under 55</option>
-            </Form.Select>
+            <>
+              <Form.Select
+                size="lg"
+                value={inputs.ageGroup}
+                onChange={e => onChange({ ageGroup: e.target.value as UserInputs['ageGroup'] })}
+                autoFocus
+              >
+                <option value="55_plus">55 or older</option>
+                <option value="under_55">Under 55</option>
+              </Form.Select>
+              {inputs.ageGroup === '55_plus' && <MedicareNote className="mt-3 mb-0" />}
+            </>
           ),
         };
       case 'tax':

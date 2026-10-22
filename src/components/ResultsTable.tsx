@@ -681,6 +681,11 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
           return <PlanCard key={result.planName} result={result} isLowestCost={isLowestCost} />;
         })}
       </div>
+      <p className="small text-muted">
+        These estimates depend on your own circumstances. Other factors, like retiring during or
+        soon after the plan year, can change which plan is best for you. If your situation is
+        complicated, talk to a fiduciary financial advisor.
+      </p>
     </>
   );
 };
