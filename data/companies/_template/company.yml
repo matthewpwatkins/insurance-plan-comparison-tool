@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../../schema/company.schema.json
 
 # Copy this folder to data/companies/<your-company-slug>/ (lowercase letters, digits, dashes).
-# The folder name becomes the URL: https://health-plans.netlify.app/<your-company-slug>
+# The folder name becomes the URL: https://health-plans.watkins.dev/<your-company-slug>
 
 # Shown in the page header and browser tab title
 name: Example Co

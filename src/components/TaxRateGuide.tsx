@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table } from 'react-bootstrap';
 
-const FEDERAL_RATE_URL = 'https://tax-visualizer.netlify.app/';
+const FEDERAL_RATE_URL = 'https://tax-visualizer.watkins.dev/';
 const STATE_RATE_URL = 'https://ustax.tools/state-income-tax-calculator/';
 
 const link = (url: string, text: string) => (
