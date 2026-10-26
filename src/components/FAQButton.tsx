@@ -48,6 +48,13 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
         entry => entry.employeeResponsibility
       );
 
+    /** Premiums plus your share of care, less your benefits. Below zero, the plan pays you. */
+    const totalCost =
+      sumOf(ledgerData?.ledger.premiums ?? [], entry => entry.amount) +
+      shareOf('in_network') +
+      shareOf('out_of_network') -
+      sumOf(ledgerData?.ledger.contributionsAndSavings ?? [], entry => entry.amount);
+
     useImperativeHandle(ref, () => ({
       openFAQ: (sectionIndex?: number) => {
         setModalMode('faq');
@@ -573,20 +580,18 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                         <strong>Your total healthcare cost</strong>
                       </td>
                       <td>
-                        <strong className="fs-4 fw-bold text-primary">
-                          {formatCurrency(
-                            (ledgerData?.ledger.premiums.reduce(
-                              (sum, entry) => sum + entry.amount,
-                              0
-                            ) || 0) +
-                              shareOf('in_network') +
-                              shareOf('out_of_network') -
-                              (ledgerData?.ledger.contributionsAndSavings?.reduce(
-                                (sum, entry) => sum + entry.amount,
-                                0
-                              ) || 0)
-                          )}
+                        <strong
+                          className={`fs-4 fw-bold ${totalCost > 0 ? 'text-danger' : 'text-success'}`}
+                        >
+                          {formatCurrency(totalCost)}
                         </strong>
+                        {totalCost < 0 && (
+                          <div className="text-muted small">
+                            That's right: you're forecast to come out {formatCurrency(-totalCost)}{' '}
+                            ahead on this plan. Your benefits are worth more than your premiums and
+                            medical costs combined.
+                          </div>
+                        )}
                       </td>
                     </tr>
                   </tfoot>
