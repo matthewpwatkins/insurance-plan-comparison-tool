@@ -31,8 +31,8 @@ export interface ExpenseEntry {
 export interface OrganizedLedger {
   contributionsAndSavings: ContributionEntry[];
   premiums: PremiumEntry[];
-  inNetworkExpenses: ExpenseEntry[];
-  outOfNetworkExpenses: ExpenseEntry[];
+  /** In-network and out-of-network care in one list, since they share one deductible */
+  expenses: ExpenseEntry[];
 }
 
 /** How much to put in an HSA or FSA on this plan, when it differs from what you entered */

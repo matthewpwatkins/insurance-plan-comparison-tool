@@ -476,14 +476,14 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
       expect(result.ledger.premiums.length).toBeGreaterThan(0);
-      expect(result.ledger.inNetworkExpenses.length).toBeGreaterThan(0);
-      expect(result.ledger.outOfNetworkExpenses).toEqual([]);
+      expect(result.ledger.expenses.length).toBeGreaterThan(0);
+      expect(result.ledger.expenses.filter(e => e.network === 'out_of_network')).toEqual([]);
     });
 
     it('should start expenses with an initial state entry', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
-      const firstEntry = result.ledger.inNetworkExpenses[0];
+      const firstEntry = result.ledger.expenses[0];
       expect(firstEntry.categoryDisplayName).toBe('Start of year');
       expect(firstEntry.employeeResponsibility).toBe(0);
       expect(firstEntry.deductibleRemaining).toBe(500); // Single deductible
@@ -547,7 +547,7 @@ describe('costCalculator', () => {
     it('should track service visits with copays correctly', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
-      const visitEntries = result.ledger.inNetworkExpenses.filter(
+      const visitEntries = result.ledger.expenses.filter(
         entry => entry.category === 'office_visit_pcp'
       );
       expect(visitEntries).toHaveLength(2); // 2 visits in mockUserInputs
@@ -574,18 +574,14 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, userInputsForDeductible);
 
-      const visitEntry = result.ledger.inNetworkExpenses.find(
-        entry => entry.category === 'test_category'
-      );
+      const visitEntry = result.ledger.expenses.find(entry => entry.category === 'test_category');
       expect(visitEntry?.deductibleRemaining).toBe(200); // 500 - 300
     });
 
     it('should track out-of-pocket remaining correctly', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mockUserInputs);
 
-      const visits = result.ledger.inNetworkExpenses.filter(
-        entry => entry.category !== 'initial_state'
-      );
+      const visits = result.ledger.expenses.filter(entry => entry.category !== 'initial_state');
       // Two $25 copays and $500 to the deductible, in whatever order the year spreads them
       const remaining = visits.map(entry => entry.outOfPocketRemaining);
       expect(remaining).toEqual([...remaining].sort((a, b) => b - a));
@@ -607,7 +603,7 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, mixedUserInputs);
 
-      const copayEntry = result.ledger.inNetworkExpenses.find(entry => entry.copay !== undefined);
+      const copayEntry = result.ledger.expenses.find(entry => entry.copay !== undefined);
       expect(copayEntry?.employeeResponsibility).toBe(25);
       expect(copayEntry?.deductibleRemaining).toBe(500);
     });
@@ -627,9 +623,7 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, coinsuranceUserInputs);
 
-      const visitEntry = result.ledger.inNetworkExpenses.find(
-        entry => entry.category === 'test_category'
-      );
+      const visitEntry = result.ledger.expenses.find(entry => entry.category === 'test_category');
       // Deductible + coinsurance: $500 + ($500 * 0.2) = $600
       expect(visitEntry?.employeeResponsibility).toBe(600);
       expect(visitEntry?.insuranceResponsibility).toBe(400);
@@ -662,12 +656,40 @@ describe('costCalculator', () => {
 
       const result = calculatePlanCost(planWithFreeCare, mockPlanData, userInputs);
 
-      expect(result.ledger.inNetworkExpenses.map(entry => entry.category)).toEqual([
+      expect(result.ledger.expenses.map(entry => entry.category)).toEqual([
         'initial_state',
         'immunizations',
         'test_category',
       ]);
       expect(result.outOfPocketCosts).toBe(100);
+    });
+
+    it('should list balances that only count down, across both networks', () => {
+      const userInputs = {
+        ...mockUserInputs,
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 3, costPerVisit: 200, isInNetwork: true },
+            },
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 3, costPerVisit: 300, isInNetwork: false },
+            },
+          ],
+        },
+      };
+
+      const { expenses } = calculatePlanCost(mockPPOPlan, mockPlanData, userInputs).ledger;
+
+      expect(new Set(expenses.map(entry => entry.network))).toEqual(
+        new Set(['in_network', 'out_of_network'])
+      );
+      expenses.slice(1).forEach((entry, i) => {
+        expect(entry.deductibleRemaining).toBeLessThanOrEqual(expenses[i].deductibleRemaining);
+        expect(entry.outOfPocketRemaining).toBeLessThanOrEqual(expenses[i].outOfPocketRemaining);
+      });
     });
 
     it('should handle telemedicine with requires_deductible_to_be_met=false and contributes_to_deductible=false', () => {
@@ -707,7 +729,7 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(20);
 
       // Deductible should remain at full amount (not reduced)
-      const visitEntry = result.ledger.inNetworkExpenses.find(
+      const visitEntry = result.ledger.expenses.find(
         entry => entry.category === 'telemedicine_pcp'
       );
       expect(visitEntry).toBeDefined();
@@ -754,9 +776,9 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(100);
 
       // Deductible should be reduced (out-of-network single deductible is 3300)
-      const visitEntry = result.ledger.outOfNetworkExpenses.find(
-        entry => entry.category === 'telemedicine_pcp'
-      );
+      const visitEntry = result.ledger.expenses
+        .filter(e => e.network === 'out_of_network')
+        .find(entry => entry.category === 'telemedicine_pcp');
       expect(visitEntry).toBeDefined();
       expect(visitEntry!.deductibleRemaining).toBe(1550); // In-network deductible: 1650 - 100
     });
@@ -797,7 +819,7 @@ describe('costCalculator', () => {
       expect(result.outOfPocketCosts).toBe(180);
 
       // Deductible should remain unchanged across all visits
-      const allTeleVisits = result.ledger.inNetworkExpenses.filter(
+      const allTeleVisits = result.ledger.expenses.filter(
         entry => entry.category === 'telemedicine_pcp'
       );
       expect(allTeleVisits).toHaveLength(3);
@@ -858,13 +880,9 @@ describe('costCalculator', () => {
 
       // Visits are spread through the year, so check what holds in either order:
       // telemedicine costs its coinsurance and only the office visit reduces the deductible
-      const teleVisit = result.ledger.inNetworkExpenses.find(
-        entry => entry.category === 'telemedicine_pcp'
-      );
+      const teleVisit = result.ledger.expenses.find(entry => entry.category === 'telemedicine_pcp');
       expect(teleVisit!.employeeResponsibility).toBe(20);
-      const visits = result.ledger.inNetworkExpenses.filter(
-        entry => entry.category !== 'initial_state'
-      );
+      const visits = result.ledger.expenses.filter(entry => entry.category !== 'initial_state');
       expect(Math.min(...visits.map(entry => entry.deductibleRemaining))).toBe(1450); // 1650 - 200
       expect(Math.min(...visits.map(entry => entry.outOfPocketRemaining))).toBe(5780); // 6000 - 220
     });
@@ -882,8 +900,7 @@ describe('costCalculator', () => {
       const result = calculatePlanCost(mockPPOPlan, mockPlanData, zeroCostInputs);
 
       expect(result.ledger.premiums).toHaveLength(12);
-      expect(result.ledger.inNetworkExpenses).toEqual([]);
-      expect(result.ledger.outOfNetworkExpenses).toEqual([]);
+      expect(result.ledger.expenses).toEqual([]);
       // Only the taxes skipped on premiums
       expect(result.ledger.contributionsAndSavings.map(entry => entry.description)).toEqual([
         'Tax savings on premiums',

@@ -1,8 +1,23 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { Modal, Button, Accordion, Table } from 'react-bootstrap';
+import { Modal, Button, Accordion, Table, Badge } from 'react-bootstrap';
 import { formatCurrency } from '../utils/formatters';
-import { OrganizedLedger, Company } from '../types';
+import { OrganizedLedger, Company, ExpenseEntry } from '../types';
 import HelpIcon from './HelpIcon';
+
+const sumOf = <T,>(items: T[], amount: (item: T) => number) =>
+  items.reduce((sum, item) => sum + amount(item), 0);
+
+/** One label and amount on a phone's visit card, amount lined up on the right */
+const CardLine: React.FC<{ label: string; amount: number; className?: string }> = ({
+  label,
+  amount,
+  className = '',
+}) => (
+  <div className={`d-flex justify-content-between ${className}`}>
+    <span>{label}</span>
+    <span>{formatCurrency(amount, true)}</span>
+  </div>
+);
 
 export interface FAQButtonRef {
   openFAQ: (sectionIndex?: number) => void;
@@ -25,6 +40,13 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
       planName: string;
       ledger: OrganizedLedger;
     } | null>(null);
+
+    /** What you pay for care on one network */
+    const shareOf = (network: ExpenseEntry['network']) =>
+      sumOf(
+        (ledgerData?.ledger.expenses ?? []).filter(entry => entry.network === network),
+        entry => entry.employeeResponsibility
+      );
 
     useImperativeHandle(ref, () => ({
       openFAQ: (sectionIndex?: number) => {
@@ -171,7 +193,13 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
           </Button>
         )}
 
-        <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+        <Modal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          size="xl"
+          fullscreen="sm-down"
+          centered
+        >
           <Modal.Header closeButton>
             <Modal.Title>
               {modalMode === 'faq'
@@ -235,38 +263,57 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                   </tfoot>
                 </Table>
 
-                {/* In Network Expenses Table */}
-                {ledgerData?.ledger.inNetworkExpenses &&
-                  ledgerData.ledger.inNetworkExpenses.length > 0 && (
-                    <>
-                      <h5 className="mb-3">In-Network Expenses</h5>
-                      {(() => {
-                        const showCopayColumn = ledgerData.ledger.inNetworkExpenses.some(
-                          entry => entry.copay && entry.copay > 0
-                        );
-                        return (
-                          <Table striped bordered hover responsive className="mb-4">
+                {/* Expenses Table */}
+                {ledgerData && ledgerData.ledger.expenses.length > 0 && (
+                  <>
+                    <h5 className="mb-3">Medical Costs</h5>
+                    {(() => {
+                      const expenses = ledgerData.ledger.expenses;
+                      const showCopayColumn = expenses.some(
+                        entry => entry.copay && entry.copay > 0
+                      );
+                      return (
+                        <>
+                          <Table
+                            striped
+                            bordered
+                            hover
+                            responsive
+                            className="mb-4 text-nowrap d-none d-md-table"
+                          >
                             <thead>
-                              <tr>
-                                <th>Category</th>
-                                <th style={{ width: '90px' }}>Cost</th>
-                                {showCopayColumn && <th style={{ width: '80px' }}>Copay</th>}
-                                <th style={{ width: '90px' }}>Your cost</th>
-                                <th style={{ width: '90px' }}>Plan pays</th>
-                                <th style={{ width: '90px' }}>Deductible left</th>
-                                <th style={{ width: '90px' }}>Left until out-of-pocket max</th>
+                              <tr className="align-bottom">
+                                <th className="text-wrap">Category</th>
+                                <th>Cost</th>
+                                {showCopayColumn && <th>Copay</th>}
+                                <th>Your cost</th>
+                                <th>Plan pays</th>
+                                <th>Rem. deductible</th>
+                                <th>Rem. out of pocket</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {ledgerData.ledger.inNetworkExpenses.map((entry, index) => {
+                              {expenses.map((entry, index) => {
                                 const isInitialState = entry.category === 'initial_state';
                                 return (
                                   <tr key={index}>
-                                    <td>
-                                      {entry.categoryDisplayName}
-                                      {entry.notes && (
-                                        <div className="text-muted small">{entry.notes}</div>
-                                      )}
+                                    <td className="text-wrap">
+                                      <div style={{ maxWidth: '50rem' }}>
+                                        {entry.categoryDisplayName}
+                                        {entry.isPreventive && (
+                                          <Badge bg="success" className="ms-2">
+                                            Preventive
+                                          </Badge>
+                                        )}
+                                        {entry.network === 'out_of_network' && !isInitialState && (
+                                          <Badge bg="warning" text="dark" className="ms-2">
+                                            Out-of-network
+                                          </Badge>
+                                        )}
+                                        {entry.notes && (
+                                          <div className="text-muted small">{entry.notes}</div>
+                                        )}
+                                      </div>
                                     </td>
                                     <td>
                                       {isInitialState
@@ -301,36 +348,25 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                             <tfoot>
                               <tr className="table-active">
                                 <td>
-                                  <strong>Total In-Network</strong>
+                                  <strong>Total</strong>
                                 </td>
                                 <td>
                                   <strong>
-                                    {formatCurrency(
-                                      ledgerData.ledger.inNetworkExpenses.reduce(
-                                        (sum, entry) => sum + entry.billedAmount,
-                                        0
-                                      )
-                                    )}
+                                    {formatCurrency(sumOf(expenses, entry => entry.billedAmount))}
                                   </strong>
                                 </td>
                                 {showCopayColumn && <td>—</td>}
                                 <td className="text-danger">
                                   <strong>
                                     {formatCurrency(
-                                      ledgerData.ledger.inNetworkExpenses.reduce(
-                                        (sum, entry) => sum + entry.employeeResponsibility,
-                                        0
-                                      )
+                                      sumOf(expenses, entry => entry.employeeResponsibility)
                                     )}
                                   </strong>
                                 </td>
                                 <td>
                                   <strong>
                                     {formatCurrency(
-                                      ledgerData.ledger.inNetworkExpenses.reduce(
-                                        (sum, entry) => sum + entry.insuranceResponsibility,
-                                        0
-                                      )
+                                      sumOf(expenses, entry => entry.insuranceResponsibility)
                                     )}
                                   </strong>
                                 </td>
@@ -339,119 +375,88 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                               </tr>
                             </tfoot>
                           </Table>
-                        );
-                      })()}
-                    </>
-                  )}
-
-                {/* Out of Network Expenses Table */}
-                {ledgerData?.ledger.outOfNetworkExpenses &&
-                  ledgerData.ledger.outOfNetworkExpenses.length > 0 && (
-                    <>
-                      <h5 className="mb-3">Out-of-Network Expenses</h5>
-                      {(() => {
-                        const showCopayColumn = ledgerData.ledger.outOfNetworkExpenses.some(
-                          entry => entry.copay && entry.copay > 0
-                        );
-                        return (
-                          <Table striped bordered hover responsive className="mb-4">
-                            <thead>
-                              <tr>
-                                <th>Category</th>
-                                <th style={{ width: '90px' }}>Cost</th>
-                                {showCopayColumn && <th style={{ width: '80px' }}>Copay</th>}
-                                <th style={{ width: '90px' }}>Your cost</th>
-                                <th style={{ width: '90px' }}>Plan pays</th>
-                                <th style={{ width: '90px' }}>Deductible left</th>
-                                <th style={{ width: '90px' }}>Left until out-of-pocket max</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {ledgerData.ledger.outOfNetworkExpenses.map((entry, index) => {
-                                const isInitialState = entry.category === 'initial_state';
-                                return (
-                                  <tr key={index}>
-                                    <td>
-                                      {entry.categoryDisplayName}
-                                      {entry.notes && (
-                                        <div className="text-muted small">{entry.notes}</div>
-                                      )}
-                                    </td>
-                                    <td>
-                                      {isInitialState
-                                        ? '—'
-                                        : formatCurrency(entry.billedAmount, true)}
-                                    </td>
-                                    {showCopayColumn && (
-                                      <td>
-                                        {entry.copay ? formatCurrency(entry.copay, true) : '—'}
-                                      </td>
+                          {/* Phones get one card per visit, since the table won't fit */}
+                          <div className="mb-4 d-md-none border rounded overflow-hidden">
+                            {expenses.map((entry, index) => {
+                              const isInitialState = entry.category === 'initial_state';
+                              return (
+                                <div key={index} className={index > 0 ? 'border-top' : ''}>
+                                  <div className="bg-body-tertiary px-2 py-1">
+                                    <div className="d-flex justify-content-between align-items-start gap-2">
+                                      <span className="fw-semibold">
+                                        {entry.categoryDisplayName}
+                                      </span>
+                                      <span className="d-flex gap-1 flex-shrink-0">
+                                        {entry.isPreventive && (
+                                          <Badge bg="success">Preventive</Badge>
+                                        )}
+                                        {entry.network === 'out_of_network' && !isInitialState && (
+                                          <Badge bg="warning" text="dark">
+                                            Out-of-network
+                                          </Badge>
+                                        )}
+                                      </span>
+                                    </div>
+                                    {entry.notes && (
+                                      <div className="text-muted small">{entry.notes}</div>
                                     )}
-                                    <td
-                                      className={
-                                        entry.employeeResponsibility > 0 ? 'text-danger' : ''
-                                      }
-                                    >
-                                      {isInitialState
-                                        ? '—'
-                                        : formatCurrency(entry.employeeResponsibility, true)}
-                                    </td>
-                                    <td>
-                                      {isInitialState
-                                        ? '—'
-                                        : formatCurrency(entry.insuranceResponsibility, true)}
-                                    </td>
-                                    <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
-                                    <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                            <tfoot>
-                              <tr className="table-active">
-                                <td>
-                                  <strong>Total Out-of-Network</strong>
-                                </td>
-                                <td>
-                                  <strong>
-                                    {formatCurrency(
-                                      ledgerData.ledger.outOfNetworkExpenses.reduce(
-                                        (sum, entry) => sum + entry.billedAmount,
-                                        0
-                                      )
+                                  </div>
+                                  <div className="px-2 py-1">
+                                    {!isInitialState && (
+                                      <>
+                                        <CardLine label="Cost" amount={entry.billedAmount} />
+                                        {entry.copay ? (
+                                          <CardLine label="Copay" amount={entry.copay} />
+                                        ) : null}
+                                        <CardLine
+                                          label="Plan pays"
+                                          amount={entry.insuranceResponsibility}
+                                        />
+                                        <CardLine
+                                          label="You pay"
+                                          amount={entry.employeeResponsibility}
+                                          className={
+                                            entry.employeeResponsibility > 0 ? 'text-danger' : ''
+                                          }
+                                        />
+                                      </>
                                     )}
-                                  </strong>
-                                </td>
-                                {showCopayColumn && <td>—</td>}
-                                <td className="text-danger">
-                                  <strong>
-                                    {formatCurrency(
-                                      ledgerData.ledger.outOfNetworkExpenses.reduce(
-                                        (sum, entry) => sum + entry.employeeResponsibility,
-                                        0
-                                      )
-                                    )}
-                                  </strong>
-                                </td>
-                                <td>
-                                  <strong>
-                                    {formatCurrency(
-                                      ledgerData.ledger.outOfNetworkExpenses.reduce(
-                                        (sum, entry) => sum + entry.insuranceResponsibility,
-                                        0
-                                      )
-                                    )}
-                                  </strong>
-                                </td>
-                                <td>—</td>
-                                <td>—</td>
-                              </tr>
-                            </tfoot>
-                          </Table>
-                        );
-                      })()}
-                    </>
-                  )}
+                                    <CardLine
+                                      label="Rem. deductible"
+                                      amount={entry.deductibleRemaining}
+                                    />
+                                    <CardLine
+                                      label="Rem. out of pocket"
+                                      amount={entry.outOfPocketRemaining}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <div className="border-top">
+                              <div className="bg-body-secondary px-2 py-1 fw-semibold">Total</div>
+                              <div className="px-2 py-1">
+                                <CardLine
+                                  label="Cost"
+                                  amount={sumOf(expenses, entry => entry.billedAmount)}
+                                />
+                                <CardLine
+                                  label="Plan pays"
+                                  amount={sumOf(expenses, entry => entry.insuranceResponsibility)}
+                                />
+                                <CardLine
+                                  label="You pay"
+                                  amount={sumOf(expenses, entry => entry.employeeResponsibility)}
+                                  className="text-danger fw-semibold"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
 
                 {/* Benefits Table */}
                 {ledgerData?.ledger.contributionsAndSavings &&
@@ -534,34 +539,18 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                         )}
                       </td>
                     </tr>
-                    {ledgerData?.ledger.inNetworkExpenses &&
-                      ledgerData.ledger.inNetworkExpenses.length > 0 && (
-                        <tr>
-                          <td>Your share of in-network medical costs</td>
-                          <td className="text-danger">
-                            {formatCurrency(
-                              ledgerData.ledger.inNetworkExpenses.reduce(
-                                (sum, entry) => sum + entry.employeeResponsibility,
-                                0
-                              )
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                    {ledgerData?.ledger.outOfNetworkExpenses &&
-                      ledgerData.ledger.outOfNetworkExpenses.length > 0 && (
-                        <tr>
-                          <td>Your share of out-of-network medical costs</td>
-                          <td className="text-danger">
-                            {formatCurrency(
-                              ledgerData.ledger.outOfNetworkExpenses.reduce(
-                                (sum, entry) => sum + entry.employeeResponsibility,
-                                0
-                              )
-                            )}
-                          </td>
-                        </tr>
-                      )}
+                    {shareOf('in_network') > 0 && (
+                      <tr>
+                        <td>Your share of in-network medical costs</td>
+                        <td className="text-danger">{formatCurrency(shareOf('in_network'))}</td>
+                      </tr>
+                    )}
+                    {shareOf('out_of_network') > 0 && (
+                      <tr>
+                        <td>Your share of out-of-network medical costs</td>
+                        <td className="text-danger">{formatCurrency(shareOf('out_of_network'))}</td>
+                      </tr>
+                    )}
                     {ledgerData?.ledger.contributionsAndSavings &&
                       ledgerData.ledger.contributionsAndSavings.length > 0 && (
                         <tr>
@@ -590,14 +579,8 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                               (sum, entry) => sum + entry.amount,
                               0
                             ) || 0) +
-                              (ledgerData?.ledger.inNetworkExpenses?.reduce(
-                                (sum, entry) => sum + entry.employeeResponsibility,
-                                0
-                              ) || 0) +
-                              (ledgerData?.ledger.outOfNetworkExpenses?.reduce(
-                                (sum, entry) => sum + entry.employeeResponsibility,
-                                0
-                              ) || 0) -
+                              shareOf('in_network') +
+                              shareOf('out_of_network') -
                               (ledgerData?.ledger.contributionsAndSavings?.reduce(
                                 (sum, entry) => sum + entry.amount,
                                 0

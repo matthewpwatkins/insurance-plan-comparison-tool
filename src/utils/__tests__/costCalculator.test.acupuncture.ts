@@ -65,7 +65,7 @@ describe('costCalculator - Acupuncture Test', () => {
     // Print ledger details for diagnosis
     console.log('\n=== Ledger Details ===');
     console.log('In-Network Expenses:');
-    hsa60!.ledger.inNetworkExpenses.forEach((expense, idx) => {
+    hsa60!.ledger.expenses.forEach((expense, idx) => {
       console.log(`  ${idx + 1}. ${expense.categoryDisplayName}`);
       console.log(`     Billed: $${expense.billedAmount.toFixed(2)}`);
       console.log(`     Employee Responsibility: $${expense.employeeResponsibility.toFixed(2)}`);

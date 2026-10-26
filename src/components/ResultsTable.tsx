@@ -244,10 +244,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     const bestCase =
       result.netAnnualPremiums - result.employerContribution - result.bestCaseTaxSavings;
     const breakEven = breakEvenSpending(planData, userInputs, result);
-    const planShare = [
-      ...result.ledger.inNetworkExpenses,
-      ...result.ledger.outOfNetworkExpenses,
-    ].reduce((sum, expense) => sum + expense.insuranceResponsibility, 0);
+    const planShare = result.ledger.expenses.reduce(
+      (sum, expense) => sum + expense.insuranceResponsibility,
+      0
+    );
     const totalBills = result.outOfPocketCosts + planShare;
     const hasBenefits =
       shows(planShare) ||

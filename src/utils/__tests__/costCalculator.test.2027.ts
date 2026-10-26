@@ -268,7 +268,7 @@ describe('2027 PPO 80 copays and the deductible', () => {
       'DMBA PPO 80'
     );
     expect(result.outOfPocketCosts).toBe(500);
-    const fills = result.ledger.inNetworkExpenses;
+    const fills = result.ledger.expenses;
     expect(fills[fills.length - 1].deductibleRemaining).toBe(0);
   });
 });

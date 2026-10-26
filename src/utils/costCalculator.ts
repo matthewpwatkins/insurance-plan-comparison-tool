@@ -332,8 +332,7 @@ class PlanExecution {
   private deductibleSpent: number = 0;
   private contributionsAndSavings: ContributionEntry[] = [];
   private premiums: PremiumEntry[] = [];
-  private inNetworkExpenses: ExpenseEntry[] = [];
-  private outOfNetworkExpenses: ExpenseEntry[] = [];
+  private expenses: ExpenseEntry[] = [];
   private categoriesData: CategoriesData;
   private costCapSpent: Record<string, number> = {}; // Track spending against cost caps
   private quantityUsed: Record<string, number> = {}; // Track visits used against quantity caps
@@ -578,9 +577,7 @@ class PlanExecution {
       type: 'expense',
       network,
       category: categoryId,
-      categoryDisplayName: isPreventive
-        ? `[Preventive] ${categoryDisplayName}`
-        : categoryDisplayName,
+      categoryDisplayName,
       isPreventive,
       isFree,
       billedAmount: cost,
@@ -592,12 +589,7 @@ class PlanExecution {
       notes,
     };
 
-    // Add to appropriate network expenses array
-    if (network === 'in_network') {
-      this.inNetworkExpenses.push(expenseEntry);
-    } else {
-      this.outOfNetworkExpenses.push(expenseEntry);
-    }
+    this.expenses.push(expenseEntry);
   }
 
   getTotalOutOfPocket(): number {
@@ -605,17 +597,8 @@ class PlanExecution {
   }
 
   getLedger(): OrganizedLedger {
-    // Sort expenses: free care first, then rest
-    const sortExpenses = (expenses: ExpenseEntry[]) => {
-      return [...expenses].sort((a, b) => {
-        if (a.isFree && !b.isFree) return -1;
-        if (!a.isFree && b.isFree) return 1;
-        return 0;
-      });
-    };
-
-    // Create initial state entry showing starting deductible and OOP values
-    const createInitialStateEntry = (): ExpenseEntry => ({
+    // Starting deductible and OOP values, shown above the first expense
+    const startOfYear: ExpenseEntry = {
       type: 'expense',
       network: 'in_network',
       category: 'initial_state',
@@ -627,25 +610,25 @@ class PlanExecution {
       insuranceResponsibility: 0,
       deductibleRemaining: this.getDeductibleForCoverage(),
       outOfPocketRemaining: this.getOOPMaxForCoverage(),
-    });
+    };
 
-    // Add initial state row to the beginning of in-network expenses if there are any expenses
-    const inNetworkWithInitial =
-      this.inNetworkExpenses.length > 0
-        ? [createInitialStateEntry(), ...sortExpenses(this.inNetworkExpenses)]
-        : sortExpenses(this.inNetworkExpenses);
-
-    // Add initial state row to the beginning of out-of-network expenses if there are any expenses
-    const outOfNetworkWithInitial =
-      this.outOfNetworkExpenses.length > 0
-        ? [createInitialStateEntry(), ...sortExpenses(this.outOfNetworkExpenses)]
-        : sortExpenses(this.outOfNetworkExpenses);
+    // Free care costs nothing and never touches the deductible, so it reads as if it came first,
+    // at start-of-year balances, and the paid rows count down in the order they happened
+    const freeFirst = [
+      ...this.expenses
+        .filter(entry => entry.isFree)
+        .map(entry => ({
+          ...entry,
+          deductibleRemaining: startOfYear.deductibleRemaining,
+          outOfPocketRemaining: startOfYear.outOfPocketRemaining,
+        })),
+      ...this.expenses.filter(entry => !entry.isFree),
+    ];
 
     return {
       contributionsAndSavings: [...this.contributionsAndSavings],
       premiums: [...this.premiums],
-      inNetworkExpenses: inNetworkWithInitial,
-      outOfNetworkExpenses: outOfNetworkWithInitial,
+      expenses: freeFirst.length > 0 ? [startOfYear, ...freeFirst] : [],
     };
   }
 
@@ -727,12 +710,7 @@ class PlanExecution {
       notes: notes ? `${capNote} ${notes}` : capNote,
     };
 
-    // Add to appropriate network expenses array
-    if (network === 'in_network') {
-      this.inNetworkExpenses.push(expenseEntry);
-    } else {
-      this.outOfNetworkExpenses.push(expenseEntry);
-    }
+    this.expenses.push(expenseEntry);
   }
 
   private oopRemaining(): number {
