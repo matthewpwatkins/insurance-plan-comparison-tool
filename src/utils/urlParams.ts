@@ -29,21 +29,34 @@ const fromBase64Url = (text: string): Uint8Array => {
   return Uint8Array.from(binary, char => char.charCodeAt(0));
 };
 
+/** A full link carries everything; a summary link leaves out the notes on each category. */
+export type ShareMode = 'full' | 'summary';
+
+const withoutNotes = ({ categoryId, estimate }: CategoryEstimate): CategoryEstimate => ({
+  categoryId,
+  estimate,
+});
+
 /** Inputs in the order defaultInputs builds them, so equal inputs always make the same link. */
-const serialize = (inputs: UserInputs): string =>
+const serialize = (inputs: UserInputs, mode: ShareMode): string =>
   JSON.stringify({
     year: inputs.year,
     coverage: inputs.coverage,
     ageGroup: inputs.ageGroup,
     taxRate: inputs.taxRate,
-    costs: { categoryEstimates: inputs.costs.categoryEstimates },
+    costs: {
+      categoryEstimates:
+        mode === 'summary'
+          ? inputs.costs.categoryEstimates.map(withoutNotes)
+          : inputs.costs.categoryEstimates,
+    },
     hsaContribution: inputs.hsaContribution,
     fsaContribution: inputs.fsaContribution,
   });
 
 /** The hash payload for these inputs, without the leading '#'. */
-export const encodeUserInputs = (inputs: UserInputs): string => {
-  const compressed = deflateSync(new TextEncoder().encode(serialize(inputs)), {
+export const encodeUserInputs = (inputs: UserInputs, mode: ShareMode = 'full'): string => {
+  const compressed = deflateSync(new TextEncoder().encode(serialize(inputs, mode)), {
     level: 9,
     dictionary: SHARE_DICTIONARY,
   });
@@ -99,8 +112,8 @@ export const decodeUserInputs = (hash: string, availableYears: number[]): Shared
 };
 
 /** The results page for these inputs, e.g. /dmba/results#v1.... */
-const resultsURL = (inputs: UserInputs): string =>
-  `/${readCompanySlugFromPath()}/results#${encodeUserInputs(inputs)}`;
+const resultsURL = (inputs: UserInputs, mode: ShareMode = 'full'): string =>
+  `/${readCompanySlugFromPath()}/results#${encodeUserInputs(inputs, mode)}`;
 
 /**
  * Update browser URL with current user inputs
@@ -116,16 +129,19 @@ export const isResultsPath = (pathname: string = window.location.pathname): bool
 /**
  * Get current URL with parameters for sharing
  */
-export const getShareableURL = (inputs: UserInputs): string => {
-  return `${window.location.origin}${resultsURL(inputs)}`;
+export const getShareableURL = (inputs: UserInputs, mode: ShareMode = 'full'): string => {
+  return `${window.location.origin}${resultsURL(inputs, mode)}`;
 };
 
 /**
  * Copy URL to clipboard
  */
-export const copyURLToClipboard = async (inputs: UserInputs): Promise<boolean> => {
+export const copyURLToClipboard = async (
+  inputs: UserInputs,
+  mode: ShareMode = 'full'
+): Promise<boolean> => {
   try {
-    const url = getShareableURL(inputs);
+    const url = getShareableURL(inputs, mode);
     await navigator.clipboard.writeText(url);
     return true;
   } catch (error) {

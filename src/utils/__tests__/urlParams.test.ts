@@ -94,6 +94,36 @@ describe('share links', () => {
       expect(result).toEqual({ status: 'ok', inputs: original });
     });
 
+    it('summary links drop the notes and keep every category and cost', () => {
+      const original = inputs({
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+              notes: 'Zoë: Dr. Smith',
+            },
+          ],
+        },
+      });
+      const decoded = decodeUserInputs(encodeUserInputs(original, 'summary'), YEARS);
+      expect(decoded).toEqual({
+        status: 'ok',
+        inputs: {
+          ...original,
+          costs: {
+            categoryEstimates: [
+              {
+                categoryId: 'office_visit_pcp',
+                estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+              },
+            ],
+          },
+        },
+      });
+      expect(encodeUserInputs(original, 'summary')).not.toEqual(encodeUserInputs(original));
+    });
+
     it('round-trips notes with unicode, quotes and symbols', () => {
       const original = inputs({
         costs: {

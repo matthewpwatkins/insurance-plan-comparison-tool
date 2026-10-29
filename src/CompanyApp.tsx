@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col, Alert, Button, Toast, ToastContainer } from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  Alert,
+  Button,
+  OverlayTrigger,
+  Toast,
+  ToastContainer,
+  Tooltip,
+} from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown, faShare } from '@fortawesome/free-solid-svg-icons';
@@ -20,6 +30,7 @@ import {
   copyURLToClipboard,
   isResultsPath,
   SharedInputs,
+  ShareMode,
 } from './utils/urlParams';
 import { clearGuided, loadGuidedInputs, saveGuidedInputs } from './utils/guidedStorage';
 import {
@@ -58,6 +69,16 @@ const UNREADABLE_LINK_MESSAGE =
 
 /** Everything but a results link (the welcome page and each step) gets the guided setup. */
 const isGuidedURL = () => !isResultsPath();
+
+const SHARE_OPTIONS: { mode: ShareMode; label: string; tip: string; variant: string }[] = [
+  { mode: 'full', label: 'Share full', tip: 'Everything, including notes.', variant: 'primary' },
+  {
+    mode: 'summary',
+    label: 'Share summary',
+    tip: 'Categories and costs only. No notes.',
+    variant: 'secondary',
+  },
+];
 
 function CompanyApp({ company }: CompanyAppProps) {
   const [planData, setPlanData] = useState<PlanData | null>(null);
@@ -151,8 +172,8 @@ function CompanyApp({ company }: CompanyAppProps) {
     setUserInputs(prev => ({ ...prev, ...newInputs }));
   };
 
-  const handleShare = async () => {
-    const success = await copyURLToClipboard(userInputs);
+  const handleShare = async (mode: ShareMode) => {
+    const success = await copyURLToClipboard(userInputs, mode);
     if (success) {
       setShareToastMessage('URL copied to clipboard! Share this link with others.');
     } else {
@@ -294,15 +315,19 @@ function CompanyApp({ company }: CompanyAppProps) {
               >
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h2 className="mb-0">Plan Comparison Results</h2>
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    onClick={handleShare}
-                    className="d-flex align-items-center gap-2"
-                  >
-                    <FontAwesomeIcon icon={faShare} />
-                    Share Results
-                  </Button>
+                  <div className="d-flex gap-2">
+                    {SHARE_OPTIONS.map(({ mode, label, tip, variant }) => (
+                      <OverlayTrigger
+                        key={mode}
+                        placement="bottom"
+                        overlay={<Tooltip id={`share-${mode}-tip`}>{tip}</Tooltip>}
+                      >
+                        <Button variant={variant} size="sm" onClick={() => handleShare(mode)}>
+                          <FontAwesomeIcon icon={faShare} /> {label}
+                        </Button>
+                      </OverlayTrigger>
+                    ))}
+                  </div>
                 </div>
                 {results.length > 1 && (
                   <Alert variant="success" className="mb-3">
