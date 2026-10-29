@@ -107,7 +107,7 @@ describe('claims review', () => {
     ]);
     const office = draft!.estimates.find(e => e.categoryId === 'office_visit_pcp')!;
     expect(office.estimate.quantity).toBe(2);
-    expect(office.notes).toBe('Pat: Clinic A');
+    expect(office.notes).toBe('Clinic A');
     const therapy = draft!.estimates.find(
       e => e.categoryId === 'behavioral_mental_health_outpatient'
     )!;

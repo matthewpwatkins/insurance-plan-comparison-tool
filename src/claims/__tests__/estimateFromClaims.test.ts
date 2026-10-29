@@ -115,7 +115,7 @@ describe('past expenses from claims', () => {
       ['JANE DOE', 'DR B', 1],
       ['JOHN DOE', 'DR A', 1],
     ]);
-    expect(describeExpense(expenses[0])).toBe('Jane: Dr A');
+    expect(describeExpense(expenses[0])).toBe('Dr A');
   });
 
   it('suggests visits per year over the report and grows prices by inflation', () => {
@@ -182,7 +182,8 @@ describe('past expenses from claims', () => {
       {
         categoryId: 'office_visit_specialist',
         estimate: { quantity: 3, costPerVisit: 150, isInNetwork: true },
-        notes: 'Jane: Dr A',
+        notes: 'Dr A',
+        person: 1,
       },
     ]);
   });

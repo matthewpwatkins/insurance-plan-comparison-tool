@@ -217,21 +217,31 @@ export const suggestCarryOver = (
 const titleCase = (text: string): string =>
   text.toLowerCase().replace(/(^|[\s/&-])([a-z])/g, (_, gap, letter) => gap + letter.toUpperCase());
 
-/** "Jane: Pat Q Example", for the estimate's notes. The category already says what it was. */
-export const describeExpense = (expense: PastExpense): string => {
-  const firstName = titleCase(expense.patient.split(' ')[0] ?? '');
-  return `${firstName}: ${titleCase(expense.provider)}`.slice(0, 100);
-};
+/** The provider, for the estimate's notes. The category says what it was, the person who. */
+export const describeExpense = (expense: PastExpense): string =>
+  titleCase(expense.provider).slice(0, 100);
 
-/** One estimate per past expense the person kept. */
+/** Everyone in the claims, in the order they become Person 1, 2, ... */
+export const patientsOf = (expenses: PastExpense[]): string[] =>
+  Array.from(new Set(expenses.map(expense => expense.patient))).sort();
+
+/** A patient's first name, as the name to suggest for them */
+export const firstNameOf = (patient: string): string => titleCase(patient.split(' ')[0] ?? '');
+
+/**
+ * One estimate per past expense the person kept, each for Person 1, 2, ... in the order of
+ * patientsOf. The names themselves stay out of the estimates.
+ */
 export const estimatesFromCarryOvers = (
   expenses: PastExpense[],
   decisions: Record<string, CarryOver>
-): CategoryEstimate[] =>
-  expenses.reduce<CategoryEstimate[]>((estimates, expense) => {
+): CategoryEstimate[] => {
+  const patients = patientsOf(expenses);
+  return expenses.reduce<CategoryEstimate[]>((estimates, expense) => {
     const decision = decisions[expense.key];
     if (decision?.include && decision.categoryId && decision.quantity > 0) {
       estimates.push({
+        person: patients.indexOf(expense.patient) + 1,
         categoryId: decision.categoryId,
         estimate: {
           quantity: decision.quantity,
@@ -243,3 +253,4 @@ export const estimatesFromCarryOvers = (
     }
     return estimates;
   }, []);
+};

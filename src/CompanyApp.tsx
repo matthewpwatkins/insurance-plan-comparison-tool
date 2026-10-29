@@ -56,6 +56,7 @@ const defaultInputs = (slug: string): UserInputs => ({
   },
   hsaContribution: 0,
   fsaContribution: 0,
+  peopleNames: [],
 });
 
 const withShared = (defaults: UserInputs, shared: PartialUserInputs): UserInputs => ({

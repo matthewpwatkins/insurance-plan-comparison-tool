@@ -91,6 +91,7 @@
       "additionalProperties": false,
       "properties": {
         "qty_cap": { "type": "integer", "minimum": 0 },
+        "extra_visits_with_preauthorization": { "type": "boolean" },
         "cost_cap": { "type": "number", "minimum": 0 },
         "in_network_coverage": { "$ref": "#/definitions/costStructure" },
         "out_of_network_coverage": { "$ref": "#/definitions/costStructure" }

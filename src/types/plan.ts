@@ -45,6 +45,8 @@ export interface NetworkBenefits {
   in_network_coverage?: CostStructure;
   out_of_network_coverage?: CostStructure;
   qty_cap?: number;
+  /** The plan covers visits past qty_cap once preauthorized, so the limit is only a note */
+  extra_visits_with_preauthorization?: boolean;
   cost_cap?: number;
 }
 
@@ -53,6 +55,10 @@ export interface Category {
   description?: string;
   preventive?: boolean;
   notes?: string[];
+  /** False for costs no plan pays, which skip the deductible and out-of-pocket max (default true) */
+  covered_by_insurance?: boolean;
+  /** Whether HSA or FSA money can pay for it (default true) */
+  hsa_fsa_eligible?: boolean;
 }
 
 export interface HealthPlan {

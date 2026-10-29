@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Form, Table } from 'react-bootstrap';
+import { Alert, Button, Form, ListGroup, Table } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileArrowUp } from '@fortawesome/free-solid-svg-icons';
 import PrivacyNote from './PrivacyNote';
@@ -90,7 +90,8 @@ const EstimateImporter: React.FC<EstimateImporterProps> = ({
           )}
           {result.estimates.length > 0 && (
             <>
-              <Table size="sm" responsive className="small">
+              {/* A table on wider screens; phones get one card per row instead */}
+              <Table size="sm" className="small d-none d-md-table">
                 <thead>
                   <tr>
                     <th>Category</th>
@@ -112,6 +113,20 @@ const EstimateImporter: React.FC<EstimateImporterProps> = ({
                   ))}
                 </tbody>
               </Table>
+              <ListGroup className="small mb-3 d-md-none">
+                {result.estimates.map((row, index) => (
+                  <ListGroup.Item key={index}>
+                    <div className="fw-semibold">
+                      {categories[row.categoryId]?.name ?? row.categoryId}
+                    </div>
+                    <div>
+                      {row.estimate.quantity} × {formatCurrency(row.estimate.costPerVisit)},{' '}
+                      {row.estimate.isInNetwork ? 'in network' : 'out of network'}
+                    </div>
+                    {row.notes && <div className="text-muted">{row.notes}</div>}
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
               <div className="d-flex flex-wrap gap-2">
                 <Button variant="success" onClick={() => finish('replace')}>
                   {existingCount > 0 ? 'Replace my estimates' : 'Use these estimates'}

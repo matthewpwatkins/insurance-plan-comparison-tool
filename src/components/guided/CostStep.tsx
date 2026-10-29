@@ -9,25 +9,31 @@ import PrivacyNote from '../PrivacyNote';
 import { buildEstimatePrompt } from '../../utils/estimatePrompt';
 import { CategoryEstimate, Company, PlanData, UserInputs } from '../../types';
 
-export type EstimateChoice = 'estimate' | 'preventive';
+export type EstimateChoice = 'estimate' | 'manual' | 'preventive';
 
 const CHOICES: { id: EstimateChoice; emoji: string; title: string; description: string }[] = [
   {
     id: 'estimate',
     emoji: '🧾',
-    title: 'Estimate my costs (recommended)',
-    description: "Start from last year's claims or enter them yourself. About 5 to 10 minutes.",
+    title: 'Start from my claims (recommended)',
+    description: "Load last year's claims, then adjust them for next year. About 5 to 10 minutes.",
+  },
+  {
+    id: 'manual',
+    emoji: '✍️',
+    title: 'Enter costs by hand',
+    description: 'Type in the care you expect, how often, and what it costs.',
   },
   {
     id: 'preventive',
     emoji: '🩺',
     title: 'Only preventive care',
     description:
-      'Compare plans as if you only use care every plan covers in full. Goes straight to results.',
+      'Compare plans as if you only use care every plan covers in full. No costs to enter.',
   },
 ];
 
-/** Step 1: estimate costs, or compare on premiums and savings alone. */
+/** Step 1: estimate costs from claims or by hand, or compare on premiums and savings alone. */
 export const EstimateChoiceStep: React.FC<{
   choice: EstimateChoice | null;
   onChoose: (choice: EstimateChoice) => void;
@@ -48,7 +54,7 @@ export const EstimateChoiceStep: React.FC<{
             className={`h-100 ${choice === option.id ? 'shadow-sm bg-primary-subtle' : ''}`}
           >
             <Card.Body>
-              <div className="fs-3">{option.emoji}</div>
+              <div className="fs-3 text-center">{option.emoji}</div>
               <div className="fw-bold">{option.title}</div>
               <div className="small text-muted">{option.description}</div>
             </Card.Body>
@@ -223,7 +229,13 @@ export const EditStep: React.FC<{
   planData: PlanData;
   inputs: UserInputs;
   onChange: (updates: Partial<UserInputs>) => void;
-}> = ({ planData, inputs, onChange }) => (
+  highlightIndex?: number;
+}> = ({ planData, inputs, onChange, highlightIndex }) => (
   // Already inside the guided setup's form, whose Enter key does nothing on this step
-  <HealthcareCategoriesSection inputs={inputs} onChange={onChange} planData={planData} />
+  <HealthcareCategoriesSection
+    inputs={inputs}
+    onChange={onChange}
+    planData={planData}
+    highlightIndex={highlightIndex}
+  />
 );

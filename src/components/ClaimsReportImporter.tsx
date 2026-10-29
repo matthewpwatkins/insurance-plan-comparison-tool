@@ -9,6 +9,8 @@ import { ClaimsReadError } from '../claims/types';
 import {
   CarryOver,
   estimatesFromCarryOvers,
+  firstNameOf,
+  patientsOf,
   groupPastExpenses,
   limitToRecent,
   PastExpense,
@@ -19,6 +21,7 @@ import {
 } from '../claims/estimateFromClaims';
 import { formatCurrency } from '../utils/formatters';
 import { CategoryEstimate, ClaimsReport, PlanData } from '../types';
+import { isCoveredByInsurance } from '../utils/costCalculator';
 
 /** Estimates come from at most the most recent year of the report. */
 const MONTHS_USED = 12;
@@ -73,6 +76,8 @@ export interface LoadedClaims {
 /** What the page's Continue button sends on from the review. */
 export interface ClaimsDraft {
   estimates: CategoryEstimate[];
+  /** Suggested names for Person 1, 2, ..., from the patients in the claims */
+  people: string[];
   /** Date range the estimates came from, for the notice on the editor */
   period: string;
   /** False until every checked row has a category */
@@ -185,7 +190,13 @@ export const ClaimsReview: React.FC<{
   const [inflationRate, setInflationRate] = useState(planData.healthcare_price_increase);
 
   const sortedCategories = useMemo(
-    () => Object.entries(planData.categories).sort(([, a], [, b]) => a.name.localeCompare(b.name)),
+    // Costs insurance doesn't cover go last, as in the expense editor
+    () =>
+      Object.entries(planData.categories).sort(
+        ([idA, a], [idB, b]) =>
+          Number(!isCoveredByInsurance(planData.categories, idA)) -
+            Number(!isCoveredByInsurance(planData.categories, idB)) || a.name.localeCompare(b.name)
+      ),
     [planData.categories]
   );
 
@@ -246,10 +257,11 @@ export const ClaimsReview: React.FC<{
   useEffect(() => {
     onDraftChange({
       estimates: estimatesFromCarryOvers(ordered, suggestions),
+      people: patientsOf(expenses).map(firstNameOf),
       period: claimsPeriod(prepared),
       ready: !missingCategory,
     });
-  }, [prepared, ordered, suggestions, missingCategory, onDraftChange]);
+  }, [prepared, expenses, ordered, suggestions, missingCategory, onDraftChange]);
 
   /** A dropdown only for services we couldn't place; everything else is plain text. */
   const categoryCell = (expense: PastExpense, suggestion: CarryOver) =>

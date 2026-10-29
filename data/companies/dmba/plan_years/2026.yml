@@ -84,6 +84,7 @@ plans:
         qty_cap: 1
       occupational_therapy_outpatient:
         qty_cap: 25
+        extra_visits_with_preauthorization: true
       pharmacy_specialty_tier_1:
         in_network_coverage:
           copay: 5
@@ -119,6 +120,7 @@ plans:
           copay: 310
       physical_therapy_outpatient:
         qty_cap: 25
+        extra_visits_with_preauthorization: true
       skilled_nursing_facility:
         qty_cap: 50
       telemedicine_pcp:
@@ -226,6 +228,7 @@ plans:
         qty_cap: 1
       occupational_therapy_outpatient:
         qty_cap: 25
+        extra_visits_with_preauthorization: true
       pharmacy_specialty_tier_1:
         in_network_coverage:
           copay: 5
@@ -261,6 +264,7 @@ plans:
           copay: 230
       physical_therapy_outpatient:
         qty_cap: 25
+        extra_visits_with_preauthorization: true
       skilled_nursing_facility:
         qty_cap: 50
       telemedicine_pcp:
@@ -410,6 +414,7 @@ plans:
         out_of_network_coverage:
           copay: 60
         qty_cap: 25
+        extra_visits_with_preauthorization: true
       skilled_nursing_facility:
         qty_cap: 50
       speech_therapy_outpatient:
@@ -560,6 +565,7 @@ plans:
         out_of_network_coverage:
           copay: 60
         qty_cap: 25
+        extra_visits_with_preauthorization: true
       skilled_nursing_facility:
         qty_cap: 50
       speech_therapy_outpatient:

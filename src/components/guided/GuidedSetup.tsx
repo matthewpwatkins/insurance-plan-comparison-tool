@@ -1,7 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, Form, InputGroup, ProgressBar, Table } from 'react-bootstrap';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Form,
+  InputGroup,
+  Modal,
+  ProgressBar,
+  Row,
+  Table,
+} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowLeft,
+  faArrowRight,
+  faArrowUpRightFromSquare,
+} from '@fortawesome/free-solid-svg-icons';
+import { ELIGIBLE_OTHER_ID } from '../HealthcareCategoriesSection';
+import PeopleList from '../PeopleList';
+import { coverageFor, peopleCount } from '../../utils/people';
+import { isCoveredByInsurance } from '../../utils/costCalculator';
 import FormattedNumberInput from '../FormattedNumberInput';
 import MedicareNote from '../MedicareNote';
 import PrivacyNote from '../PrivacyNote';
@@ -29,7 +48,7 @@ import {
   isHSAQualified,
 } from '../../services/planDataService';
 import { formatCurrency } from '../../utils/formatters';
-import { CategoryEstimate, Company, CoverageType, PlanData, UserInputs } from '../../types';
+import { CategoryEstimate, Company, PlanData, UserInputs } from '../../types';
 
 type StepId =
   | 'welcome'
@@ -37,8 +56,7 @@ type StepId =
   | 'coverage'
   | 'age'
   | 'tax'
-  | 'hsa'
-  | 'fsa'
+  | 'accounts'
   | 'estimate'
   | 'import'
   | 'review'
@@ -57,20 +75,23 @@ interface GuidedSetupProps {
 
 /** Dollar amount with a matching slider, from 0 to the contribution limit. */
 const ContributionInput: React.FC<{
+  label: string;
   value: number;
   max: number;
+  autoFocus?: boolean;
   onChange: (value: number) => void;
-}> = ({ value, max, onChange }) => (
-  <div style={{ maxWidth: '32rem' }}>
+}> = ({ label, value, max, autoFocus, onChange }) => (
+  <div>
     <InputGroup size="lg" className="mb-3" style={{ maxWidth: '16rem' }}>
       <InputGroup.Text>$</InputGroup.Text>
       <FormattedNumberInput
+        aria-label={label}
         value={value}
         onChange={onChange}
         min={0}
         max={max}
         step={100}
-        autoFocus
+        autoFocus={autoFocus}
       />
     </InputGroup>
     <Form.Range
@@ -79,7 +100,7 @@ const ContributionInput: React.FC<{
       step={50}
       value={Math.min(value, max)}
       onChange={e => onChange(Number(e.target.value))}
-      aria-label="Contribution amount"
+      aria-label={label}
     />
     <div className="d-flex justify-content-between small text-muted">
       <span>$0</span>
@@ -87,6 +108,10 @@ const ContributionInput: React.FC<{
     </div>
   </div>
 );
+
+/** A picture of the household for the who's-covered callout, following the number of people */
+const householdEmoji = (count: number): string =>
+  count <= 1 ? '🧑' : count === 2 ? '👫' : count === 3 ? '👨‍👩‍👧' : '👨‍👩‍👧‍👦';
 
 const GuidedSetup: React.FC<GuidedSetupProps> = ({
   company,
@@ -102,11 +127,21 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
     () => (readGuidedStepFromPath() as StepId | null) ?? 'welcome'
   );
   const [estimateChoice, setEstimateChoice] = useState<EstimateChoice | null>(
-    (saved?.estimateChoice as EstimateChoice | null) ?? null
+    // Starting from claims is the recommended way, so it starts chosen
+    (saved?.estimateChoice as EstimateChoice | null) ?? 'estimate'
   );
   const [claimsPeriod, setClaimsPeriod] = useState<string | undefined>(saved?.claimsPeriod);
   const [claims, setClaims] = useState<LoadedClaims | null>(null);
   const [claimsDraft, setClaimsDraft] = useState<ClaimsDraft | null>(null);
+  const [showOtherCostsReminder, setShowOtherCostsReminder] = useState(false);
+  // Whether the people list was filled in from imported estimates
+  const [fromClaims, setFromClaims] = useState(false);
+  // The row the reminder added, pointed out on the expense screen
+  const [addedRow, setAddedRow] = useState<number | undefined>(undefined);
+  const [otherCostsReminded, setOtherCostsReminded] = useState(false);
+  const hasOtherCosts = inputs.costs.categoryEstimates.some(
+    estimate => planData && !isCoveredByInsurance(planData.categories, estimate.categoryId)
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -155,15 +190,18 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
   const steps: StepId[] = [
     'welcome',
     ...(years.length > 1 ? (['year'] as StepId[]) : []),
+    'estimate',
+    // Claims come before who's covered, so the people in them fill in the list. Before a
+    // choice, count the longest path, through the claims import.
+    ...(estimateChoice === 'estimate' || estimateChoice === null
+      ? (['import', ...(claims ? ['review'] : [])] as StepId[])
+      : []),
+    // Who's covered sets the HSA and FSA limits, so it comes before them
     'coverage',
     ...(hsaPlans.length > 0 ? (['age'] as StepId[]) : []),
     'tax',
-    ...(hsaPlans.length > 0 ? (['hsa'] as StepId[]) : []),
-    ...(fsaPlans.length > 0 ? (['fsa'] as StepId[]) : []),
-    'estimate',
-    ...(estimateChoice !== 'preventive'
-      ? (['import', ...(claims ? ['review'] : []), 'edit'] as StepId[])
-      : []),
+    'accounts',
+    ...(estimateChoice !== 'preventive' ? (['edit'] as StepId[]) : []),
   ];
   const index = Math.max(0, steps.indexOf(step));
   const applies = steps.includes(step);
@@ -194,6 +232,11 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
     if (isLast) {
       if (estimateChoice === 'preventive') {
         onChange({ costs: { ...inputs.costs, categoryEstimates: [] } });
+      } else if (step === 'edit' && !hasOtherCosts && !otherCostsReminded) {
+        // Once, before results: costs insurance won't pay for are easy to forget
+        setOtherCostsReminded(true);
+        setShowOtherCostsReminder(true);
+        return;
       }
       onFinish();
     } else {
@@ -207,17 +250,26 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
     goTo('review');
   };
 
-  /** Takes imported estimates and moves on to editing them. */
-  const applyImported = (estimates: CategoryEstimate[], period?: string) => {
-    onChange({ costs: { ...inputs.costs, categoryEstimates: estimates } });
+  /**
+   * Takes imported estimates, and the people in them, and moves on to who's covered. Claims
+   * suggest names; an AI estimates file only numbers people.
+   */
+  const applyImported = (estimates: CategoryEstimate[], period?: string, people?: string[]) => {
+    const used = Math.max(0, ...estimates.map(estimate => estimate.person ?? 0));
+    const names = people ?? Array.from({ length: used }, () => '');
+    onChange({
+      costs: { ...inputs.costs, categoryEstimates: estimates },
+      ...(names.length > 0 ? { peopleNames: names, coverage: coverageFor(names.length) } : {}),
+    });
     setClaimsPeriod(period);
-    goTo('edit');
+    setFromClaims(names.length > 0);
+    goTo('coverage');
   };
 
   const startOver = () => {
     onStartOver();
     setSaved(null);
-    setEstimateChoice(null);
+    setEstimateChoice('estimate');
     setClaimsPeriod(undefined);
     setClaims(null);
     hsaTouched.current = false;
@@ -275,7 +327,15 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
               <Button size="lg" variant="success" className="px-5" onClick={() => goTo(resumeStep)}>
                 Pick up where you left off <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
               </Button>
-              <Button size="lg" variant="outline-secondary" onClick={startOver}>
+              <Button
+                size="lg"
+                variant="outline-secondary"
+                onClick={() => {
+                  // Forget everything and go straight to the first question
+                  startOver();
+                  goTo(steps[1]);
+                }}
+              >
                 Start over
               </Button>
             </div>
@@ -320,25 +380,32 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
         };
       case 'coverage':
         return {
-          title: 'And who are you getting coverage for?',
+          title: 'Who will be covered in your household?',
+          intro: fromClaims
+            ? 'Names are optional and never leave your device; we use them only to label your expenses.'
+            : 'List everyone, starting with you. Names are optional and never leave your device; we use them only to label your expenses.',
           body: (
-            <Form.Select
-              size="lg"
-              value={inputs.coverage}
-              onChange={e => onChange({ coverage: e.target.value as CoverageType })}
-              autoFocus
-            >
-              <option value={CoverageType.Single}>Single - Just you</option>
-              <option value={CoverageType.TwoParty}>Two party - You and one other person</option>
-              <option value={CoverageType.Family}>Family - At least 3 people</option>
-            </Form.Select>
+            <>
+              {fromClaims && (
+                <Alert variant="info" className="d-flex align-items-start gap-3">
+                  <span className="fs-3 lh-1 text-nowrap">
+                    {householdEmoji(peopleCount(inputs))}
+                  </span>
+                  <span>
+                    <strong>We filled this in from last year's claims.</strong> Add anyone who had
+                    no claims or is new, like a baby, and remove anyone leaving your plan.
+                  </span>
+                </Alert>
+              )}
+              <PeopleList inputs={inputs} onChange={onChange} size="lg" />
+            </>
           ),
         };
       case 'age':
         return {
-          title: `How old will you be at the end of ${inputs.year}?`,
+          title: `How old will the primary policyholder be at the end of ${inputs.year}?`,
           intro:
-            'People 55 and up can put an extra $1,000 a year into an HSA. This is the only thing your age changes.',
+            'People 55 and up can put an extra $1,000 a year into an HSA. This is the only thing age changes here.',
           body: (
             <>
               <Form.Select
@@ -376,77 +443,73 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
             </>
           ),
         };
-      case 'hsa':
+      case 'accounts': {
+        const hsa = hsaPlans.length > 0 && (
+          <Col xs={12} lg key="hsa" className="d-flex flex-column">
+            <h5>Health Savings Account (HSA)</h5>
+            <p>
+              Comes with the high-deductible plans, and {company.name} adds up to{' '}
+              <strong>{formatCurrency(maxEmployerHSA)} a year</strong> to it for free. What you put
+              in stays yours, even if you change jobs.
+            </p>
+            <p>
+              📈 <strong>The hidden superpower:</strong> you can invest it like a 401(k) and let it
+              grow for decades, then spend it on medical care completely tax-free.{' '}
+              <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
+                Here's how it works
+              </a>
+            </p>
+            <div className="mt-auto">
+              <ContributionInput
+                label="Most you'd put in an HSA"
+                value={inputs.hsaContribution}
+                max={maxEmployeeHSA}
+                autoFocus
+                onChange={value => {
+                  hsaTouched.current = true;
+                  onChange({ hsaContribution: value });
+                }}
+              />
+            </div>
+          </Col>
+        );
+        const fsa = fsaPlans.length > 0 && (
+          <Col xs={12} lg key="fsa" className="d-flex flex-column">
+            <h5>{company.fsa_name ?? 'Flexible Spending Account (FSA)'}</h5>
+            <p>
+              Comes with the plans that don't have an HSA. Money left at the end of the year is
+              lost, past a small amount that rolls over. No need to get it exact: we'll work out how
+              much makes sense for each plan from your expected costs.
+            </p>
+            <div className="mt-auto">
+              <ContributionInput
+                label="Most you'd put in an FSA"
+                value={inputs.fsaContribution}
+                max={maxFSA}
+                autoFocus={!hsa}
+                onChange={value => {
+                  fsaTouched.current = true;
+                  onChange({ fsaContribution: value });
+                }}
+              />
+            </div>
+          </Col>
+        );
         return {
-          title: "What's the most you'd put in an HSA?",
+          title: "What's the most you'd put in a tax-free account?",
           intro: (
             <>
-              <p>
-                <em>No need to pick a plan yet.</em> If you end up choosing a high-deductible plan,
-                you get a Health Savings Account (HSA), and {company.name} adds up to{' '}
-                <strong>{formatCurrency(maxEmployerHSA)} a year</strong> to it for free.
-              </p>
-              <p>
-                What you put in comes out of your paycheck <em>before</em> taxes and stays yours,
-                even if you change jobs.
-              </p>
-              <p>
-                📈 <strong>The hidden superpower:</strong> you can invest it like a 401(k) and let
-                it grow for decades, then spend it on medical care completely tax-free. Many people
-                pay this year's bills out of pocket and let their HSA snowball for retirement.{' '}
-                <a href={HSA_VIDEO_URL} target="_blank" rel="noopener noreferrer">
-                  Here's how it works
-                </a>
-              </p>
-              <p className="mb-0">
-                If you went that route, what's the most you'd be willing to contribute?
-              </p>
+              <em>No need to pick a plan yet.</em> Each plan comes with one of these accounts. What
+              you put in comes out of your paycheck <em>before</em> taxes. If you went that route,
+              what's the most you'd be willing to contribute?
             </>
           ),
-          body: (
-            <ContributionInput
-              value={inputs.hsaContribution}
-              max={maxEmployeeHSA}
-              onChange={value => {
-                hsaTouched.current = true;
-                onChange({ hsaContribution: value });
-              }}
-            />
-          ),
+          body: <Row className="g-5">{[hsa, fsa]}</Row>,
         };
-      case 'fsa':
-        return {
-          title: "What's the most you'd put in an FSA?",
-          intro: (
-            <>
-              <p>
-                <em>Still no need to pick a plan.</em> If you end up choosing a plan without an HSA,
-                you can use {company.fsa_name ?? 'a Flexible Spending Account (FSA)'} instead.
-              </p>
-              <p>
-                What you put in comes out of your paycheck <em>before</em> taxes, but money left at
-                the end of the year is lost, past a small amount that rolls over. No need to get it
-                exact: we'll work out how much makes sense for each plan from your expected costs.
-              </p>
-              <p className="mb-0">
-                If you went that route, what's the most you'd be willing to contribute?
-              </p>
-            </>
-          ),
-          body: (
-            <ContributionInput
-              value={inputs.fsaContribution}
-              max={maxFSA}
-              onChange={value => {
-                fsaTouched.current = true;
-                onChange({ fsaContribution: value });
-              }}
-            />
-          ),
-        };
+      }
       case 'estimate':
         return {
-          title: 'Do you want to estimate your health expenses?',
+          title: 'How do you want to estimate your health expenses?',
           intro:
             "Doctor visits, prescriptions, tests, therapy and the like. Don't worry about being exact.",
           body: <EstimateChoiceStep choice={estimateChoice} onChoose={setEstimateChoice} />,
@@ -493,11 +556,35 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
       case 'edit':
         return {
           title: `What health expenses do you expect in ${inputs.year}?`,
-          intro:
-            claimsPeriod && estimateCount > 0
-              ? `Here are the ${estimateCount} ${estimateCount === 1 ? 'expense' : 'expenses'} you kept, with the price increase applied. Now plan for what's different in ${inputs.year}: add anything new, like a baby, a surgery or a new prescription, change how often or how much, and remove anything that won't happen again.`
-              : 'Add the care you expect, how often, and its full price before insurance.',
-          body: planData && <EditStep planData={planData} inputs={inputs} onChange={onChange} />,
+          intro: (
+            <>
+              <p>
+                {claimsPeriod && estimateCount > 0
+                  ? `Here are the ${estimateCount} ${estimateCount === 1 ? 'expense' : 'expenses'} you kept, with the price increase applied. Now plan for what's different in ${inputs.year}: add anything new, like a baby, a surgery or a new prescription, change how often or how much, and remove anything that won't happen again.`
+                  : 'Add the care you expect, how often, and its full price before insurance.'}
+              </p>
+              <p className="mb-1">
+                💡 <strong>Don't forget other medical costs!</strong> To get a clear picture of your
+                medical costs, include expenses your insurance won't cover, like:
+              </p>
+              <ul className="mb-1">
+                <li>Procedures and visits your plan doesn't cover</li>
+                <li>Over-the-counter medicine</li>
+                <li>Everyday health items, like sunscreen and reading glasses</li>
+              </ul>
+              <p className="mb-0">
+                Add them under <em>Other medical costs</em>.
+              </p>
+            </>
+          ),
+          body: planData && (
+            <EditStep
+              planData={planData}
+              inputs={inputs}
+              onChange={onChange}
+              highlightIndex={addedRow}
+            />
+          ),
         };
       default:
         return { title: '', body: null };
@@ -526,10 +613,6 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
           {question.intro && <div className="text-muted mb-4">{question.intro}</div>}
           <div className="mb-4">{question.body}</div>
         </Form>
-        <p className="small text-muted mb-3">
-          Not sure? Make your best guess. On the results page you can change any answer and see how
-          it changes the best plan.
-        </p>
 
         <div className="d-flex justify-content-between align-items-center gap-2 border-top pt-3">
           <Button variant="outline-secondary" className="text-nowrap" onClick={back}>
@@ -538,7 +621,7 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
           </Button>
           {/* Import: skip until a report is loaded, then on to reviewing it */}
           {step === 'import' && !claims && (
-            <Button variant="outline-secondary" onClick={() => goTo('edit')}>
+            <Button variant="outline-secondary" onClick={() => goTo('coverage')}>
               {skipLabel(inputs.costs.categoryEstimates.length)}
               <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
             </Button>
@@ -555,7 +638,8 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
               size="lg"
               disabled={!claimsDraft?.ready}
               onClick={() =>
-                claimsDraft && applyImported(claimsDraft.estimates, claimsDraft.period)
+                claimsDraft &&
+                applyImported(claimsDraft.estimates, claimsDraft.period, claimsDraft.people)
               }
             >
               Continue
@@ -575,6 +659,64 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
           )}
         </div>
       </Card.Body>
+      <Modal show={showOtherCostsReminder} onHide={() => setShowOtherCostsReminder(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Anything insurance won't pay for?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Your HSA or FSA also pays for health costs insurance doesn't cover. Adding them makes
+            your total more realistic and can raise your tax savings. Think about:
+          </p>
+          <ul>
+            <li>Over-the-counter medicine, like pain relievers and allergy pills</li>
+            <li>Bandages, first aid and other medical supplies</li>
+            <li>Sunscreen (SPF 15 or higher)</li>
+            <li>Visits or treatments your plan won't cover</li>
+          </ul>
+          <p className="mb-0">
+            Not sure what counts? Search{' '}
+            <a href="https://www.hsalist.org/" target="_blank" rel="noopener noreferrer">
+              hsalist.org <FontAwesomeIcon icon={faArrowUpRightFromSquare} size="xs" />
+            </a>
+            . Costs your HSA or FSA can't pay for go under{' '}
+            <em>Other medical costs (HSA/FSA ineligible)</em>.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={() => {
+              setShowOtherCostsReminder(false);
+              onFinish();
+            }}
+          >
+            Skip, see my results
+          </Button>
+          <Button
+            variant="success"
+            onClick={() => {
+              setShowOtherCostsReminder(false);
+              setAddedRow(inputs.costs.categoryEstimates.length);
+              onChange({
+                costs: {
+                  ...inputs.costs,
+                  categoryEstimates: [
+                    ...inputs.costs.categoryEstimates,
+                    {
+                      categoryId: ELIGIBLE_OTHER_ID,
+                      estimate: { quantity: 1, costPerVisit: 0, isInNetwork: true },
+                      notes: '',
+                    },
+                  ],
+                },
+              });
+            }}
+          >
+            Add them
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Card>
   );
 };

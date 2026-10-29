@@ -76,6 +76,15 @@ describe('guided setup', () => {
     return match;
   };
 
+  /** A button in a popup, which renders outside the page's container */
+  const popupButton = (label: string): HTMLButtonElement => {
+    const match = Array.from(document.body.querySelectorAll('.modal button')).find(
+      el => el.textContent?.trim() === label
+    ) as HTMLButtonElement | undefined;
+    if (!match) throw new Error(`No popup button "${label}" in: ${document.body.textContent}`);
+    return match;
+  };
+
   const click = (target: string | HTMLElement) => {
     const el = typeof target === 'string' ? button(target) : target;
     act(() => {
@@ -88,20 +97,30 @@ describe('guided setup', () => {
     Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, value);
   };
 
-  const choose = (value: string) => {
-    const select = container.querySelector('select') as HTMLSelectElement;
-    act(() => {
-      setValue(select, value);
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+  /** Clicks Next through the questions until the one that finishes */
+  const nextUntilLastStep = () => {
+    for (let i = 0; i < 12 && !text().includes('See my results'); i++) click('Next');
+  };
+
+  /** Lists this many people on the coverage question, which sets the coverage */
+  const setPeople = (count: number) => {
+    const listed = () => container.querySelectorAll('input[aria-label^="Name for person"]').length;
+    while (listed() > count) {
+      const removes = container.querySelectorAll('button[aria-label^="Remove person"]');
+      click(removes[removes.length - 1] as HTMLElement);
+    }
+    while (listed() < count) click('Add person');
   };
 
   const numberInput = () =>
     container.querySelector('input[inputmode="numeric"]') as HTMLInputElement;
+  const hsaInput = () =>
+    container.querySelector('input[aria-label="Most you\'d put in an HSA"]') as HTMLInputElement;
+  const fsaInput = () =>
+    container.querySelector('input[aria-label="Most you\'d put in an FSA"]') as HTMLInputElement;
 
   /** Types into a formatted number box; it only reports the number on blur. */
-  const typeNumber = (value: string) => {
-    const input = numberInput();
+  const typeNumber = (value: string, input: HTMLInputElement = numberInput()) => {
     act(() => {
       input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
       setValue(input, value);
@@ -137,8 +156,8 @@ describe('guided setup', () => {
       expect(text()).toContain('What plan year are you working on?');
 
       click('Next');
-      expect(path()).toBe('/dmba/setup/coverage');
-      expect(text()).toContain('who are you getting coverage for?');
+      expect(path()).toBe('/dmba/setup/estimate');
+      expect(text()).toContain('How do you want to estimate your health expenses?');
 
       click('Back');
       expect(path()).toBe('/dmba/setup/year');
@@ -159,16 +178,16 @@ describe('guided setup', () => {
       browserGoesTo('/dmba');
       expect(text()).toContain("Let's go");
 
-      browserGoesTo('/dmba/setup/coverage');
-      expect(text()).toContain('who are you getting coverage for?');
+      browserGoesTo('/dmba/setup/estimate');
+      expect(text()).toContain('How do you want to estimate your health expenses?');
     });
 
     it('opens a step from its link and counts the questions that apply', () => {
       renderAt('/dmba/setup/tax');
 
       expect(text()).toContain("What's your combined income tax rate?");
-      // year, coverage, age, tax, hsa, fsa, estimate, import, edit
-      expect(text()).toContain('Question 4 of 9');
+      // year, estimate, import, coverage, age, tax, accounts, edit
+      expect(text()).toContain('Question 6 of 8');
     });
 
     it('sends a review link with no report loaded back to the import step', () => {
@@ -193,46 +212,43 @@ describe('guided setup', () => {
       expect(text()).not.toContain("What's your combined income tax rate?");
     });
 
-    it('waits for an answer before leaving the estimate question', () => {
+    it('starts the estimate question on starting from claims', () => {
       renderAt('/dmba/setup/estimate');
 
-      expect(button('Next').disabled).toBe(true);
-      click(container.querySelector('.card[role="button"]') as HTMLElement);
+      const chosen = container.querySelector('.card.border-primary');
+      expect(chosen?.textContent).toContain('Start from my claims');
       expect(button('Next').disabled).toBe(false);
     });
   });
 
   describe('HSA and FSA amounts', () => {
     it('start at the most you can put in and follow coverage until edited', () => {
-      renderAt('/dmba/setup/hsa');
+      renderAt('/dmba/setup/accounts');
       // Family limit $9,000 less the $1,250 both HSA plans put in
-      expect(numberInput().value).toBe('7,750');
-
-      click('Next');
-      expect(text()).toContain("What's the most you'd put in an FSA?");
-      expect(numberInput().value).toBe('3,500');
+      expect(hsaInput().value).toBe('7,750');
+      expect(fsaInput().value).toBe('3,500');
 
       browserGoesTo('/dmba/setup/coverage');
-      choose(CoverageType.Single);
-      browserGoesTo('/dmba/setup/hsa');
+      setPeople(1);
+      browserGoesTo('/dmba/setup/accounts');
       // Single limit $4,500 less the $625 both HSA plans put in
-      expect(numberInput().value).toBe('3,875');
+      expect(hsaInput().value).toBe('3,875');
 
-      typeNumber('1000');
-      expect(numberInput().value).toBe('1,000');
+      typeNumber('1000', hsaInput());
+      expect(hsaInput().value).toBe('1,000');
 
       browserGoesTo('/dmba/setup/coverage');
-      choose(CoverageType.Family);
-      browserGoesTo('/dmba/setup/hsa');
-      expect(numberInput().value).toBe('1,000');
+      setPeople(3);
+      browserGoesTo('/dmba/setup/accounts');
+      expect(hsaInput().value).toBe('1,000');
     });
 
     it('caps a typed amount at the limit', () => {
-      renderAt('/dmba/setup/fsa');
+      renderAt('/dmba/setup/accounts');
 
-      typeNumber('9999');
+      typeNumber('9999', fsaInput());
 
-      expect(numberInput().value).toBe('3,500');
+      expect(fsaInput().value).toBe('3,500');
     });
   });
 
@@ -256,28 +272,27 @@ describe('guided setup', () => {
 
       click('Start over');
 
-      expect(text()).toContain("Let's go");
-      expect(localStorage.getItem('guided:dmba:progress')).toBeNull();
-      click("Let's go");
+      // Straight to the first question, with nothing kept from before
+      expect(path()).toBe('/dmba/setup/year');
+      expect(localStorage.getItem('guided:dmba:progress')).not.toContain('"tax"');
       browserGoesTo('/dmba/setup/tax');
       expect(numberInput().value).toBe('26.45');
     });
 
     it('puts HSA and FSA amounts back on following the max after starting over', () => {
-      saveProgress('hsa', savedInputs({ hsaContribution: 1000, fsaContribution: 500 }));
+      saveProgress('accounts', savedInputs({ hsaContribution: 1000, fsaContribution: 500 }));
       renderAt('/dmba');
 
       click('Start over');
-      browserGoesTo('/dmba/setup/hsa');
+      browserGoesTo('/dmba/setup/accounts');
       // Family limit $9,000 less the $1,250 both HSA plans put in
-      expect(numberInput().value).toBe('7,750');
-      browserGoesTo('/dmba/setup/fsa');
-      expect(numberInput().value).toBe('3,500');
+      expect(hsaInput().value).toBe('7,750');
+      expect(fsaInput().value).toBe('3,500');
 
       browserGoesTo('/dmba/setup/coverage');
-      choose(CoverageType.Single);
-      browserGoesTo('/dmba/setup/hsa');
-      expect(numberInput().value).toBe('3,875');
+      setPeople(1);
+      browserGoesTo('/dmba/setup/accounts');
+      expect(hsaInput().value).toBe('3,875');
     });
 
     it('reopens a saved review at the import step, since the report is not kept', () => {
@@ -318,7 +333,7 @@ describe('guided setup', () => {
 
       click("Let's go");
       click('Next');
-      expect(path()).toBe('/dmba/setup/coverage');
+      expect(path()).toBe('/dmba/setup/estimate');
     });
 
     it('still opens a shared link', () => {
@@ -347,6 +362,7 @@ describe('guided setup', () => {
         card.textContent?.includes('Only preventive care')
       ) as HTMLElement;
       click(preventive);
+      nextUntilLastStep();
       click('See my results');
 
       expect(text()).toContain('Plan Comparison Results');
@@ -379,9 +395,13 @@ describe('guided setup', () => {
       renderAt('/dmba/setup/import');
 
       click('Keep my 1 estimate');
+      expect(path()).toBe('/dmba/setup/coverage');
+      nextUntilLastStep();
       expect(path()).toBe('/dmba/setup/edit');
       expect(text()).toContain('What health expenses do you expect in 2026?');
       click('See my results');
+      expect(document.body.textContent).toContain("Anything insurance won't pay for?");
+      click(popupButton('Skip, see my results'));
 
       expect(text()).toContain('Plan Comparison Results');
       expect(linkInputs().costs?.categoryEstimates).toEqual(savedInputs().costs.categoryEstimates);
@@ -391,6 +411,28 @@ describe('guided setup', () => {
       browserGoesTo('/dmba/setup/edit');
       expect(text()).toContain('What health expenses do you expect in 2026?');
       expect(text()).not.toContain('Basic Information');
+    });
+
+    it("reminds once about costs insurance won't pay for, and adds a row for them", () => {
+      saveProgress('import');
+      renderAt('/dmba/setup/import');
+      click('Keep my 1 estimate');
+      nextUntilLastStep();
+
+      click('See my results');
+      click(popupButton('Add them'));
+      expect(path()).toBe('/dmba/setup/edit');
+      // The added row stands out from the rest
+      const highlighted = container.querySelectorAll('.list-group-item.bg-warning-subtle');
+      expect(highlighted).toHaveLength(1);
+      expect(highlighted[0].textContent).toContain('Other medical costs (HSA/FSA eligible)');
+
+      // With the row added, the next click goes straight to results
+      click('See my results');
+      expect(text()).toContain('Plan Comparison Results');
+      expect(linkInputs().costs?.categoryEstimates?.map(e => e.categoryId)).toContain(
+        'other_hsa_fsa_eligible'
+      );
     });
 
     it('opens a shared link straight to its results', () => {

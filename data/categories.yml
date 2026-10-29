@@ -307,3 +307,14 @@ diabetes_glucometers:
 diabetes_insulin_pumps:
   name: "Diabetes - Insulin Pumps"
   description: "Insulin delivery devices for diabetes management. Coverage limited to one pump every four years. Preauthorization required. Insulin and additional supplies covered under prescription drug benefit. Advanced technology for continuous insulin delivery and improved diabetes control."
+other_hsa_fsa_eligible:
+  name: "Other medical costs (HSA/FSA eligible)"
+  description: "Health costs insurance doesn't pay for but your HSA or FSA does, like over-the-counter medicine, bandages and first aid supplies, sunscreen (SPF 15 or higher), reading glasses, and visits your plan won't cover. You pay the full price, and it doesn't count toward your deductible or out-of-pocket max, but you can pay it with pre-tax HSA or FSA money. Not sure what qualifies? Search hsalist.org."
+  covered_by_insurance: false
+  hsa_fsa_eligible: true
+
+other_hsa_fsa_ineligible:
+  name: "Other medical costs (HSA/FSA ineligible)"
+  description: "Health costs that neither insurance nor your HSA or FSA will pay for, like gym memberships, cosmetic procedures, and general wellness products. You pay the full price with after-tax money, and it doesn't count toward your deductible or out-of-pocket max. It costs the same on every plan, so it never changes which plan is cheapest, but it makes your total more realistic."
+  covered_by_insurance: false
+  hsa_fsa_eligible: false

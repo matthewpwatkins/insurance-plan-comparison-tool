@@ -1,13 +1,14 @@
 import { deflateSync, inflateSync } from 'fflate';
 import { UserInputs, PartialUserInputs, CategoryEstimate, CoverageType } from '../types';
 import { SHARE_DICTIONARY } from './shareDictionary';
+import { listsExtraPeople, peopleNames } from './people';
 
 /**
  * Results links carry the inputs in the hash, so they never reach a server:
  *
  *   /<slug>/results#v1.<base64url(raw deflate(JSON.stringify(inputs), dictionary))>
  *
- * The version tag names the dictionary. Bump it whenever shareDictionary.ts changes.
+ * The version tag names the dictionary, which is frozen; a new dictionary needs a new version.
  */
 export const SHARE_FORMAT_VERSION = 'v1';
 
@@ -29,12 +30,16 @@ const fromBase64Url = (text: string): Uint8Array => {
   return Uint8Array.from(binary, char => char.charCodeAt(0));
 };
 
-/** A full link carries everything; a summary link leaves out the notes on each category. */
+/**
+ * A full link carries everything; a summary link leaves out the notes on each category and the
+ * names of the people covered, who show as "Person 1" and so on.
+ */
 export type ShareMode = 'full' | 'summary';
 
-const withoutNotes = ({ categoryId, estimate }: CategoryEstimate): CategoryEstimate => ({
+const withoutNotes = ({ categoryId, estimate, person }: CategoryEstimate): CategoryEstimate => ({
   categoryId,
   estimate,
+  person,
 });
 
 /** Inputs in the order defaultInputs builds them, so equal inputs always make the same link. */
@@ -52,6 +57,13 @@ const serialize = (inputs: UserInputs, mode: ShareMode): string =>
     },
     hsaContribution: inputs.hsaContribution,
     fsaContribution: inputs.fsaContribution,
+    // The list only when it says more than the coverage does, so most links stay as short as
+    // before. A summary keeps how many people there are but not their names.
+    ...(listsExtraPeople(inputs)
+      ? {
+          peopleNames: mode === 'full' ? peopleNames(inputs) : peopleNames(inputs).map(() => ''),
+        }
+      : {}),
   });
 
 /** The hash payload for these inputs, without the leading '#'. */
@@ -73,7 +85,8 @@ const isCategoryEstimate = (value: any): value is CategoryEstimate =>
   isNonNegativeNumber(value.estimate.quantity) &&
   isNonNegativeNumber(value.estimate.costPerVisit) &&
   typeof value.estimate.isInNetwork === 'boolean' &&
-  (value.notes === undefined || typeof value.notes === 'string');
+  (value.notes === undefined || typeof value.notes === 'string') &&
+  (value.person === undefined || (Number.isInteger(value.person) && value.person >= 1));
 
 /** Keeps the fields that are valid for this company; drops the rest so defaults fill in. */
 const validate = (raw: any, availableYears: number[]): PartialUserInputs => {
@@ -84,6 +97,11 @@ const validate = (raw: any, availableYears: number[]): PartialUserInputs => {
   if (isNonNegativeNumber(raw.taxRate) && raw.taxRate <= 100) inputs.taxRate = raw.taxRate;
   if (isNonNegativeNumber(raw.hsaContribution)) inputs.hsaContribution = raw.hsaContribution;
   if (isNonNegativeNumber(raw.fsaContribution)) inputs.fsaContribution = raw.fsaContribution;
+  if (
+    Array.isArray(raw.peopleNames) &&
+    raw.peopleNames.every((n: unknown) => typeof n === 'string')
+  )
+    inputs.peopleNames = raw.peopleNames;
   const estimates = raw.costs?.categoryEstimates;
   if (Array.isArray(estimates)) {
     inputs.costs = { categoryEstimates: estimates.filter(isCategoryEstimate) };

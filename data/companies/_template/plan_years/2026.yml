@@ -46,6 +46,8 @@ plans:
         in_network_coverage:
           is_free: true
         qty_cap: 1 # visits per year; extra visits are billed 100% to the member
+        # extra_visits_with_preauthorization: true # set when the plan covers more visits once
+        #   preauthorized; the limit then only shows as a note and extra visits get normal coverage
       office_visit_pcp:
         in_network_coverage:
           coinsurance: 0.1

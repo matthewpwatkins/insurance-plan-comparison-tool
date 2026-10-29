@@ -14,6 +14,8 @@ export interface CategoryEstimate {
   categoryId: string;
   estimate: CostEstimate;
   notes?: string;
+  /** Who the care is for, numbered from 1. Unset rows count together as one unnamed person. */
+  person?: number;
 }
 
 export interface UserCosts {
@@ -28,6 +30,8 @@ export interface UserInputs {
   costs: UserCosts;
   hsaContribution: number;
   fsaContribution: number;
+  /** Optional names for people 1, 2, ...; blank or missing shows "Person N" */
+  peopleNames: string[];
 }
 
 export interface PartialUserInputs extends Omit<Partial<UserInputs>, 'costs'> {

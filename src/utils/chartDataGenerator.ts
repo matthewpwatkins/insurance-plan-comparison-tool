@@ -1,9 +1,17 @@
-import { PlanData, UserInputs, PlanResult, HealthPlan, CoverageType } from '../types';
+import {
+  PlanData,
+  UserInputs,
+  PlanResult,
+  HealthPlan,
+  CoverageType,
+  CategoryEstimate,
+} from '../types';
 import {
   calculateAllPlans,
   calculatePlanCost,
   categoryCoverage,
   categoryQuantityCap,
+  isCoveredByInsurance,
 } from './costCalculator';
 
 /**
@@ -57,10 +65,11 @@ interface BilledEstimate {
   network: Network;
   quantity: number;
   costPerVisit: number;
+  person?: number;
 }
 
 /**
- * The user's estimates with care that is free on every plan taken out.
+ * The user's estimates with care that is free on every plan, and care no plan pays for, taken out.
  *
  * A category counts as free only if every plan covers it at no charge in that network, and only
  * up to the smallest visit limit among the plans; visits past that limit are billed on some plan,
@@ -68,29 +77,40 @@ interface BilledEstimate {
  */
 function billedEstimates(planData: PlanData, userInputs: UserInputs): BilledEstimate[] {
   const freeVisitsUsed: Record<string, number> = {};
-  return userInputs.costs.categoryEstimates.map(({ categoryId, estimate }) => {
+  return insuredEstimates(planData, userInputs).map(({ categoryId, estimate, person }) => {
     const network: Network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
     const quantity = Math.round(estimate.quantity);
-    const billed = { categoryId, network, quantity, costPerVisit: estimate.costPerVisit };
+    const billed = { categoryId, network, quantity, costPerVisit: estimate.costPerVisit, person };
     const freeEverywhere =
       planData.plans.length > 0 &&
       planData.plans.every(plan => categoryCoverage(plan, categoryId, network)?.is_free === true);
     if (!freeEverywhere) {
       return billed;
     }
-    // A limit spans every row of the category, as in the cost engine
+    // A limit spans every row of the category for one person, as in the cost engine
     const freeLimit = Math.min(
       ...planData.plans.map(plan => categoryQuantityCap(plan, categoryId, network) ?? Infinity)
     );
-    const key = `${categoryId}|${network}`;
+    const key = `${categoryId}|${network}|${person ?? ''}`;
     const freeVisits = Math.min(quantity, Math.max(0, freeLimit - (freeVisitsUsed[key] ?? 0)));
     freeVisitsUsed[key] = (freeVisitsUsed[key] ?? 0) + freeVisits;
     return { ...billed, quantity: quantity - freeVisits };
   });
 }
 
+/** The user's estimates for care the plans pay toward, or don't, at full price either way */
+const insuredEstimates = (planData: PlanData, userInputs: UserInputs) =>
+  userInputs.costs.categoryEstimates.filter(({ categoryId }) =>
+    isCoveredByInsurance(planData.categories, categoryId)
+  );
+const uncoveredEstimates = (planData: PlanData, userInputs: UserInputs) =>
+  userInputs.costs.categoryEstimates.filter(
+    ({ categoryId }) => !isCoveredByInsurance(planData.categories, categoryId)
+  );
+
 /**
- * Billed spending on the user's estimates, leaving out care that is free on every plan
+ * Billed spending on the user's estimates, leaving out care that is free on every plan and care
+ * no plan pays for
  */
 export function calculateUserSpending(planData: PlanData, userInputs: UserInputs): number {
   return billedEstimates(planData, userInputs).reduce(
@@ -132,9 +152,32 @@ export function rateAfterDeductible(
 }
 
 /**
+ * How the user's billed care splits between people, as shares adding to 1. Care with no person,
+ * or no billed care at all, is one share for the family as a whole.
+ */
+function personShares(
+  planData: PlanData,
+  userInputs: UserInputs
+): { person: number | undefined; share: number }[] {
+  const byPerson = new Map<number | undefined, number>();
+  let total = 0;
+  billedEstimates(planData, userInputs).forEach(({ quantity, costPerVisit, person }) => {
+    byPerson.set(person, (byPerson.get(person) ?? 0) + quantity * costPerVisit);
+    total += quantity * costPerVisit;
+  });
+  if (total <= 0) {
+    return [{ person: undefined, share: 1 }];
+  }
+  return Array.from(byPerson, ([person, billed]) => ({ person, share: billed / total }));
+}
+
+/**
  * A plan's total annual cost when the year's care is `spending` of in-network bills: premiums
  * and account savings, then 100% of bills until the deductible, then the plan's rate for the
- * user's mix of care, then nothing more past the out-of-pocket max.
+ * user's mix of care, then nothing more past the out-of-pocket max. The bills split between
+ * people as the user's own care does, so a person whose care dominates reaches their own
+ * out-of-pocket max first, as their dot does. Care no plan pays for is the same at every
+ * spending level, so it raises the whole line.
  */
 function planLine(
   plan: HealthPlan,
@@ -153,23 +196,31 @@ function planLine(
       },
     },
   };
+  const uncovered = uncoveredEstimates(planData, userInputs);
+  const shares = personShares(planData, userInputs);
+  // One bill for the family as a whole. Split between people, each person's share comes as
+  // monthly bills, so the deductible falls across everyone as it does on the user's own care.
+  const bills = (spending: number): CategoryEstimate[] =>
+    shares.length === 1 && shares[0].person === undefined
+      ? [billOf(spending, 1, undefined)]
+      : shares.map(({ person, share }) => billOf((spending * share) / 12, 12, person));
   return spending =>
     calculatePlanCost(linePlan, planData, {
       ...userInputs,
       costs: {
         ...userInputs.costs,
-        categoryEstimates:
-          spending > 0
-            ? [
-                {
-                  categoryId: DEFAULT_COVERAGE_CATEGORY,
-                  estimate: { quantity: 1, costPerVisit: spending, isInNetwork: true },
-                  notes: '',
-                },
-              ]
-            : [],
+        categoryEstimates: [...(spending > 0 ? bills(spending) : []), ...uncovered],
       },
     }).totalCost;
+}
+
+function billOf(costPerVisit: number, quantity: number, person: number | undefined) {
+  return {
+    categoryId: DEFAULT_COVERAGE_CATEGORY,
+    estimate: { quantity, costPerVisit, isInNetwork: true },
+    notes: '',
+    person,
+  };
 }
 
 /**
@@ -214,8 +265,9 @@ function deductibleFor(plan: HealthPlan, coverage: CoverageType): number {
  * user's own non-free spending and that plan's real total for their estimates.
  *
  * After the deductible each line charges the plan's rate for the user's mix of care, copays
- * included. The lines still bill 100% before the deductible and ignore visit limits and care free
- * on only some plans, so the dots can sit off them.
+ * included, and every line carries the user's care no plan pays for. The lines still bill 100%
+ * before the deductible and ignore visit limits and care free on only some plans, so the dots can
+ * sit off them.
  */
 export function generateChartData(planData: PlanData, userInputs: UserInputs): ChartDataResult {
   const userSpending = calculateUserSpending(planData, userInputs);
@@ -223,9 +275,18 @@ export function generateChartData(planData: PlanData, userInputs: UserInputs): C
 
   const lines = planData.plans.map(plan => {
     const costAt = planLine(plan, planData, userInputs);
+    // Where the line stops rising: the worst case, or lower when one person's care dominates and
+    // their own max stops it first. A hair under, so rounding noise on the flat stretch still
+    // counts as flat.
     const maxAnnualCost = results.find(r => r.planName === plan.name)!.maxAnnualCost;
-    // A hair under the worst case, so rounding noise on the flat stretch still counts as flat
-    const flatPoint = spendingWhereCostReaches(costAt, maxAnnualCost - 1e-6);
+    const top = costAt(SEARCH_CEILING);
+    const stillRising = top - costAt(SEARCH_CEILING * 0.99) > 0.01;
+    const flatPoint =
+      top >= maxAnnualCost - 0.01
+        ? spendingWhereCostReaches(costAt, maxAnnualCost - 1e-6)
+        : stillRising
+          ? null
+          : spendingWhereCostReaches(costAt, top - 0.01);
     return { plan, costAt, flatPoint };
   });
   const latestFlatPoint = Math.max(0, ...lines.map(line => line.flatPoint ?? 0));

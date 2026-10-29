@@ -19,9 +19,9 @@ const acupuncture = (quantity: number, notes: string): CategoryEstimate => ({
 });
 
 describe('visit limits', () => {
-  it('count visits across every row of the same category', () => {
-    // Acupuncture is limited to 12 visits a year, so 16 visits cost the same whether
-    // they're entered as one row or split between two people.
+  it('count visits across every row of the same category with no person picked', () => {
+    // Acupuncture is limited to 12 visits a year. Rows that don't say who they're for count as
+    // one person, so 16 visits cost the same whether entered as one row or two.
     const planData = loadPlanData('dmba', 2026);
     const oneRow = calculateAllPlans(planData, inputsWith([acupuncture(16, 'Family')]));
     const twoRows = calculateAllPlans(

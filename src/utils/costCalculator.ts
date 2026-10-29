@@ -68,15 +68,21 @@ export const calculatePlanCost = (
   // Add employer contribution to ledger
   execution.addEmployerContribution(employerContribution);
 
-  // Process every visit in the order it would happen. A category can span several rows (one per
-  // person or provider), so a visit limit counts visits across all of them, and the year's last
-  // visits are the ones past the limit.
+  // Process every visit in the order it would happen. Visit limits are per person, and a person
+  // can have several rows in a category (one per provider), so a limit counts the person's visits
+  // across all of them, and the year's last visits are the ones past the limit. Rows without a
+  // person count together as one person.
   const visitsUsed: Record<string, number> = {};
   for (const { categoryEstimate } of visitsThroughTheYear(costs.categoryEstimates)) {
-    const { categoryId, estimate, notes } = categoryEstimate;
+    const { categoryId, estimate, notes, person } = categoryEstimate;
     const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
+    execution.forPerson(person);
+    if (!isCoveredByInsurance(planData.categories, categoryId)) {
+      execution.recordUncoveredExpense(categoryId, estimate.costPerVisit, network, notes);
+      continue;
+    }
     const quantityCap = execution.getCategoryQuantityCap(categoryId, network);
-    const capKey = `${categoryId}|${network}`;
+    const capKey = `${categoryId}|${network}|${person ?? ''}`;
     const used = visitsUsed[capKey] ?? 0;
     visitsUsed[capKey] = used + 1;
 
@@ -89,21 +95,27 @@ export const calculatePlanCost = (
   }
 
   const outOfPocketCosts = execution.getTotalOutOfPocket();
+  const { uncoveredCosts, uncoveredEligible } = execution.getUncovered();
 
-  // Add HSA/FSA contribution tax savings to ledger
-  const { userContribution, taxSavedOn, taxSavings } = account.contributing(outOfPocketCosts);
+  // Add HSA/FSA contribution tax savings to ledger. Uncovered costs the account can pay for count
+  // as spending from it.
+  const { userContribution, taxSavedOn, taxSavings } = account.contributing(
+    outOfPocketCosts + uncoveredEligible
+  );
   execution.addContributionTaxSavings(taxSavings, account.type);
   const ledger = execution.getLedger();
 
   // Calculate total cost (premiums less the taxes skipped on them)
-  const totalCost = netAnnualPremiums + outOfPocketCosts - taxSavings - employerContribution;
+  const totalCost =
+    netAnnualPremiums + outOfPocketCosts + uncoveredCosts - taxSavings - employerContribution;
 
-  // Calculate maximum annual cost (worst-case scenario at OOP max)
+  // Calculate maximum annual cost (worst-case scenario at OOP max). Uncovered costs never count
+  // toward the max, so they stay on top of it.
   const oopMax = plan.out_of_pocket_maximum.in_network;
   const oopMaxValue = coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
-  const worstCaseTaxSavings = account.contributing(oopMaxValue).taxSavings;
+  const worstCaseTaxSavings = account.contributing(oopMaxValue + uncoveredEligible).taxSavings;
   const maxAnnualCost =
-    netAnnualPremiums + oopMaxValue - worstCaseTaxSavings - employerContribution;
+    netAnnualPremiums + oopMaxValue + uncoveredCosts - worstCaseTaxSavings - employerContribution;
 
   return {
     planName: plan.name,
@@ -117,10 +129,12 @@ export const calculatePlanCost = (
     totalContributions: userContribution + employerContribution,
     taxSavings, // HSA/FSA contribution tax savings only
     taxSavedOn,
-    bestCaseTaxSavings: account.contributing(0).taxSavings,
+    bestCaseTaxSavings: account.contributing(uncoveredEligible).taxSavings,
     worstCaseTaxSavings,
-    contributionAdvice: account.advice(outOfPocketCosts),
+    contributionAdvice: account.advice(outOfPocketCosts + uncoveredEligible),
     outOfPocketCosts,
+    uncoveredCosts,
+    uncoveredEligibleCosts: uncoveredEligible,
     totalCost: totalCost, // Can be negative if tax savings exceed costs
     outOfPocketMax: oopMaxValue,
     maxAnnualCost,
@@ -130,6 +144,7 @@ export const calculatePlanCost = (
       contributionTaxSavings: -taxSavings, // Negative because it reduces total cost
       employerContribution: -employerContribution, // Negative because it reduces total cost
       outOfPocket: outOfPocketCosts,
+      uncovered: uncoveredCosts,
       net: totalCost,
     },
     ledger,
@@ -152,7 +167,8 @@ const visitsThroughTheYear = (
       // A visit is whole, so a fractional count (from a link or old data) rounds to the nearest
       const quantity = Math.round(estimate.quantity);
       const phase = scatter(
-        `${categoryId}|${estimate.isInNetwork}|${quantity}|${estimate.costPerVisit}`
+        `${categoryId}|${estimate.isInNetwork}|${quantity}|${estimate.costPerVisit}` +
+          (categoryEstimate.person ? `|${categoryEstimate.person}` : '')
       );
       return Array.from({ length: quantity }, (_, k) => ({
         categoryEstimate,
@@ -310,16 +326,41 @@ export const categoryCoverage = (
 };
 
 /**
- * Visits a plan covers per year in a category and network, or undefined if unlimited
+ * A plan's yearly visit limit in a category and network, or undefined if unlimited. Some limits
+ * only mean that more visits need preauthorization.
+ */
+export const categoryVisitLimit = (
+  plan: HealthPlan,
+  categoryId: string,
+  network: 'in_network' | 'out_of_network'
+): { visits: number; extraWithPreauthorization: boolean } | undefined => {
+  const categoryBenefits = plan.categories[categoryId];
+  const visits = categoryBenefits?.qty_cap ?? categoryBenefits?.[`${network}_coverage`]?.qty_cap;
+  return visits === undefined
+    ? undefined
+    : { visits, extraWithPreauthorization: !!categoryBenefits?.extra_visits_with_preauthorization };
+};
+
+/**
+ * Visits a plan covers per year in a category and network, or undefined if unlimited or if more
+ * are covered once preauthorized
  */
 export const categoryQuantityCap = (
   plan: HealthPlan,
   categoryId: string,
   network: 'in_network' | 'out_of_network'
 ): number | undefined => {
-  const categoryBenefits = plan.categories[categoryId];
-  return categoryBenefits?.qty_cap ?? categoryBenefits?.[`${network}_coverage`]?.qty_cap;
+  const limit = categoryVisitLimit(plan, categoryId, network);
+  return limit && !limit.extraWithPreauthorization ? limit.visits : undefined;
 };
+
+/** Whether plans pay toward a category at all, rather than leaving it all to you */
+export const isCoveredByInsurance = (categories: CategoriesData, categoryId: string): boolean =>
+  categories[categoryId]?.covered_by_insurance !== false;
+
+/** Whether HSA or FSA money can pay for a category */
+export const isHsaFsaEligible = (categories: CategoriesData, categoryId: string): boolean =>
+  categories[categoryId]?.hsa_fsa_eligible !== false;
 
 /**
  * Plan execution class to track expenses and calculate out-of-pocket costs
@@ -329,11 +370,15 @@ class PlanExecution {
   private plan: HealthPlan;
   private coverage: CoverageType;
   private outOfPocketSpent: number = 0;
+  private person: number | undefined; // Who the current expense is for
+  private spentByPerson: Record<number, number> = {}; // Out of pocket by person, for their own max
   private deductibleSpent: number = 0;
   private contributionsAndSavings: ContributionEntry[] = [];
   private premiums: PremiumEntry[] = [];
   private expenses: ExpenseEntry[] = [];
   private categoriesData: CategoriesData;
+  private uncoveredCosts: number = 0; // Care no plan pays for, outside the deductible and OOP max
+  private uncoveredEligible: number = 0; // The part of it HSA or FSA money can pay for
   private costCapSpent: Record<string, number> = {}; // Track spending against cost caps
   private quantityUsed: Record<string, number> = {}; // Track visits used against quantity caps
 
@@ -487,7 +532,7 @@ class PlanExecution {
           this.oopRemaining()
         );
         if (applicableDeductible > 0) {
-          this.outOfPocketSpent += applicableDeductible;
+          this.addOutOfPocket(applicableDeductible);
           this.deductibleSpent += applicableDeductible;
           remainingCost -= applicableDeductible;
           deductiblePortion = applicableDeductible;
@@ -498,7 +543,7 @@ class PlanExecution {
         if (remainingCost > 0 && this.deductibleRemaining() === 0) {
           actualCopay = Math.min(benefits.copay, remainingCost);
           copayPortion = Math.min(actualCopay, this.oopRemaining());
-          this.outOfPocketSpent += copayPortion;
+          this.addOutOfPocket(copayPortion);
         }
 
         employeeResponsibility = deductiblePortion + copayPortion;
@@ -508,7 +553,7 @@ class PlanExecution {
         actualCopay = Math.min(benefits.copay, cost);
         if (actualCopay !== undefined) {
           employeeResponsibility = Math.min(actualCopay, this.oopRemaining());
-          this.outOfPocketSpent += employeeResponsibility;
+          this.addOutOfPocket(employeeResponsibility);
           if (contributesToDeductible) {
             this.deductibleSpent += Math.min(employeeResponsibility, this.deductibleRemaining());
           }
@@ -536,7 +581,7 @@ class PlanExecution {
         if (applicableDeductible > 0) {
           // Count toward OOP max if configured
           if (contributesToOOPMax) {
-            this.outOfPocketSpent += applicableDeductible;
+            this.addOutOfPocket(applicableDeductible);
           }
           // Count toward deductible if configured
           if (contributesToDeductible) {
@@ -562,7 +607,7 @@ class PlanExecution {
           : coinsuranceAmount;
 
         if (contributesToOOPMax) {
-          this.outOfPocketSpent += applicableCoinsurance;
+          this.addOutOfPocket(applicableCoinsurance);
         }
         coinsurancePortion = applicableCoinsurance;
       }
@@ -592,8 +637,43 @@ class PlanExecution {
     this.expenses.push(expenseEntry);
   }
 
+  /**
+   * Record care no plan pays for: you pay all of it, and it leaves the deductible and
+   * out-of-pocket max alone
+   */
+  recordUncoveredExpense(
+    categoryId: string,
+    cost: number,
+    network: 'in_network' | 'out_of_network',
+    notes?: string
+  ): void {
+    const categoryInfo = this.categoriesData[categoryId];
+    this.uncoveredCosts += cost;
+    if (isHsaFsaEligible(this.categoriesData, categoryId)) {
+      this.uncoveredEligible += cost;
+    }
+    this.expenses.push({
+      type: 'expense',
+      network,
+      category: categoryId,
+      categoryDisplayName: categoryInfo?.name || categoryId,
+      isPreventive: false,
+      isFree: false,
+      billedAmount: cost,
+      employeeResponsibility: cost,
+      insuranceResponsibility: 0,
+      deductibleRemaining: this.deductibleRemaining(),
+      outOfPocketRemaining: this.oopRemaining(),
+      notes,
+    });
+  }
+
   getTotalOutOfPocket(): number {
     return this.outOfPocketSpent;
+  }
+
+  getUncovered(): { uncoveredCosts: number; uncoveredEligible: number } {
+    return { uncoveredCosts: this.uncoveredCosts, uncoveredEligible: this.uncoveredEligible };
   }
 
   getLedger(): OrganizedLedger {
@@ -686,7 +766,7 @@ class PlanExecution {
 
     // Add to out-of-pocket spending (these still count toward OOP max)
     const applicableOOP = Math.min(employeeResponsibility, this.oopRemaining());
-    this.outOfPocketSpent += applicableOOP;
+    this.addOutOfPocket(applicableOOP);
 
     // Create expense entry with cap indication
     const capNote =
@@ -713,9 +793,30 @@ class PlanExecution {
     this.expenses.push(expenseEntry);
   }
 
+  /** Who the next expenses are for, until changed */
+  forPerson(person: number | undefined): void {
+    this.person = person;
+  }
+
+  private addOutOfPocket(amount: number): void {
+    this.outOfPocketSpent += amount;
+    if (this.person !== undefined) {
+      this.spentByPerson[this.person] = (this.spentByPerson[this.person] ?? 0) + amount;
+    }
+  }
+
+  /**
+   * Out-of-pocket room left for the current person: the coverage's max, and with two-party or
+   * family coverage also each person's own max. Expenses with no person only meet the family max.
+   */
   private oopRemaining(): number {
-    const oopMax = this.getOOPMaxForCoverage();
-    return Math.max(0, oopMax - this.outOfPocketSpent);
+    const familyRoom = Math.max(0, this.getOOPMaxForCoverage() - this.outOfPocketSpent);
+    if (this.coverage === CoverageType.Single || this.person === undefined) {
+      return familyRoom;
+    }
+    const individualMax = this.plan.out_of_pocket_maximum.in_network.individual;
+    const personRoom = individualMax - (this.spentByPerson[this.person] ?? 0);
+    return Math.max(0, Math.min(familyRoom, personRoom));
   }
 
   private deductibleRemaining(): number {

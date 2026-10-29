@@ -29,6 +29,17 @@ interface FAQButtonProps {
   company: Company;
 }
 
+/**
+ * Column headings that stay in view while scrolling a long table in the popup. The tables that
+ * use it can't scroll sideways on their own, since that would stop the headings sticking.
+ */
+const STICKY_HEAD: React.CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  background: 'var(--bs-body-bg)',
+};
+
 const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
   ({ showButton = true, company }, ref) => {
     const insurerName = company.insurer_name ?? company.name;
@@ -236,11 +247,11 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
 
                 {/* Premiums Table */}
                 <h5 className="mb-3">Premiums</h5>
-                <Table striped bordered hover responsive className="mb-4">
+                <Table striped bordered hover className="mb-4">
                   <thead>
                     <tr>
-                      <th>Description</th>
-                      <th style={{ width: '120px' }}>Amount</th>
+                      <th style={STICKY_HEAD}>Description</th>
+                      <th style={{ ...STICKY_HEAD, width: '120px' }}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -285,18 +296,19 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                             striped
                             bordered
                             hover
-                            responsive
-                            className="mb-4 text-nowrap d-none d-md-table"
+                            className="mb-4 text-nowrap d-none d-lg-table"
                           >
                             <thead>
                               <tr className="align-bottom">
-                                <th className="text-wrap">Category</th>
-                                <th>Cost</th>
-                                {showCopayColumn && <th>Copay</th>}
-                                <th>Your cost</th>
-                                <th>Plan pays</th>
-                                <th>Rem. deductible</th>
-                                <th>Rem. out of pocket</th>
+                                <th className="text-wrap" style={STICKY_HEAD}>
+                                  Category
+                                </th>
+                                <th style={STICKY_HEAD}>Cost</th>
+                                {showCopayColumn && <th style={STICKY_HEAD}>Copay</th>}
+                                <th style={STICKY_HEAD}>Your cost</th>
+                                <th style={STICKY_HEAD}>Plan pays</th>
+                                <th style={STICKY_HEAD}>Rem. deductible</th>
+                                <th style={STICKY_HEAD}>Rem. out of pocket</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -383,7 +395,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                             </tfoot>
                           </Table>
                           {/* Phones get one card per visit, since the table won't fit */}
-                          <div className="mb-4 d-md-none border rounded overflow-hidden">
+                          <div className="mb-4 d-lg-none border rounded overflow-hidden">
                             {expenses.map((entry, index) => {
                               const isInitialState = entry.category === 'initial_state';
                               return (

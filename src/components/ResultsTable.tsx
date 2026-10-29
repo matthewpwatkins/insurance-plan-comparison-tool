@@ -3,7 +3,7 @@ import { Alert, Badge, Card, Row, Col } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faList } from '@fortawesome/free-solid-svg-icons';
 import { formatCurrency } from '../utils/formatters';
-import { PlanResult, ContributionType, PlanData, UserInputs } from '../types';
+import { PlanResult, ContributionType, CoverageType, PlanData, UserInputs } from '../types';
 import HelpIcon from './HelpIcon';
 import { breakEvenSpending } from '../utils/chartDataGenerator';
 import {
@@ -126,7 +126,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
       entered > 0
         ? `You said you'd contribute up to ${formatCurrency(entered)} to your ${account}. `
         : `You said you wouldn't contribute to your ${account}. `;
-    const outOfPocket = formatCurrency(result.outOfPocketCosts);
+    // Everything the account can pay for, including eligible costs insurance doesn't cover
+    const outOfPocket = formatCurrency(result.outOfPocketCosts + result.uncoveredEligibleCosts);
 
     if (!advice) {
       return null;
@@ -242,7 +243,10 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
       ? getMaxHSAContribution(planData, userInputs.coverage, userInputs.ageGroup)
       : getMaxFSAContribution(planData);
     const bestCase =
-      result.netAnnualPremiums - result.employerContribution - result.bestCaseTaxSavings;
+      result.netAnnualPremiums +
+      result.uncoveredCosts -
+      result.employerContribution -
+      result.bestCaseTaxSavings;
     const breakEven = breakEvenSpending(planData, userInputs, result);
     const planShare = result.ledger.expenses.reduce(
       (sum, expense) => sum + expense.insuranceResponsibility,
@@ -315,14 +319,38 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                     therapy. Of the {formatCurrency(totalBills)} in total medical costs you
                     estimated above, the plan pays {formatCurrency(planShare)} and you pay{' '}
                     {formatCurrency(result.outOfPocketCosts)}. Your share never goes above the
-                    plan's {formatCurrency(outOfPocketMax)} out-of-pocket max. Click{' '}
-                    <strong>Details</strong> on this card to see every expense.
+                    plan's {formatCurrency(outOfPocketMax)} out-of-pocket max
+                    {userInputs.coverage !== CoverageType.Single &&
+                      `, or ${formatCurrency(planData.plans.find(p => p.name === result.planName)?.out_of_pocket_maximum.in_network.individual ?? 0)} for any one person`}
+                    . Click <strong>Details</strong> on this card to see every expense.
                   </p>
                 </div>
               }
             >
               What you pay at the counter for the {formatCurrency(totalBills)} in total medical
               costs you estimated above
+            </Item>
+          )}
+          {shows(result.uncoveredCosts) && (
+            <Item
+              amountClassName="text-danger"
+              amount={result.uncoveredCosts}
+              title="Costs insurance doesn't cover"
+              info={
+                <div>
+                  <p>
+                    What you entered under Other medical costs: things like over-the-counter
+                    medicine, supplies and visits no plan pays for. You pay the full price on every
+                    plan, and it never counts toward the deductible or the out-of-pocket max.
+                  </p>
+                  <p className="mb-0">
+                    The HSA/FSA eligible part can still be paid with pre-tax {account} money, which
+                    is counted in your tax savings.
+                  </p>
+                </div>
+              }
+            >
+              The same on every plan
             </Item>
           )}
         </Section>
@@ -522,6 +550,16 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                           result.outOfPocketCosts,
                           outOfPocketMax,
                         ],
+                        ...(shows(result.uncoveredCosts)
+                          ? [
+                              [
+                                "+ Costs insurance doesn't cover",
+                                result.uncoveredCosts,
+                                result.uncoveredCosts,
+                                result.uncoveredCosts,
+                              ],
+                            ]
+                          : []),
                         [
                           '− Tax savings on premiums',
                           result.premiumDiscount,
@@ -559,8 +597,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
                 </table>
                 <ul>
                   <li>
-                    <strong>Best case:</strong> you need no care beyond free preventive visits. This
-                    is where the plan's line starts on the chart below.
+                    <strong>Best case:</strong> you need no care beyond free preventive visits and
+                    the costs insurance doesn't cover. This is where the plan's line starts on the
+                    chart below.
                   </li>
                   <li>
                     <strong>Worst case:</strong> your share of medical costs hits the{' '}

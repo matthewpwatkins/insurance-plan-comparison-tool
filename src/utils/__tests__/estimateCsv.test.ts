@@ -23,6 +23,17 @@ describe('parseEstimatesCsv', () => {
     ]);
   });
 
+  it('reads who each row is for, ignoring anything but a whole number from 1', () => {
+    const { estimates } = parseEstimatesCsv(
+      'category,network,visits,cost_per_visit,notes,person\n' +
+        'office_visit_pcp,in,4,180,Sick visits,2\n' +
+        'urgent_care,in,1,200,Stitches,Zoë\n' +
+        'urgent_care,in,1,200,,0\n',
+      categories
+    );
+    expect(estimates.map(e => e.person)).toEqual([2, undefined, undefined]);
+  });
+
   it('matches categories by display name and reads out-of-network rows', () => {
     const { estimates } = parseEstimatesCsv('Urgent Care,out-of-network,2,$95,', categories);
     expect(estimates[0].categoryId).toBe('urgent_care');

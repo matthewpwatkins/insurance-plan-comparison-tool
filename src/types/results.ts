@@ -60,7 +60,9 @@ export interface PlanResult {
   bestCaseTaxSavings: number; // Tax savings with no care beyond free care
   worstCaseTaxSavings: number; // Tax savings at the out-of-pocket max
   contributionAdvice?: ContributionAdvice;
-  outOfPocketCosts: number;
+  outOfPocketCosts: number; // Your share of care the plan covers
+  uncoveredCosts: number; // Care no plan pays for, at full price
+  uncoveredEligibleCosts: number; // The part of it HSA or FSA money can pay for
   totalCost: number;
   outOfPocketMax: number; // Plan's in-network out-of-pocket max for this coverage
   maxAnnualCost: number; // Maximum possible cost in worst-case scenario (at OOP max)
@@ -70,6 +72,7 @@ export interface PlanResult {
     contributionTaxSavings: number; // HSA/FSA contribution tax savings
     employerContribution: number;
     outOfPocket: number;
+    uncovered: number;
     net: number;
   };
   ledger: OrganizedLedger;

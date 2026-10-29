@@ -60,7 +60,7 @@ Please work through these steps with me:
 
 4. Estimate ${planData.year} usage for each category below. For cost per visit, start from the average allowed amount in your table, not the billed amount or my copay. For a category with no past claims, use a typical in-network price and say so in the notes. Each prescription fill counts as one visit. Apply the inflation rate. Assume in-network unless the report or my answers say otherwise.
 
-5. Give me the result as a downloadable file named health-cost-estimates.csv. If you can't create files, put the CSV alone in a single code block so I can copy it. The CSV must have exactly this header row and one row per category and network:
+5. Give me the result as a downloadable file named health-cost-estimates.csv. If you can't create files, put the CSV alone in a single code block so I can copy it. The CSV must have exactly this header row and one row per person, category and network:
 
 ${ESTIMATE_CSV_HEADER.join(',')}
 
@@ -69,13 +69,14 @@ Column rules:
 - network: "in" or "out"
 - visits: how many times in the year (a whole number)
 - cost_per_visit: average allowed amount in dollars, numbers only (no $ or commas)
-- notes: a short reason, under 100 characters, wrapped in double quotes
+- notes: a short reason, under 100 characters, wrapped in double quotes. No one's name.
+- person: who the care is for, as a number: 1, 2, 3 and so on, the same number for the same person every time. Never a name.
 
 Example rows:
-${exampleA},in,4,180,"Kids' sick visits, up from 3 last year"
-${exampleB},out,2,350,"Dermatologist, out of network"
+${exampleA},in,4,180,"Sick visits, up from 3 last year",2
+${exampleB},out,2,350,"Dermatologist, out of network",1
 
-Only include categories we expect to use. Don't include premiums, deductibles, or anything about which plan to pick.
+Only include categories we expect to use. Don't include premiums, deductibles, or anything about which plan to pick. Do ask me about health costs insurance won't pay for, like over-the-counter medicine, supplies and sunscreen, and put them in the two "Other medical costs" categories.
 
 Categories (id | name: description):
 ${categoryLines}

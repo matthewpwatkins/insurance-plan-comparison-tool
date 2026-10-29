@@ -5,6 +5,8 @@ import FormattedNumberInput from './FormattedNumberInput';
 import CollapsibleCard from './CollapsibleCard';
 import HelpIcon from './HelpIcon';
 import TaxRateGuide from './TaxRateGuide';
+import PeopleList from './PeopleList';
+import { peopleCount } from '../utils/people';
 import { UserInputs, PlanData, Company, CoverageType } from '../types';
 
 interface BasicInfoSectionProps {
@@ -17,8 +19,8 @@ interface BasicInfoSectionProps {
 }
 
 const COVERAGE_LABELS: Record<CoverageType, string> = {
-  [CoverageType.Single]: 'Just me',
-  [CoverageType.TwoParty]: 'Two people',
+  [CoverageType.Single]: 'Single',
+  [CoverageType.TwoParty]: 'Two party',
   [CoverageType.Family]: 'Family',
 };
 
@@ -37,7 +39,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   return (
     <CollapsibleCard
       title="Basic Information"
-      summary={`${inputs.year} · ${COVERAGE_LABELS[inputs.coverage]} · ${inputs.taxRate}% tax`}
+      summary={`${inputs.year} · ${peopleCount(inputs)} ${peopleCount(inputs) === 1 ? 'person' : 'people'} · ${inputs.taxRate}% tax`}
       defaultOpen={defaultOpen}
     >
       <Form>
@@ -59,15 +61,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
           </Col>
           <Col md={6}>
             <Form.Group>
-              <Form.Label>Coverage Type</Form.Label>
-              <Form.Select
-                value={inputs.coverage}
-                onChange={e => handleChange('coverage', e.target.value)}
-              >
-                <option value="single">Single</option>
-                <option value="two_party">Two Party</option>
-                <option value="family">Family</option>
-              </Form.Select>
+              <Form.Label>
+                Who's covered{' '}
+                <span className="text-muted small">
+                  ({COVERAGE_LABELS[inputs.coverage]} coverage)
+                </span>
+              </Form.Label>
+              <PeopleList inputs={inputs} onChange={onChange} size="sm" />
             </Form.Group>
           </Col>
         </Row>

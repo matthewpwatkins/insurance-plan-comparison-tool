@@ -41,7 +41,9 @@ Run `npm run build-data` before `npm test` or `tsc` on a fresh checkout. The pro
 **Cost engine (`utils/costCalculator.ts`).** `PlanExecution` simulates a year of expenses one visit at a time, tracking running deductible and OOP-max state, so order matters. Category display info comes from `planData.categories`. Total cost = net premiums + out-of-pocket - HSA/FSA tax savings - employer contribution. Key behaviors:
 
 - Benefits resolve as `plan.default` overlaid with `plan.categories[id]`, per network (`in_network_coverage` / `out_of_network_coverage`).
-- Per-category `qty_cap` (visits) and `cost_cap` (dollars): overflow is billed 100% to the user, still counts toward OOP max, and is labeled `[Over visit limit]` / `[Over cost limit]` in the ledger.
+- Per-category `qty_cap` (visits) and `cost_cap` (dollars): overflow is billed 100% to the user, still counts toward OOP max, and is labeled `[Over visit limit]` / `[Over cost limit]` in the ledger. Visit limits count per person. `extra_visits_with_preauthorization: true` turns a `qty_cap` into a note only (the plan covers more visits once approved).
+- Each estimate row may carry a `person` (1, 2, ...; names are optional in `peopleNames` and left out of summary share links). With two-party or family coverage a person also has their own in-network OOP max (`individual`) inside the family one. Rows with no person count together and only meet the family max. The deductible stays family-wide.
+- Categories with `covered_by_insurance: false` (the two "Other medical costs" ones) cost their full price on every plan and skip the deductible and OOP max. If `hsa_fsa_eligible` they count as HSA/FSA spending; either way they raise every chart line equally and stay off its x-axis.
 - Deductible flags `requires_deductible_to_be_met`, `contributes_to_deductible`, `contributes_to_out_of_pocket_max` default from whether the plan has a deductible.
 - `prescriptions_subject_to_deductible` applies only to categories whose id starts with `pharmacy_`.
 - `two_party` and `family` coverage both use the family deductible and OOP max.

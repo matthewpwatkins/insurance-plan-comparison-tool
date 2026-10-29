@@ -442,9 +442,10 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({
           </li>
           <li>
             <strong>Dots and lines:</strong> Dots are your real totals. Lines show a typical bill,
-            using your mix of copays once the deductible is met. Free care and visit limits can put
-            a dot above or below its line. The bottom axis leaves out care that is free on every
-            plan
+            using your mix of copays once the deductible is met and split between people the way
+            your care is. Free care and visit limits can put a dot above or below its line. The
+            bottom axis leaves out care that is free on every plan and costs insurance doesn't
+            cover, which raise every line by the same amount
           </li>
           <li>
             <strong>PPO plans are an approximation:</strong> Until the deductible is met, a visit

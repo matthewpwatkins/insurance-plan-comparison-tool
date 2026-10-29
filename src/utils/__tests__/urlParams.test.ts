@@ -9,7 +9,7 @@ import {
   readCompanySlugFromPath,
   isResultsPath,
 } from '../urlParams';
-import { buildShareDictionaryText, SHARE_DICTIONARY } from '../shareDictionary';
+import { SHARE_DICTIONARY } from '../shareDictionary';
 import { UserInputs, CoverageType, CategoryEstimate } from '../../types';
 
 const YEARS = [2026, 2025];
@@ -64,6 +64,10 @@ const sampleEstimates = (count: number): CategoryEstimate[] =>
     },
     notes: `${PEOPLE[i % PEOPLE.length]}: ${PROVIDERS[(i * 3) % PROVIDERS.length]}`,
   }));
+
+/** sampleInputs(30), encoded with the dictionary the live site used encoded it before the dictionary was frozen */
+const V1_LINK =
+  'v1.vZpNbsIwEIWv0hOgxHbihF3bTVW1lQonSJUIIsSPIijqonfvEByIPJAZ21G3LOBp4vc9k3nhM04nKvmvMUv4paEpP4L8n-nD7FRj-Kpg12k1SPBTcL13mxPVex4aPhrS9LptymIzxSUU3yMh0VSifFjCbHs8KbhWJ7oVHZbg9l9c2VKUglM0eDrnK3hA8_0Eyhblqb5zo0yEVbnfyM2RvCpLMpjb0JA-D_UGhvQB5Fwu4Psu6_lzpYUSRV_BW3_1JWlBQOOlaHZVA-M6rNewt-61jnotHCxslHdmWaJZXntq6sVy_11XR9xRujUz97snslwOx47juOeqhLrVrC4X_eoYFsWJOGQ6IWFkDNO9FSt4M1KCAmuvjXWELPeQE2WaDetrjfhe7KDkYTpevfoaFsfcqWDfRTazbSIY4zlAm96jIK-lisB05zUGpv3zS2uC1MZUHFIHJ1ce26y-4yNXWnvGWJwQhDaO4hM6MMxETvD5nGVucB4hypQg0Gwc5YrmwDhLUpvLttM7j3HBPEqQ6YgAtfGcA6hHSbFMEoDu7MdntFeQaeJObVzngOdRc0zEBLhbEzKo7RtgUhHMNm7jMNsjuFRGUPpySXSktH-KpcIGtW10Yyk-qYPDTKcEqy9h5oZrzyzLcgLRxlVuiA7Ms1gSF-fWSlw4jxBkQhNoNtZyQnNgiqmIwHLnt_tYZr9-kTKKfv8A';
 
 const sampleInputs = (count: number) =>
   inputs({
@@ -122,6 +126,46 @@ describe('share links', () => {
         },
       });
       expect(encodeUserInputs(original, 'summary')).not.toEqual(encodeUserInputs(original));
+    });
+
+    it('full links carry people and names; summary links keep people but drop names', () => {
+      const original = inputs({
+        peopleNames: ['Zoë', '', 'Sam'],
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+              person: 3,
+            },
+          ],
+        },
+      });
+      expect(decodeUserInputs(encodeUserInputs(original), YEARS)).toEqual({
+        status: 'ok',
+        inputs: original,
+      });
+      const summary = decodeUserInputs(encodeUserInputs(original, 'summary'), YEARS);
+      expect(summary.status === 'ok' && summary.inputs.peopleNames).toEqual(['', '', '']);
+      expect(summary.status === 'ok' && summary.inputs.costs?.categoryEstimates?.[0].person).toBe(
+        3
+      );
+    });
+
+    it('drops a person that is not a whole number from 1', () => {
+      const raw = inputs({
+        costs: {
+          categoryEstimates: [
+            {
+              categoryId: 'office_visit_pcp',
+              estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+              person: 0,
+            },
+          ],
+        },
+      });
+      const decoded = decodeUserInputs(encodeUserInputs(raw), YEARS);
+      expect(decoded.status === 'ok' && decoded.inputs.costs?.categoryEstimates).toEqual([]);
     });
 
     it('round-trips notes with unicode, quotes and symbols', () => {
@@ -252,14 +296,13 @@ describe('share links', () => {
   });
 
   describe('dictionary', () => {
-    it('is built the same way every time', () => {
-      const text = buildShareDictionaryText();
-      expect(buildShareDictionaryText()).toBe(text);
-      expect(new TextDecoder().decode(SHARE_DICTIONARY)).toBe(text);
+    it('still reads a link made before the dictionary was frozen', () => {
+      // Made on the live site before this change; any edit to the dictionary breaks it
+      expect(decodeUserInputs(V1_LINK, YEARS)).toEqual({ status: 'ok', inputs: sampleInputs(30) });
     });
 
     it('ends with the JSON every link starts with and fits in the deflate window', () => {
-      const text = buildShareDictionaryText();
+      const text = new TextDecoder().decode(SHARE_DICTIONARY);
       expect(text).toContain('{"categoryId":"office_visit_pcp","estimate":{"quantity":1');
       expect(text.endsWith('"hsaContribution":0,"fsaContribution":0}')).toBe(true);
       expect(SHARE_DICTIONARY.length).toBeLessThanOrEqual(32 * 1024);

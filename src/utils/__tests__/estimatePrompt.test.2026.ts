@@ -40,6 +40,6 @@ describe('buildEstimatePrompt', () => {
   });
 
   it('asks for exactly the columns the importer reads', () => {
-    expect(prompt).toContain('\ncategory,network,visits,cost_per_visit,notes\n');
+    expect(prompt).toContain('\ncategory,network,visits,cost_per_visit,notes,person\n');
   });
 });

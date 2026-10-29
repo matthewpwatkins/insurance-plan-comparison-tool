@@ -1,6 +1,13 @@
 import { CategoriesData, CategoryEstimate } from '../types';
 
-export const ESTIMATE_CSV_HEADER = ['category', 'network', 'visits', 'cost_per_visit', 'notes'];
+export const ESTIMATE_CSV_HEADER = [
+  'category',
+  'network',
+  'visits',
+  'cost_per_visit',
+  'notes',
+  'person',
+];
 
 export interface EstimateCsvError {
   line: number;
@@ -82,8 +89,8 @@ const parseAmount = (value: string): number | null => {
 };
 
 /**
- * Parse an estimates CSV (category, network, visits, cost_per_visit, notes) into
- * category estimates. Category may be the id or the exact display name. Bad rows are
+ * Parse an estimates CSV (category, network, visits, cost_per_visit, notes, person) into
+ * category estimates. Person is optional: 1, 2, ... for who the care is for. Category may be the id or the exact display name. Bad rows are
  * skipped and reported by line number; good rows are still returned.
  */
 export const parseEstimatesCsv = (text: string, categories: CategoriesData): EstimateCsvResult => {
@@ -102,8 +109,14 @@ export const parseEstimatesCsv = (text: string, categories: CategoriesData): Est
     if (fields.every(field => field.trim() === '')) return;
     if (normalize(fields[0]) === 'category') return; // header row
 
-    const [categoryField = '', networkField = '', visitsField = '', costField = '', notes = ''] =
-      fields;
+    const [
+      categoryField = '',
+      networkField = '',
+      visitsField = '',
+      costField = '',
+      notes = '',
+      personField = '',
+    ] = fields;
 
     const categoryId = categoryIdByKey.get(normalize(categoryField));
     if (!categoryId) {
@@ -128,10 +141,13 @@ export const parseEstimatesCsv = (text: string, categories: CategoriesData): Est
       return;
     }
 
+    // Who the care is for, when given as a whole number from 1; anything else leaves it unset
+    const person = Number(personField.trim());
     estimates.push({
       categoryId,
       estimate: { quantity, costPerVisit, isInNetwork },
       notes: notes.trim().slice(0, 100),
+      ...(Number.isInteger(person) && person >= 1 ? { person } : {}),
     });
   });
 

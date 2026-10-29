@@ -1,132 +1,114 @@
-import { getAvailableYears, getCompanies, getPlanData } from '../generated/dataHelpers';
-
 /**
  * Preset dictionary for compressing share links (see urlParams.ts).
  *
  * Deflate can copy from the dictionary as if it were text it had already seen, so anything
- * here costs almost nothing in a link. Closer to the end is cheaper to reference, so the order
- * runs from least to most likely: free-text words people put in notes, then category names,
- * then the JSON every link contains.
+ * here costs almost nothing in a link. It runs from least to most likely: free-text words people
+ * put in notes, then category names, then the JSON every link contains.
  *
- * CHANGING ANY OF THIS BREAKS EVERY EXISTING LINK. That includes adding or renaming a category
- * in data/, since ids and names come from there. When the dictionary changes, bump
- * SHARE_FORMAT_VERSION in urlParams.ts (v1 -> v2) so old links get the "couldn't be read"
- * message instead of decoding to garbage.
+ * FROZEN. This is the exact text v1 links were made with, so changing a single character breaks
+ * every existing link. It was once built from the category data, which meant adding a category
+ * broke old links; it is fixed text now, so categories can change freely. New categories are
+ * missing from it and only compress a little less well. To ever change it, add a new link
+ * version in urlParams.ts and keep this one for reading v1 links.
  */
+const SHARE_DICTIONARY_TEXT = [
+  "Pharmacy Benefit Manager Medical Center Childrens Children's Hospital Surgery Center Surgi",
+  'cal Clinic Health Healthcare Medical Group Physicians Associates Family Medicine Pediatric',
+  's Pediatric Primary Care Urgent Care Instacare Quest Diagnostics LabCorp Labs Laboratory P',
+  'athology Radiology Imaging Diagnostic Orthopedic Orthopedics Dermatology Cardiology Cardio',
+  'vascular Anesthesia Emergency Physical Therapy Rehabilitation Behavioral Health Mental Hea',
+  "lth Counseling Women's Obstetrics Gynecology Dental Vision Optometry Eye University Region",
+  'al Valley Mountain Specialists Specialty Services Center Institute Partners Group LLC Inc ',
+  'PC MD DO NP PA Saint Intermountain Prescription Pharmacy Walgreens CVS Costco office visit',
+  ' follow-up checkup annual kids babyABA Therapy Acupuncture Allergy Testing Ambulance - Eme',
+  'rgency Anesthesia Behavioral/Mental Health - Inpatient Behavioral/Mental Health - Outpatie',
+  'nt Cardiac Rehabilitation Chemotherapy - Provider Administered Chiropractic Therapy Colono',
+  'scopy/Colorectal Screening Diabetes Education Diabetes - Glucometers Diabetes - Insulin Pu',
+  'mps Dialysis Durable Medical Equipment Emergency Room Emergency Room - Physician Eye Exams',
+  ' Genetic Counseling Genetic Testing Hearing Aids Hearing Exams Hearing Testing (Audiometry',
+  ') Home Healthcare Hospice Care Hospital - Inpatient Imaging Advanced - Facility Imaging Ad',
+  'vanced - Professional Imaging Diagnostic - Facility Imaging Diagnostic - Professional Immu',
+  'nizations Infertility - Artificial Insemination Infertility - IVF Injections and IV Therap',
+  'y Laboratory - Outpatient Lifestyle Screenings Mammograms Maternity - Inpatient Maternity ',
+  '- Physician Nutritional Education Obesity Surgery Occupational Therapy - Inpatient Occupat',
+  'ional Therapy - Outpatient Office Visit - Primary Care Office Visit - Specialist Pain Mana',
+  'gement Pharmacy - Specialty Tier 1 Pharmacy - Specialty Tier 2 Pharmacy - Tier 1 (90-day m',
+  'ail) Pharmacy - Tier 1 (30-day retail) Pharmacy - Tier 1 (90-day retail) Pharmacy - Tier 2',
+  ' (90-day mail) Pharmacy - Tier 2 (30-day retail) Pharmacy - Tier 2 (90-day retail) Pharmac',
+  'y - Tier 3 (90-day mail) Pharmacy - Tier 3 (30-day retail) Pharmacy - Tier 3 (90-day retai',
+  'l) Physical Therapy - Inpatient Physical Therapy - Outpatient Prosthetics Radiation Therap',
+  'y Respiratory Education Skilled Nursing Facility Speech Therapy - Inpatient Evaluation Spe',
+  'ech Therapy - Outpatient Surgery Telemedicine - Primary Care Telemedicine - Specialist Tel',
+  'emedicine - Urgent Care TMJ Dysfunction Transplants Transportation - Medical Urgent Care W',
+  'ellness Exam{"categoryId":"aba_therapy","estimate":{"quantity":1,"costPerVisit":{"category',
+  'Id":"acupuncture","estimate":{"quantity":1,"costPerVisit":{"categoryId":"allergy_testing",',
+  '"estimate":{"quantity":1,"costPerVisit":{"categoryId":"ambulance_emergency","estimate":{"q',
+  'uantity":1,"costPerVisit":{"categoryId":"anesthesia","estimate":{"quantity":1,"costPerVisi',
+  't":{"categoryId":"behavioral_mental_health_inpatient","estimate":{"quantity":1,"costPerVis',
+  'it":{"categoryId":"behavioral_mental_health_outpatient","estimate":{"quantity":1,"costPerV',
+  'isit":{"categoryId":"cardiac_rehabilitation","estimate":{"quantity":1,"costPerVisit":{"cat',
+  'egoryId":"chemotherapy_provider_administered","estimate":{"quantity":1,"costPerVisit":{"ca',
+  'tegoryId":"chiropractic_therapy","estimate":{"quantity":1,"costPerVisit":{"categoryId":"co',
+  'lonoscopy_colorectal_screening","estimate":{"quantity":1,"costPerVisit":{"categoryId":"dia',
+  'betes_education","estimate":{"quantity":1,"costPerVisit":{"categoryId":"diabetes_glucomete',
+  'rs","estimate":{"quantity":1,"costPerVisit":{"categoryId":"diabetes_insulin_pumps","estima',
+  'te":{"quantity":1,"costPerVisit":{"categoryId":"dialysis","estimate":{"quantity":1,"costPe',
+  'rVisit":{"categoryId":"durable_medical_equipment","estimate":{"quantity":1,"costPerVisit":',
+  '{"categoryId":"emergency_room","estimate":{"quantity":1,"costPerVisit":{"categoryId":"emer',
+  'gency_room_physician","estimate":{"quantity":1,"costPerVisit":{"categoryId":"eye_exams","e',
+  'stimate":{"quantity":1,"costPerVisit":{"categoryId":"genetic_counseling","estimate":{"quan',
+  'tity":1,"costPerVisit":{"categoryId":"genetic_testing","estimate":{"quantity":1,"costPerVi',
+  'sit":{"categoryId":"hearing_aids","estimate":{"quantity":1,"costPerVisit":{"categoryId":"h',
+  'earing_exams","estimate":{"quantity":1,"costPerVisit":{"categoryId":"hearing_testing_audio',
+  'metry","estimate":{"quantity":1,"costPerVisit":{"categoryId":"home_healthcare","estimate":',
+  '{"quantity":1,"costPerVisit":{"categoryId":"hospice_care","estimate":{"quantity":1,"costPe',
+  'rVisit":{"categoryId":"hospital_inpatient","estimate":{"quantity":1,"costPerVisit":{"categ',
+  'oryId":"imaging_advanced_facility","estimate":{"quantity":1,"costPerVisit":{"categoryId":"',
+  'imaging_advanced_professional","estimate":{"quantity":1,"costPerVisit":{"categoryId":"imag',
+  'ing_diagnostic_facility","estimate":{"quantity":1,"costPerVisit":{"categoryId":"imaging_di',
+  'agnostic_professional","estimate":{"quantity":1,"costPerVisit":{"categoryId":"immunization',
+  's","estimate":{"quantity":1,"costPerVisit":{"categoryId":"infertility_artificial_inseminat',
+  'ion","estimate":{"quantity":1,"costPerVisit":{"categoryId":"infertility_ivf","estimate":{"',
+  'quantity":1,"costPerVisit":{"categoryId":"injections_iv_therapy","estimate":{"quantity":1,',
+  '"costPerVisit":{"categoryId":"laboratory_outpatient","estimate":{"quantity":1,"costPerVisi',
+  't":{"categoryId":"lifestyle_screenings","estimate":{"quantity":1,"costPerVisit":{"category',
+  'Id":"mammograms","estimate":{"quantity":1,"costPerVisit":{"categoryId":"maternity_inpatien',
+  't","estimate":{"quantity":1,"costPerVisit":{"categoryId":"maternity_physician","estimate":',
+  '{"quantity":1,"costPerVisit":{"categoryId":"nutritional_education","estimate":{"quantity":',
+  '1,"costPerVisit":{"categoryId":"obesity_surgery","estimate":{"quantity":1,"costPerVisit":{',
+  '"categoryId":"occupational_therapy_inpatient","estimate":{"quantity":1,"costPerVisit":{"ca',
+  'tegoryId":"occupational_therapy_outpatient","estimate":{"quantity":1,"costPerVisit":{"cate',
+  'goryId":"office_visit_pcp","estimate":{"quantity":1,"costPerVisit":{"categoryId":"office_v',
+  'isit_specialist","estimate":{"quantity":1,"costPerVisit":{"categoryId":"pain_management","',
+  'estimate":{"quantity":1,"costPerVisit":{"categoryId":"pharmacy_specialty_tier_1","estimate',
+  '":{"quantity":1,"costPerVisit":{"categoryId":"pharmacy_specialty_tier_2","estimate":{"quan',
+  'tity":1,"costPerVisit":{"categoryId":"pharmacy_tier_1_mail_90","estimate":{"quantity":1,"c',
+  'ostPerVisit":{"categoryId":"pharmacy_tier_1_retail_30","estimate":{"quantity":1,"costPerVi',
+  'sit":{"categoryId":"pharmacy_tier_1_retail_90","estimate":{"quantity":1,"costPerVisit":{"c',
+  'ategoryId":"pharmacy_tier_2_mail_90","estimate":{"quantity":1,"costPerVisit":{"categoryId"',
+  ':"pharmacy_tier_2_retail_30","estimate":{"quantity":1,"costPerVisit":{"categoryId":"pharma',
+  'cy_tier_2_retail_90","estimate":{"quantity":1,"costPerVisit":{"categoryId":"pharmacy_tier_',
+  '3_mail_90","estimate":{"quantity":1,"costPerVisit":{"categoryId":"pharmacy_tier_3_retail_3',
+  '0","estimate":{"quantity":1,"costPerVisit":{"categoryId":"pharmacy_tier_3_retail_90","esti',
+  'mate":{"quantity":1,"costPerVisit":{"categoryId":"physical_therapy_inpatient","estimate":{',
+  '"quantity":1,"costPerVisit":{"categoryId":"physical_therapy_outpatient","estimate":{"quant',
+  'ity":1,"costPerVisit":{"categoryId":"prosthetics","estimate":{"quantity":1,"costPerVisit":',
+  '{"categoryId":"radiation_therapy","estimate":{"quantity":1,"costPerVisit":{"categoryId":"r',
+  'espiratory_education","estimate":{"quantity":1,"costPerVisit":{"categoryId":"skilled_nursi',
+  'ng_facility","estimate":{"quantity":1,"costPerVisit":{"categoryId":"speech_therapy_inpatie',
+  'nt_eval","estimate":{"quantity":1,"costPerVisit":{"categoryId":"speech_therapy_outpatient"',
+  ',"estimate":{"quantity":1,"costPerVisit":{"categoryId":"surgery","estimate":{"quantity":1,',
+  '"costPerVisit":{"categoryId":"telemedicine_pcp","estimate":{"quantity":1,"costPerVisit":{"',
+  'categoryId":"telemedicine_specialist","estimate":{"quantity":1,"costPerVisit":{"categoryId',
+  '":"telemedicine_urgent_care","estimate":{"quantity":1,"costPerVisit":{"categoryId":"tmj_dy',
+  'sfunction","estimate":{"quantity":1,"costPerVisit":{"categoryId":"transplants","estimate":',
+  '{"quantity":1,"costPerVisit":{"categoryId":"transportation_medical","estimate":{"quantity"',
+  ':1,"costPerVisit":{"categoryId":"urgent_care","estimate":{"quantity":1,"costPerVisit":{"ca',
+  'tegoryId":"wellness_exam","estimate":{"quantity":1,"costPerVisit":{"year":2026,"coverage":',
+  '"family","ageGroup":"under_55","taxRate":22,"costs":{"categoryEstimates":[{"categoryId":"o',
+  'ffice_visit_pcp","estimate":{"quantity":1,"costPerVisit":100,"isInNetwork":true},"notes":"',
+  '"},{"categoryId":"wellness_exam","estimate":{"quantity":1,"costPerVisit":100,"isInNetwork"',
+  ':false},"notes":""}]},"hsaContribution":0,"fsaContribution":0}',
+].join('');
 
-/** Words common in provider names and expense notes. */
-const NOTE_WORDS = [
-  'Pharmacy Benefit Manager',
-  'Medical Center',
-  'Childrens',
-  "Children's",
-  'Hospital',
-  'Surgery Center',
-  'Surgical',
-  'Clinic',
-  'Health',
-  'Healthcare',
-  'Medical Group',
-  'Physicians',
-  'Associates',
-  'Family Medicine',
-  'Pediatrics',
-  'Pediatric',
-  'Primary Care',
-  'Urgent Care',
-  'Instacare',
-  'Quest Diagnostics',
-  'LabCorp',
-  'Labs',
-  'Laboratory',
-  'Pathology',
-  'Radiology',
-  'Imaging',
-  'Diagnostic',
-  'Orthopedic',
-  'Orthopedics',
-  'Dermatology',
-  'Cardiology',
-  'Cardiovascular',
-  'Anesthesia',
-  'Emergency',
-  'Physical Therapy',
-  'Rehabilitation',
-  'Behavioral Health',
-  'Mental Health',
-  'Counseling',
-  "Women's",
-  'Obstetrics',
-  'Gynecology',
-  'Dental',
-  'Vision',
-  'Optometry',
-  'Eye',
-  'University',
-  'Regional',
-  'Valley',
-  'Mountain',
-  'Specialists',
-  'Specialty',
-  'Services',
-  'Center',
-  'Institute',
-  'Partners',
-  'Group',
-  'LLC',
-  'Inc',
-  'PC',
-  'MD',
-  'DO',
-  'NP',
-  'PA',
-  'Saint',
-  'Intermountain',
-  'Prescription',
-  'Pharmacy',
-  'Walgreens',
-  'CVS',
-  'Costco',
-  'office visit',
-  'follow-up',
-  'checkup',
-  'annual',
-  'kids',
-  'baby',
-];
-
-/** Every category id and name across all companies and years, sorted by id. */
-const allCategories = (): [string, string][] => {
-  const names = new Map<string, string>();
-  for (const company of getCompanies()) {
-    for (const year of getAvailableYears(company.slug)) {
-      const { categories } = getPlanData(company.slug, year);
-      for (const [id, category] of Object.entries(categories)) {
-        if (!names.has(id)) names.set(id, category.name);
-      }
-    }
-  }
-  return Array.from(names).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-};
-
-/** A typical link's JSON, in the key order the app serializes UserInputs. */
-const SAMPLE_INPUTS =
-  '{"year":2026,"coverage":"family","ageGroup":"under_55","taxRate":22,' +
-  '"costs":{"categoryEstimates":[' +
-  '{"categoryId":"office_visit_pcp","estimate":{"quantity":1,"costPerVisit":100,"isInNetwork":true},"notes":""},' +
-  '{"categoryId":"wellness_exam","estimate":{"quantity":1,"costPerVisit":100,"isInNetwork":false},"notes":""}' +
-  ']},"hsaContribution":0,"fsaContribution":0}';
-
-export const buildShareDictionaryText = (): string => {
-  const categories = allCategories();
-  return [
-    NOTE_WORDS.join(' '),
-    categories.map(([, name]) => name).join(' '),
-    categories
-      .map(([id]) => `{"categoryId":"${id}","estimate":{"quantity":1,"costPerVisit":`)
-      .join(''),
-    SAMPLE_INPUTS,
-  ].join('');
-};
-
-export const SHARE_DICTIONARY: Uint8Array = new TextEncoder().encode(buildShareDictionaryText());
+export const SHARE_DICTIONARY: Uint8Array = new TextEncoder().encode(SHARE_DICTIONARY_TEXT);
