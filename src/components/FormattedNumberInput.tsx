@@ -23,7 +23,10 @@ const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   placeholder = '',
   ...props
 }) => {
-  const [displayValue, setDisplayValue] = useState('');
+  // Shown from the first render, so a box focused as soon as it appears starts from its value
+  const [displayValue, setDisplayValue] = useState(() =>
+    value !== null && value !== undefined ? formatNumber(value) : ''
+  );
 
   // Update display value when prop value changes
   useEffect(() => {

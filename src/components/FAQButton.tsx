@@ -324,6 +324,11 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                                             Preventive
                                           </Badge>
                                         )}
+                                        {entry.isNotCovered && (
+                                          <Badge bg="secondary" className="ms-2">
+                                            Not covered
+                                          </Badge>
+                                        )}
                                         {entry.network === 'out_of_network' && !isInitialState && (
                                           <Badge bg="warning" text="dark" className="ms-2">
                                             Out-of-network
@@ -408,6 +413,9 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                                       <span className="d-flex gap-1 flex-shrink-0">
                                         {entry.isPreventive && (
                                           <Badge bg="success">Preventive</Badge>
+                                        )}
+                                        {entry.isNotCovered && (
+                                          <Badge bg="secondary">Not covered</Badge>
                                         )}
                                         {entry.network === 'out_of_network' && !isInitialState && (
                                           <Badge bg="warning" text="dark">

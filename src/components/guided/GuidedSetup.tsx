@@ -109,6 +109,9 @@ const ContributionInput: React.FC<{
   </div>
 );
 
+/** Starting guess for a year's over-the-counter medicine and supplies, per person */
+const OTHER_COSTS_PER_PERSON = 50;
+
 /** A picture of the household for the who's-covered callout, following the number of people */
 const householdEmoji = (count: number): string =>
   count <= 1 ? '🧑' : count === 2 ? '👫' : count === 3 ? '👨‍👩‍👧' : '👨‍👩‍👧‍👦';
@@ -705,8 +708,13 @@ const GuidedSetup: React.FC<GuidedSetupProps> = ({
                     ...inputs.costs.categoryEstimates,
                     {
                       categoryId: ELIGIBLE_OTHER_ID,
-                      estimate: { quantity: 1, costPerVisit: 0, isInNetwork: true },
-                      notes: '',
+                      // A starting guess of $50 a person, for them to adjust
+                      estimate: {
+                        quantity: 1,
+                        costPerVisit: OTHER_COSTS_PER_PERSON * peopleCount(inputs),
+                        isInNetwork: true,
+                      },
+                      notes: 'Over-the-counter medicines, glasses, and other medical supplies',
                     },
                   ],
                 },

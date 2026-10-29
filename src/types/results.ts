@@ -19,6 +19,7 @@ export interface ExpenseEntry {
   categoryDisplayName: string;
   isPreventive: boolean;
   isFree: boolean;
+  isNotCovered?: boolean; // Care no plan pays toward, at full price
   billedAmount: number;
   copay?: number;
   employeeResponsibility: number;

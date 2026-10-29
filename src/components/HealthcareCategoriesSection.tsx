@@ -297,34 +297,30 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                   </div>
                   {/* Bottom-aligned so the note box and the other inputs sit on one line */}
                   <Row className="g-2 align-items-end">
-                    {withPeople && (
-                      // Kept on wide screens as an empty column so the others line up; who it's
-                      // for doesn't matter for costs no plan pays toward
-                      <Col xs={12} md={2} className={covered ? '' : 'd-none d-md-block'}>
-                        {covered && (
-                          <>
-                            <Form.Label className="d-md-none small text-muted mb-0">Who</Form.Label>
-                            <Form.Select
-                              size="sm"
-                              aria-label="Who"
-                              value={estimate.person ?? ''}
-                              onChange={e =>
-                                updateCategoryEstimate(
-                                  index,
-                                  'person',
-                                  e.target.value ? Number(e.target.value) : undefined
-                                )
-                              }
-                            >
-                              <option value="">Not sure</option>
-                              {people.map(person => (
-                                <option key={person} value={person}>
-                                  {personName(inputs, person)}
-                                </option>
-                              ))}
-                            </Form.Select>
-                          </>
-                        )}
+                    {/* Who and network don't matter for costs no plan pays toward, so those
+                        rows skip both and the note takes the room */}
+                    {withPeople && covered && (
+                      <Col xs={12} md={2}>
+                        <Form.Label className="d-md-none small text-muted mb-0">Who</Form.Label>
+                        <Form.Select
+                          size="sm"
+                          aria-label="Who"
+                          value={estimate.person ?? ''}
+                          onChange={e =>
+                            updateCategoryEstimate(
+                              index,
+                              'person',
+                              e.target.value ? Number(e.target.value) : undefined
+                            )
+                          }
+                        >
+                          <option value="">Not sure</option>
+                          {people.map(person => (
+                            <option key={person} value={person}>
+                              {personName(inputs, person)}
+                            </option>
+                          ))}
+                        </Form.Select>
                       </Col>
                     )}
                     <Col xs={12} md>
@@ -342,34 +338,31 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                         />
                       </InputGroup>
                     </Col>
-                    <Col xs={4} md={2}>
-                      {/* Network only matters for care a plan pays toward */}
-                      {covered && (
-                        <>
-                          <Form.Label className="d-md-none small text-muted mb-0">
-                            In network
-                          </Form.Label>
-                          <ButtonGroup size="sm" className="w-100" aria-label="In network">
-                            {[true, false].map(inNetwork => (
-                              <Button
-                                key={String(inNetwork)}
-                                variant={
-                                  estimate.estimate.isInNetwork === inNetwork
-                                    ? 'primary'
-                                    : 'outline-primary'
-                                }
-                                aria-pressed={estimate.estimate.isInNetwork === inNetwork}
-                                title={inNetwork ? 'In-network' : 'Out-of-network'}
-                                onClick={() => update({ isInNetwork: inNetwork })}
-                              >
-                                {inNetwork ? 'Yes' : 'No'}
-                              </Button>
-                            ))}
-                          </ButtonGroup>
-                        </>
-                      )}
-                    </Col>
-                    <Col xs={3} md={2}>
+                    {covered && (
+                      <Col xs={4} md={2}>
+                        <Form.Label className="d-md-none small text-muted mb-0">
+                          In network
+                        </Form.Label>
+                        <ButtonGroup size="sm" className="w-100" aria-label="In network">
+                          {[true, false].map(inNetwork => (
+                            <Button
+                              key={String(inNetwork)}
+                              variant={
+                                estimate.estimate.isInNetwork === inNetwork
+                                  ? 'primary'
+                                  : 'outline-primary'
+                              }
+                              aria-pressed={estimate.estimate.isInNetwork === inNetwork}
+                              title={inNetwork ? 'In-network' : 'Out-of-network'}
+                              onClick={() => update({ isInNetwork: inNetwork })}
+                            >
+                              {inNetwork ? 'Yes' : 'No'}
+                            </Button>
+                          ))}
+                        </ButtonGroup>
+                      </Col>
+                    )}
+                    <Col xs={covered ? 3 : 4} md={2}>
                       <Form.Label className="d-md-none small text-muted mb-0">Per year</Form.Label>
                       <FormattedNumberInput
                         size="sm"
@@ -385,7 +378,7 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                         }
                       />
                     </Col>
-                    <Col xs={5} md={2}>
+                    <Col xs={covered ? 5 : 8} md={2}>
                       <Form.Label className="d-md-none small text-muted mb-0">
                         Price each
                       </Form.Label>

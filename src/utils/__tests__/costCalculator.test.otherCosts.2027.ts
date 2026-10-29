@@ -150,3 +150,24 @@ describe('people', () => {
     }
   });
 });
+
+describe('costs insurance does not cover, in the details and the advice', () => {
+  it('marks them not covered in the cost details', () => {
+    const [result] = calculateAllPlans(
+      planData,
+      inputsWith([row('other_hsa_fsa_eligible', 1, 300)])
+    );
+    const entry = result.ledger.expenses.find(e => e.category === 'other_hsa_fsa_eligible');
+    expect(entry?.isNotCovered).toBe(true);
+  });
+
+  it('counts eligible costs when advising how much to put in an FSA', () => {
+    const fsa = { fsaContribution: 0 };
+    const ppo = (rows: CategoryEstimate[]) =>
+      calculateAllPlans(planData, inputsWith(rows, fsa)).find(r => r.planName.includes('PPO'))!;
+    expect(ppo([row('other_hsa_fsa_eligible', 1, 400)]).contributionAdvice?.recommendedLow).toBe(
+      400
+    );
+    expect(ppo([row('other_hsa_fsa_ineligible', 1, 400)]).contributionAdvice).toBeUndefined();
+  });
+});

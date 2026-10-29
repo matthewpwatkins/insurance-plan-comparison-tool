@@ -425,7 +425,12 @@ describe('guided setup', () => {
       // The added row stands out from the rest
       const highlighted = container.querySelectorAll('.list-group-item.bg-warning-subtle');
       expect(highlighted).toHaveLength(1);
-      expect(highlighted[0].textContent).toContain('Other medical costs (HSA/FSA eligible)');
+      expect(highlighted[0].querySelector('select')?.value).toBe('other_hsa_fsa_eligible');
+      // A starting guess of $50 for each of the family's 3 people
+      const price = highlighted[0].querySelector(
+        'input[aria-label="Price each"]'
+      ) as HTMLInputElement;
+      expect(price.value).toBe('150');
 
       // With the row added, the next click goes straight to results
       click('See my results');

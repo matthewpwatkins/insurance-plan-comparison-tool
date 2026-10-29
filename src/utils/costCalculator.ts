@@ -659,6 +659,7 @@ class PlanExecution {
       categoryDisplayName: categoryInfo?.name || categoryId,
       isPreventive: false,
       isFree: false,
+      isNotCovered: true,
       billedAmount: cost,
       employeeResponsibility: cost,
       insuranceResponsibility: 0,
