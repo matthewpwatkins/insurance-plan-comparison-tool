@@ -171,3 +171,38 @@ describe('costs insurance does not cover, in the details and the advice', () => 
     expect(ppo([row('other_hsa_fsa_ineligible', 1, 400)]).contributionAdvice).toBeUndefined();
   });
 });
+
+describe('people in the cost details', () => {
+  it('names who each expense was for and tracks their own out-of-pocket room', () => {
+    const results = calculateAllPlans(
+      planData,
+      inputsWith([row('surgery', 1, 200_000, 2)], { peopleNames: ['', 'Sam', ''] })
+    );
+    for (const result of results) {
+      const entry = result.ledger.expenses.find(e => e.category === 'surgery')!;
+      expect(entry.personName).toBe('Sam');
+      expect(entry.personOutOfPocketRemaining).toBe(0);
+    }
+  });
+
+  it('leaves people out with single coverage', () => {
+    const [result] = calculateAllPlans(
+      planData,
+      inputsWith([row('surgery', 1, 1_000, 1)], { coverage: CoverageType.Single })
+    );
+    const entry = result.ledger.expenses.find(e => e.category === 'surgery')!;
+    expect(entry.personName).toBeUndefined();
+    expect(entry.personOutOfPocketRemaining).toBeUndefined();
+  });
+});
+
+describe('family and personal out-of-pocket room in the cost details', () => {
+  it("keeps the family's room separate from one person's", () => {
+    const [result] = calculateAllPlans(planData, inputsWith([row('surgery', 1, 200_000, 1)]));
+    const plan = planData.plans.find(p => p.name === result.planName)!;
+    const { individual, family } = plan.out_of_pocket_maximum.in_network;
+    const entry = result.ledger.expenses.find(e => e.category === 'surgery')!;
+    expect(entry.personOutOfPocketRemaining).toBe(0);
+    expect(entry.outOfPocketRemaining).toBeCloseTo(family - individual, 6);
+  });
+});

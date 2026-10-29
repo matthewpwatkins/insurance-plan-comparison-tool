@@ -131,16 +131,24 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
     return uncovered(a) - uncovered(b) || displayNameA.localeCompare(displayNameB);
   });
 
-  // Preventive care first, otherwise in the order entered
+  // Grouped by person (Person 1, 2, ..., then shared care, then costs no plan pays toward),
+  // preventive care first within each, otherwise in the order entered
   const isPreventive = (estimate: CategoryEstimate) =>
     categoriesData[estimate.categoryId]?.preventive ? 0 : 1;
+  const personGroup = (estimate: CategoryEstimate) =>
+    !isCoveredByInsurance(categoriesData, estimate.categoryId)
+      ? Infinity
+      : tracksPeople(inputs.coverage)
+        ? (estimate.person ?? Number.MAX_SAFE_INTEGER)
+        : 0;
   const displayOrder = inputs.costs.categoryEstimates
     .map((_, index) => index)
-    .sort(
-      (a, b) =>
-        isPreventive(inputs.costs.categoryEstimates[a]) -
-          isPreventive(inputs.costs.categoryEstimates[b]) || a - b
-    );
+    .sort((a, b) => {
+      const [rowA, rowB] = [inputs.costs.categoryEstimates[a], inputs.costs.categoryEstimates[b]];
+      return (
+        personGroup(rowA) - personGroup(rowB) || isPreventive(rowA) - isPreventive(rowB) || a - b
+      );
+    });
 
   const networkOf = (estimate: CategoryEstimate) =>
     estimate.estimate.isInNetwork ? 'in_network' : 'out_of_network';

@@ -27,6 +27,10 @@ export interface ExpenseEntry {
   deductibleRemaining: number;
   outOfPocketRemaining: number;
   notes?: string;
+  /** Who it was for, with two-party or family coverage */
+  personName?: string;
+  /** That person's own out-of-pocket room left after this expense */
+  personOutOfPocketRemaining?: number;
 }
 
 export interface OrganizedLedger {

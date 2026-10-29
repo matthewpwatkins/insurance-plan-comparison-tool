@@ -21,6 +21,7 @@ import {
   CategoryEstimate,
   ContributionAdvice,
 } from '../types';
+import { personName, tracksPeople } from './people';
 
 /**
  * Calculate costs for all plans given user inputs and plan data
@@ -76,7 +77,10 @@ export const calculatePlanCost = (
   for (const { categoryEstimate } of visitsThroughTheYear(costs.categoryEstimates)) {
     const { categoryId, estimate, notes, person } = categoryEstimate;
     const network = estimate.isInNetwork ? 'in_network' : 'out_of_network';
-    execution.forPerson(person);
+    execution.forPerson(
+      person,
+      person && tracksPeople(coverage) ? personName(userInputs, person) : undefined
+    );
     if (!isCoveredByInsurance(planData.categories, categoryId)) {
       execution.recordUncoveredExpense(categoryId, estimate.costPerVisit, network, notes);
       continue;
@@ -371,6 +375,7 @@ class PlanExecution {
   private coverage: CoverageType;
   private outOfPocketSpent: number = 0;
   private person: number | undefined; // Who the current expense is for
+  private personName: string | undefined; // Their name, shown in the cost details
   private spentByPerson: Record<number, number> = {}; // Out of pocket by person, for their own max
   private deductibleSpent: number = 0;
   private contributionsAndSavings: ContributionEntry[] = [];
@@ -630,8 +635,9 @@ class PlanExecution {
       employeeResponsibility,
       insuranceResponsibility,
       deductibleRemaining: this.deductibleRemaining(),
-      outOfPocketRemaining: this.oopRemaining(),
+      outOfPocketRemaining: this.familyOopRemaining(),
       notes,
+      ...this.personFields(),
     };
 
     this.expenses.push(expenseEntry);
@@ -664,8 +670,9 @@ class PlanExecution {
       employeeResponsibility: cost,
       insuranceResponsibility: 0,
       deductibleRemaining: this.deductibleRemaining(),
-      outOfPocketRemaining: this.oopRemaining(),
+      outOfPocketRemaining: this.familyOopRemaining(),
       notes,
+      ...this.personFields(),
     });
   }
 
@@ -787,16 +794,31 @@ class PlanExecution {
       employeeResponsibility,
       insuranceResponsibility,
       deductibleRemaining: this.deductibleRemaining(),
-      outOfPocketRemaining: this.oopRemaining(),
+      outOfPocketRemaining: this.familyOopRemaining(),
       notes: notes ? `${capNote} ${notes}` : capNote,
+      ...this.personFields(),
     };
 
     this.expenses.push(expenseEntry);
   }
 
-  /** Who the next expenses are for, until changed */
-  forPerson(person: number | undefined): void {
+  /** Who the next expenses are for, until changed, and their name for the cost details */
+  forPerson(person: number | undefined, name?: string): void {
     this.person = person;
+    this.personName = name;
+  }
+
+  /** The current person's name and own out-of-pocket room, for a ledger entry */
+  private personFields(): Pick<ExpenseEntry, 'personName' | 'personOutOfPocketRemaining'> {
+    if (this.personName === undefined || this.person === undefined) return {};
+    const individualMax = this.plan.out_of_pocket_maximum.in_network.individual;
+    return {
+      personName: this.personName,
+      personOutOfPocketRemaining: Math.max(
+        0,
+        individualMax - (this.spentByPerson[this.person] ?? 0)
+      ),
+    };
   }
 
   private addOutOfPocket(amount: number): void {
@@ -810,8 +832,13 @@ class PlanExecution {
    * Out-of-pocket room left for the current person: the coverage's max, and with two-party or
    * family coverage also each person's own max. Expenses with no person only meet the family max.
    */
+  /** Room left under the coverage's own max (the family max with two-party or family) */
+  private familyOopRemaining(): number {
+    return Math.max(0, this.getOOPMaxForCoverage() - this.outOfPocketSpent);
+  }
+
   private oopRemaining(): number {
-    const familyRoom = Math.max(0, this.getOOPMaxForCoverage() - this.outOfPocketSpent);
+    const familyRoom = this.familyOopRemaining();
     if (this.coverage === CoverageType.Single || this.person === undefined) {
       return familyRoom;
     }

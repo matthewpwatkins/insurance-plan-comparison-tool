@@ -40,6 +40,71 @@ const STICKY_HEAD: React.CSSProperties = {
   background: 'var(--bs-body-bg)',
 };
 
+/** Who an expense was for, in bold, then its notes, like "**Sam**: Riverbend Clinic" */
+const Describe: React.FC<{ entry: ExpenseEntry }> = ({ entry }) =>
+  entry.personName || entry.notes ? (
+    <div className="text-muted small">
+      {entry.personName && <strong>{entry.personName}</strong>}
+      {entry.personName && entry.notes && ': '}
+      {entry.notes}
+    </div>
+  ) : null;
+
+/** How a "limit met" row stands out between the expenses */
+const MILESTONE_CLASS = 'text-center small fw-semibold text-success bg-success-subtle py-1';
+
+/**
+ * Limits each expense uses up, by its position in the list: the deductible, a person's own
+ * out-of-pocket max, then the family's. `family` says whether to name the family ones as such.
+ */
+const milestonesMet = (expenses: ExpenseEntry[], family: boolean): Record<number, string[]> => {
+  const met: Record<number, string[]> = {};
+  const prefix = family ? 'Family ' : '';
+  let deductible = Infinity;
+  let outOfPocket = Infinity;
+  const personRoom: Record<string, number> = {};
+  expenses.forEach((entry, index) => {
+    const labels: string[] = [];
+    if (entry.category !== 'initial_state') {
+      if (deductible > 0 && entry.deductibleRemaining === 0) {
+        labels.push(`${prefix}deductible met`);
+      }
+      const person = entry.personName;
+      if (
+        person !== undefined &&
+        entry.personOutOfPocketRemaining === 0 &&
+        (personRoom[person] ?? Infinity) > 0
+      ) {
+        labels.push(`${person}'s out-of-pocket max met`);
+      }
+      if (outOfPocket > 0 && entry.outOfPocketRemaining === 0) {
+        labels.push(`${prefix}out-of-pocket max met`);
+      }
+    }
+    deductible = entry.deductibleRemaining;
+    outOfPocket = entry.outOfPocketRemaining;
+    if (entry.personName !== undefined && entry.personOutOfPocketRemaining !== undefined) {
+      personRoom[entry.personName] = entry.personOutOfPocketRemaining;
+    }
+    if (labels.length > 0) {
+      // Capitalize the first letter, since "deductible met" can lead the line
+      met[index] = labels.map(label => label.charAt(0).toUpperCase() + label.slice(1));
+    }
+  });
+  return met;
+};
+
+/** One of the stacked out-of-pocket balances, like "Family $12,400" */
+const OutOfPocketLine: React.FC<{ label?: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
+  <div className="d-flex justify-content-between gap-2">
+    <span className="text-muted small">{label}</span>
+    <span>{children}</span>
+  </div>
+);
+
 const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
   ({ showButton = true, company }, ref) => {
     const insurerName = company.insurer_name ?? company.name;
@@ -290,6 +355,12 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                       const showCopayColumn = expenses.some(
                         entry => entry.copay && entry.copay > 0
                       );
+                      // Each person's own out-of-pocket max, with two-party or family coverage
+                      const showPersonColumn = expenses.some(
+                        entry => entry.personOutOfPocketRemaining !== undefined
+                      );
+                      const milestones = milestonesMet(expenses, showPersonColumn);
+                      const columnCount = 6 + Number(showCopayColumn);
                       return (
                         <>
                           <Table
@@ -315,57 +386,80 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                               {expenses.map((entry, index) => {
                                 const isInitialState = entry.category === 'initial_state';
                                 return (
-                                  <tr key={index}>
-                                    <td className="text-wrap">
-                                      <div style={{ maxWidth: '50rem' }}>
-                                        {entry.categoryDisplayName}
-                                        {entry.isPreventive && (
-                                          <Badge bg="success" className="ms-2">
-                                            Preventive
-                                          </Badge>
-                                        )}
-                                        {entry.isNotCovered && (
-                                          <Badge bg="secondary" className="ms-2">
-                                            Not covered
-                                          </Badge>
-                                        )}
-                                        {entry.network === 'out_of_network' && !isInitialState && (
-                                          <Badge bg="warning" text="dark" className="ms-2">
-                                            Out-of-network
-                                          </Badge>
-                                        )}
-                                        {entry.notes && (
-                                          <div className="text-muted small">{entry.notes}</div>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td>
-                                      {isInitialState
-                                        ? '—'
-                                        : formatCurrency(entry.billedAmount, true)}
-                                    </td>
-                                    {showCopayColumn && (
-                                      <td>
-                                        {entry.copay ? formatCurrency(entry.copay, true) : '—'}
+                                  <React.Fragment key={index}>
+                                    <tr>
+                                      <td className="text-wrap">
+                                        <div style={{ maxWidth: '50rem' }}>
+                                          {entry.categoryDisplayName}
+                                          {entry.isPreventive && (
+                                            <Badge bg="success" className="ms-2">
+                                              Preventive
+                                            </Badge>
+                                          )}
+                                          {entry.isNotCovered && (
+                                            <Badge bg="secondary" className="ms-2">
+                                              Not covered
+                                            </Badge>
+                                          )}
+                                          {entry.network === 'out_of_network' &&
+                                            !isInitialState && (
+                                              <Badge bg="warning" text="dark" className="ms-2">
+                                                Out-of-network
+                                              </Badge>
+                                            )}
+                                          <Describe entry={entry} />
+                                        </div>
                                       </td>
-                                    )}
-                                    <td
-                                      className={
-                                        entry.employeeResponsibility > 0 ? 'text-danger' : ''
-                                      }
-                                    >
-                                      {isInitialState
-                                        ? '—'
-                                        : formatCurrency(entry.employeeResponsibility, true)}
-                                    </td>
-                                    <td>
-                                      {isInitialState
-                                        ? '—'
-                                        : formatCurrency(entry.insuranceResponsibility, true)}
-                                    </td>
-                                    <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
-                                    <td>{formatCurrency(entry.outOfPocketRemaining, true)}</td>
-                                  </tr>
+                                      <td>
+                                        {isInitialState
+                                          ? '—'
+                                          : formatCurrency(entry.billedAmount, true)}
+                                      </td>
+                                      {showCopayColumn && (
+                                        <td>
+                                          {entry.copay ? formatCurrency(entry.copay, true) : '—'}
+                                        </td>
+                                      )}
+                                      <td
+                                        className={
+                                          entry.employeeResponsibility > 0 ? 'text-danger' : ''
+                                        }
+                                      >
+                                        {isInitialState
+                                          ? '—'
+                                          : formatCurrency(entry.employeeResponsibility, true)}
+                                      </td>
+                                      <td>
+                                        {isInitialState
+                                          ? '—'
+                                          : formatCurrency(entry.insuranceResponsibility, true)}
+                                      </td>
+                                      <td>{formatCurrency(entry.deductibleRemaining, true)}</td>
+                                      <td>
+                                        {/* The family's room, and under it the person's own,
+                                            named since rows from different people interleave */}
+                                        {showPersonColumn ? (
+                                          <OutOfPocketLine label="Family">
+                                            {formatCurrency(entry.outOfPocketRemaining, true)}
+                                          </OutOfPocketLine>
+                                        ) : (
+                                          formatCurrency(entry.outOfPocketRemaining, true)
+                                        )}
+                                        {entry.personOutOfPocketRemaining !== undefined && (
+                                          <OutOfPocketLine label={entry.personName}>
+                                            {formatCurrency(entry.personOutOfPocketRemaining, true)}
+                                          </OutOfPocketLine>
+                                        )}
+                                      </td>
+                                    </tr>
+                                    {milestones[index]?.map(text => (
+                                      <tr key={text}>
+                                        <td colSpan={columnCount} className={MILESTONE_CLASS}>
+                                          🎉 {text}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </React.Fragment>
                                 );
                               })}
                             </tbody>
@@ -424,9 +518,7 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                                         )}
                                       </span>
                                     </div>
-                                    {entry.notes && (
-                                      <div className="text-muted small">{entry.notes}</div>
-                                    )}
+                                    <Describe entry={entry} />
                                   </div>
                                   <div className="px-2 py-1">
                                     {!isInitialState && (
@@ -453,10 +545,23 @@ const FAQButton = forwardRef<FAQButtonRef, FAQButtonProps>(
                                       amount={entry.deductibleRemaining}
                                     />
                                     <CardLine
-                                      label="Rem. out of pocket"
+                                      label={
+                                        showPersonColumn ? 'Rem. family OOP' : 'Rem. out of pocket'
+                                      }
                                       amount={entry.outOfPocketRemaining}
                                     />
+                                    {entry.personOutOfPocketRemaining !== undefined && (
+                                      <CardLine
+                                        label={`${entry.personName}'s rem. OOP`}
+                                        amount={entry.personOutOfPocketRemaining}
+                                      />
+                                    )}
                                   </div>
+                                  {milestones[index]?.map(text => (
+                                    <div key={text} className={`border-top ${MILESTONE_CLASS}`}>
+                                      🎉 {text}
+                                    </div>
+                                  ))}
                                 </div>
                               );
                             })}
