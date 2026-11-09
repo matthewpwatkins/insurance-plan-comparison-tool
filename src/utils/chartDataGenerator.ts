@@ -1,11 +1,4 @@
-import {
-  PlanData,
-  UserInputs,
-  PlanResult,
-  HealthPlan,
-  CoverageType,
-  CategoryEstimate,
-} from '../types';
+import { PlanData, UserInputs, PlanResult, HealthPlan, CoverageType } from '../types';
 import {
   calculateAllPlans,
   calculatePlanCost,
@@ -175,43 +168,67 @@ function personShares(
  * A plan's total annual cost when the year's care is `spending` of in-network bills: premiums
  * and account savings, then 100% of bills until the deductible, then the plan's rate for the
  * user's mix of care, then nothing more past the out-of-pocket max. The bills split between
- * people as the user's own care does, so a person whose care dominates reaches their own
- * out-of-pocket max first, as their dot does. Care no plan pays for is the same at every
- * spending level, so it raises the whole line.
+ * people as the user's own care does, and so does the deductible, so a person whose care
+ * dominates reaches their own out-of-pocket max first, as their dot does. Care no plan pays for
+ * is the same at every spending level, so it raises the whole line.
+ *
+ * The out-of-pocket amount is worked out directly rather than by playing bills through the year:
+ * which person's bill met the deductible would then change from one spending level to the next,
+ * and with per-person maximums that made the line jump up and down.
  */
 function planLine(
   plan: HealthPlan,
   planData: PlanData,
   userInputs: UserInputs
 ): (spending: number) => number {
-  // The plan with its default coverage charging the blended rate, so the engine draws the line
-  const { copay: _copay, ...defaultCoverage } = plan.default.in_network_coverage ?? {};
+  const deductible = deductibleFor(plan, userInputs.coverage);
+  const rate = rateAfterDeductible(plan, planData, userInputs);
+  const oopMax = plan.out_of_pocket_maximum.in_network;
+  const coverageMax =
+    userInputs.coverage === CoverageType.Single ? oopMax.individual : oopMax.family;
+  // Each person's own max applies only with two-party or family coverage, as in the cost engine
+  const personMax = (person: number | undefined) =>
+    userInputs.coverage === CoverageType.Single || person === undefined
+      ? Infinity
+      : oopMax.individual;
+  const shares = personShares(planData, userInputs);
+  const outOfPocketAt = (spending: number) => {
+    const owed = Math.min(spending, deductible) + rate * Math.max(0, spending - deductible);
+    const total = shares.reduce(
+      (sum, { person, share }) => sum + Math.min(personMax(person), share * owed),
+      0
+    );
+    return Math.min(coverageMax, total);
+  };
+
+  // The plan paying nothing and skipping its deductible, so one bill of the out-of-pocket amount
+  // costs exactly that, and the engine adds premiums, account savings and care no plan pays for.
+  // The real deductible stays on the plan, since it decides whether the plan gets an HSA.
   const linePlan: HealthPlan = {
     ...plan,
     default: {
       ...plan.default,
       in_network_coverage: {
-        ...defaultCoverage,
-        coinsurance: rateAfterDeductible(plan, planData, userInputs),
+        coinsurance: 1,
+        requires_deductible_to_be_met: false,
+        contributes_to_deductible: false,
       },
     },
   };
   const uncovered = uncoveredEstimates(planData, userInputs);
-  const shares = personShares(planData, userInputs);
-  // One bill for the family as a whole. Split between people, each person's share comes as
-  // monthly bills, so the deductible falls across everyone as it does on the user's own care.
-  const bills = (spending: number): CategoryEstimate[] =>
-    shares.length === 1 && shares[0].person === undefined
-      ? [billOf(spending, 1, undefined)]
-      : shares.map(({ person, share }) => billOf((spending * share) / 12, 12, person));
-  return spending =>
-    calculatePlanCost(linePlan, planData, {
+  return spending => {
+    const outOfPocket = outOfPocketAt(spending);
+    return calculatePlanCost(linePlan, planData, {
       ...userInputs,
       costs: {
         ...userInputs.costs,
-        categoryEstimates: [...(spending > 0 ? bills(spending) : []), ...uncovered],
+        categoryEstimates: [
+          ...(outOfPocket > 0 ? [billOf(outOfPocket, 1, undefined)] : []),
+          ...uncovered,
+        ],
       },
     }).totalCost;
+  };
 }
 
 function billOf(costPerVisit: number, quantity: number, person: number | undefined) {

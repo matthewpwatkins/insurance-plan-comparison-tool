@@ -266,3 +266,29 @@ describe('breakEvenSpending 2027', () => {
     expect(breakEvenSpending(planData, inputs, result)).toBeNull();
   });
 });
+
+describe('chart lines 2027 for a family whose care is split between people', () => {
+  // One person's care dominates, so they reach their own out-of-pocket max inside the family one
+  const forPerson = (person: number, estimate: CategoryEstimate): CategoryEstimate => ({
+    ...estimate,
+    person,
+  });
+  const chart = generateChartData(
+    planData,
+    familyInputs([
+      forPerson(1, visits('imaging_diagnostic_professional', 6, 900)),
+      forPerson(1, visits('surgery', 1, 4_000)),
+      forPerson(2, visits('office_visit_pcp', 4, 160)),
+      forPerson(3, visits('office_visit_pcp', 2, 140)),
+      forPerson(3, visits('imaging_diagnostic_professional', 3, 60)),
+      forPerson(4, visits('surgery', 1, 450)),
+    ])
+  );
+
+  it.each(plans.map(({ name }) => name))('%s never costs less as bills grow', name => {
+    const data = chart.plans.find(p => p.planName === name)!.data;
+    data.slice(1).forEach((point, i) => {
+      expect(point.totalCost).toBeGreaterThanOrEqual(data[i].totalCost - 0.005);
+    });
+  });
+});
