@@ -369,9 +369,9 @@ describe('guided setup', () => {
       expect(path()).toBe('/dmba/results');
       expect(window.location.search).toBe('');
       expect(linkInputs().year).toBe(2026);
-      // The inputs above the results start closed
+      // The inputs above the results start closed, and so do the important notes
       const toggles = container.querySelectorAll('.card-header [aria-expanded]');
-      expect(toggles).toHaveLength(3);
+      expect(toggles).toHaveLength(4);
       toggles.forEach(toggle => expect(toggle.getAttribute('aria-expanded')).toBe('false'));
       expect(linkInputs().costs?.categoryEstimates).toEqual([]);
     });

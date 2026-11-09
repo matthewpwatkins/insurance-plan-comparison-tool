@@ -74,3 +74,18 @@ export const removePerson = (inputs: UserInputs, person: number): Partial<UserIn
     costs: { ...inputs.costs, categoryEstimates },
   };
 };
+
+/**
+ * How many rows of care insurance pays toward don't say who they're for, with two-party or family
+ * coverage. Those rows only count toward the family out-of-pocket max, never a person's own, so
+ * totals can come out too high.
+ */
+export const rowsWithoutPerson = (
+  inputs: UserInputs,
+  isCovered: (categoryId: string) => boolean
+): number =>
+  tracksPeople(inputs.coverage)
+    ? inputs.costs.categoryEstimates.filter(
+        estimate => estimate.person === undefined && isCovered(estimate.categoryId)
+      ).length
+    : 0;

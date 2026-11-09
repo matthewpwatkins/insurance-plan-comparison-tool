@@ -1,4 +1,11 @@
-import { addPerson, coverageFor, peopleCount, removePerson, renamePerson } from '../people';
+import {
+  addPerson,
+  coverageFor,
+  peopleCount,
+  removePerson,
+  renamePerson,
+  rowsWithoutPerson,
+} from '../people';
 import { CategoryEstimate, CoverageType, UserInputs } from '../../types';
 
 const row = (person?: number): CategoryEstimate => ({
@@ -55,5 +62,30 @@ describe('people', () => {
     expect(after.peopleNames).toEqual(['A', 'C']);
     expect(after.coverage).toBe(CoverageType.TwoParty);
     expect(after.costs?.categoryEstimates.map(e => e.person)).toEqual([1, undefined, 2, undefined]);
+  });
+
+  describe('rowsWithoutPerson', () => {
+    const otc: CategoryEstimate = { ...row(), categoryId: 'otc' };
+    const covered = (categoryId: string) => categoryId !== 'otc';
+    const rows = [row(1), row(), row(), otc];
+
+    it('counts care insurance pays toward with no person, for two-party and family', () => {
+      expect(rowsWithoutPerson(inputs({ costs: { categoryEstimates: rows } }), covered)).toBe(2);
+      expect(
+        rowsWithoutPerson(
+          inputs({ coverage: CoverageType.TwoParty, costs: { categoryEstimates: rows } }),
+          covered
+        )
+      ).toBe(2);
+    });
+
+    it('never counts with single coverage, which has one person', () => {
+      expect(
+        rowsWithoutPerson(
+          inputs({ coverage: CoverageType.Single, costs: { categoryEstimates: rows } }),
+          covered
+        )
+      ).toBe(0);
+    });
   });
 });

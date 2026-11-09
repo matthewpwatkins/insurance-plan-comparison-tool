@@ -665,18 +665,14 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
     result,
     isLowestCost,
   }) => (
-    <div className={isLowestCost ? 'mx-n3 mx-md-n4' : ''}>
+    <div>
       <Card
         className={`mb-4 ${isLowestCost ? 'border-success border-4 shadow-lg' : 'mb-3'}`}
         style={
           isLowestCost
             ? {
-                transform: 'scale(1.05)',
-                transformOrigin: 'center',
-                position: 'relative',
-                zIndex: 10,
                 overflow: 'hidden',
-                // Green behind the header so scaling can't leave a light seam at its edges
+                // Green behind the header so no light seam shows at its rounded edges
                 backgroundColor: 'var(--bs-success)',
               }
             : {}
@@ -713,8 +709,8 @@ const ResultsTable: React.FC<ResultsTableProps> = ({
 
   return (
     <>
-      {/* Card View for All Screen Sizes. Top padding leaves room for the enlarged best plan. */}
-      <div className="pt-4">
+      {/* Card View for All Screen Sizes */}
+      <div>
         {results.map(result => {
           const isLowestCost = result.totalCost === lowestCostAmount;
           return <PlanCard key={result.planName} result={result} isLowestCost={isLowestCost} />;

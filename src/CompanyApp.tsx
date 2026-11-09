@@ -18,12 +18,14 @@ import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import CostInputForm from './components/CostInputForm';
 import ResultsTable from './components/ResultsTable';
 import CostComparisonChart from './components/CostComparisonChart';
+import EstimateNotes, { ESTIMATE_NOTES_ID } from './components/EstimateNotes';
 import NavigationHeader from './components/NavigationHeader';
 import { FAQButtonRef } from './components/FAQButton';
 import GuidedSetup from './components/guided/GuidedSetup';
 import PrivacyNote from './components/PrivacyNote';
 import { loadPlanData, getDefaultYear, getAvailableDataYears } from './services/planDataService';
-import { calculateAllPlans } from './utils/costCalculator';
+import { calculateAllPlans, isCoveredByInsurance } from './utils/costCalculator';
+import { rowsWithoutPerson } from './utils/people';
 import {
   readSharedInputs,
   updateURL,
@@ -111,6 +113,7 @@ function CompanyApp({ company }: CompanyAppProps) {
   const [sectionsOpen, setSectionsOpen] = useState(!opensResults);
   const [isGuided, setIsGuided] = useState(isGuidedURL);
   const [compareRequested, setCompareRequested] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const faqButtonRef = useRef<FAQButtonRef | null>(null);
 
@@ -197,6 +200,12 @@ function CompanyApp({ company }: CompanyAppProps) {
         updateURL(userInputs);
         const calculatedResults = calculateAllPlans(planData, userInputs);
         setResults(calculatedResults);
+        // Open the notes when one of them asks the user to fix their estimates
+        setNotesOpen(
+          rowsWithoutPerson(userInputs, categoryId =>
+            isCoveredByInsurance(planData.categories, categoryId)
+          ) > 0
+        );
         setResultsOutOfDate(false);
         setHasCalculatedOnce(true);
       } catch (err) {
@@ -349,6 +358,42 @@ function CompanyApp({ company }: CompanyAppProps) {
                     this year by choosing {results[0].planName} instead of{' '}
                     {results.length === 2 ? results[1].planName : 'another plan'}.
                   </Alert>
+                )}
+                {planData &&
+                  (() => {
+                    const unassigned = rowsWithoutPerson(userInputs, categoryId =>
+                      isCoveredByInsurance(planData.categories, categoryId)
+                    );
+                    if (unassigned === 0) return null;
+                    return (
+                      <Alert variant="warning" className="mb-3">
+                        {unassigned === 1
+                          ? "1 cost doesn't say which family member it's for"
+                          : `${unassigned} costs don't say which family member they're for`}
+                        , so each person's own out-of-pocket max can't apply. Your totals may be too
+                        high.{' '}
+                        <Button
+                          variant="link"
+                          className="p-0 align-baseline"
+                          onClick={() => {
+                            setNotesOpen(true);
+                            document
+                              .getElementById(ESTIMATE_NOTES_ID)
+                              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                        >
+                          See important notes
+                        </Button>
+                      </Alert>
+                    );
+                  })()}
+                {planData && (
+                  <EstimateNotes
+                    planData={planData}
+                    userInputs={userInputs}
+                    open={notesOpen}
+                    onOpenChange={setNotesOpen}
+                  />
                 )}
                 {planData && (
                   <ResultsTable

@@ -313,6 +313,8 @@ const HealthcareCategoriesSection: React.FC<HealthcareCategoriesSectionProps> = 
                         <Form.Select
                           size="sm"
                           aria-label="Who"
+                          // A cost for no one in particular can't count toward a person's own max
+                          className={estimate.person === undefined ? 'border-warning' : undefined}
                           value={estimate.person ?? ''}
                           onChange={e =>
                             updateCategoryEstimate(

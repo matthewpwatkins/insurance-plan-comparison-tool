@@ -17,12 +17,14 @@ import {
   faMagnifyingGlassPlus,
   faMagnifyingGlassMinus,
   faRotateLeft,
+  faLightbulb,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons';
 import { UserInputs } from '../types/user';
 import { PlanData } from '../types';
 import { generateChartData } from '../utils/chartDataGenerator';
 import HelpIcon from './HelpIcon';
+import CollapsibleCard from './CollapsibleCard';
 
 // Register Chart.js components
 ChartJS.register(
@@ -368,66 +370,16 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({
   }, [chartPlans, currentSpending, isNarrow]);
 
   return (
-    <div style={{ marginTop: '2rem' }}>
+    <div style={{ marginTop: '2rem', marginBottom: '3rem' /* apart from the gray page footer */ }}>
       <h3 style={{ marginBottom: '1rem' }}>Cost Comparison Chart</h3>
 
-      <div style={{ padding: isNarrow ? '0.5rem 0' : '1rem', position: 'relative' }}>
-        {/* Zoom controls: over the chart's top right corner, or above the chart on phones */}
-        <div
-          style={
-            isNarrow
-              ? {
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: '0.25rem',
-                  marginBottom: '0.5rem',
-                }
-              : {
-                  position: 'absolute',
-                  top: '1.5rem',
-                  right: '1.5rem',
-                  display: 'flex',
-                  gap: '0.25rem',
-                  zIndex: 10,
-                }
-          }
-        >
-          <ZoomButton
-            title="Zoom out"
-            icon={faMagnifyingGlassMinus}
-            disabled={!canZoomOut}
-            onClick={() => zoomTo(viewRange * ZOOM_STEP)}
-          />
-          <ZoomButton
-            title="Show everything"
-            icon={faRotateLeft}
-            disabled={!canZoomOut}
-            onClick={() => setView({ min: 0, max: fullMax })}
-          />
-          <ZoomButton
-            title="Zoom in on your spending"
-            icon={faMagnifyingGlassPlus}
-            disabled={!canZoomIn}
-            onClick={() => zoomTo(viewRange / ZOOM_STEP)}
-          />
-        </div>
-
-        <Line ref={chartRef} data={chartData} options={options} />
-      </div>
-
-      <div
-        style={{
-          marginTop: '1rem',
-          marginBottom: '3rem', // Keep it apart from the gray page footer
-          padding: '0.75rem',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '0.375rem',
-          fontSize: '0.875rem',
-          color: '#4b5563',
-        }}
+      <CollapsibleCard
+        title="How to read this chart"
+        icon={<FontAwesomeIcon icon={faLightbulb} className="text-muted" fixedWidth />}
+        titleClassName="h6 mb-0"
+        defaultOpen={false}
       >
-        <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>How to read this chart:</p>
-        <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+        <ul className="small mb-0" style={{ paddingLeft: '1.5rem' }}>
           <li>
             Each colored line shows how a plan's total annual cost (premiums + out-of-pocket) grows
             with your medical bills, and each dot is that plan's total for the care you entered
@@ -446,13 +398,6 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({
             your care is. Free care and visit limits can put a dot above or below its line. The
             bottom axis leaves out care that is free on every plan and costs insurance doesn't
             cover, which raise every line by the same amount
-          </li>
-          <li>
-            <strong>PPO plans are an approximation:</strong> Until the deductible is met, a visit
-            costs its full bill; after that, just the copay. So when your care happens changes what
-            you pay. We spread each of your estimates evenly across the year. If your care bunches
-            up early or late in the year, your real cost on a PPO plan can be a bit higher or lower.
-            This is also why a PPO plan's dot can sit above or below its line
           </li>
           <li>
             <strong>Zoom controls:</strong> Zoom in on your spending, zoom back out, or show
@@ -517,6 +462,50 @@ const CostComparisonChart: React.FC<CostComparisonChartProps> = ({
             />
           </li>
         </ul>
+      </CollapsibleCard>
+
+      <div style={{ padding: isNarrow ? '0.5rem 0' : '1rem', position: 'relative' }}>
+        {/* Zoom controls: over the chart's top right corner, or above the chart on phones */}
+        <div
+          style={
+            isNarrow
+              ? {
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.25rem',
+                  marginBottom: '0.5rem',
+                }
+              : {
+                  position: 'absolute',
+                  top: '1.5rem',
+                  right: '1.5rem',
+                  display: 'flex',
+                  gap: '0.25rem',
+                  zIndex: 10,
+                }
+          }
+        >
+          <ZoomButton
+            title="Zoom out"
+            icon={faMagnifyingGlassMinus}
+            disabled={!canZoomOut}
+            onClick={() => zoomTo(viewRange * ZOOM_STEP)}
+          />
+          <ZoomButton
+            title="Show everything"
+            icon={faRotateLeft}
+            disabled={!canZoomOut}
+            onClick={() => setView({ min: 0, max: fullMax })}
+          />
+          <ZoomButton
+            title="Zoom in on your spending"
+            icon={faMagnifyingGlassPlus}
+            disabled={!canZoomIn}
+            onClick={() => zoomTo(viewRange / ZOOM_STEP)}
+          />
+        </div>
+
+        <Line ref={chartRef} data={chartData} options={options} />
       </div>
     </div>
   );
