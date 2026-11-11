@@ -78,23 +78,57 @@ describe('expense editor', () => {
     container.remove();
   });
 
-  it('adds a category as one in-network visit', () => {
+  const newForm = () => container.querySelector('[aria-label="New expense"]') as HTMLElement;
+  const choose = (select: HTMLSelectElement, value: string) =>
+    act(() => {
+      setValue(select, value);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  const addButton = () =>
+    Array.from(newForm().querySelectorAll('button')).find(b => b.textContent === 'Add')!;
+
+  it('adds an expense only once who, count and price are filled in', () => {
+    render([{ ...row('office_visit_pcp', 2, 'First'), person: 2 }]);
+
+    choose(field(newForm(), 'New category') as unknown as HTMLSelectElement, 'urgent_care');
+    // Nothing joins the list yet, and no person is assumed
+    expect(estimates()).toHaveLength(1);
+    expect((field(newForm(), 'Who') as unknown as HTMLSelectElement).value).toBe('');
+
+    click(addButton());
+    expect(estimates()).toHaveLength(1);
+    expect(newForm().textContent).toContain('who it is for');
+
+    choose(field(newForm(), 'Who') as unknown as HTMLSelectElement, '1');
+    typeInto(field(newForm(), 'Per year'), '2');
+    typeInto(field(newForm(), 'Price each'), '150');
+    click(addButton());
+
+    expect(estimates()[1]).toEqual({
+      categoryId: 'urgent_care',
+      estimate: { quantity: 2, costPerVisit: 150, isInNetwork: true },
+      notes: '',
+      person: 1,
+    });
+    // The form clears for the next one
+    expect((field(newForm(), 'New category') as unknown as HTMLSelectElement).value).toBe('');
+  });
+
+  it('adds shared care when the person is "Not sure"', () => {
     render();
 
-    const add = container.querySelector('select') as HTMLSelectElement;
-    act(() => {
-      setValue(add, 'urgent_care');
-      add.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+    choose(field(newForm(), 'New category') as unknown as HTMLSelectElement, 'urgent_care');
+    choose(field(newForm(), 'Who') as unknown as HTMLSelectElement, 'shared');
+    typeInto(field(newForm(), 'Price each'), '200');
+    click(addButton());
 
     expect(estimates()).toEqual([
       {
         categoryId: 'urgent_care',
-        estimate: { quantity: 1, costPerVisit: 0, isInNetwork: true },
+        estimate: { quantity: 1, costPerVisit: 200, isInNetwork: true },
         notes: '',
       },
     ]);
-    expect(add.value).toBe('');
   });
 
   it('edits visits, price, network and note on the right row', () => {
@@ -118,21 +152,22 @@ describe('expense editor', () => {
     });
   });
 
-  it('shows preventive care first but edits and removes the row clicked', () => {
-    // Entered second, shown first
-    render([row('office_visit_pcp', 2, 'Sick visits'), row('wellness_exam', 1, 'Checkup')]);
+  it('shows rows in the order entered until the user sorts them', () => {
+    render([row('office_visit_pcp', 2, 'Sick visits'), row('wellness_exam', 3, 'Checkup')]);
 
-    expect(rows()[0].textContent).toContain('Preventive');
-    typeInto(field(rows()[0], 'Per year'), '2');
+    expect(rows().map(r => field(r, 'Notes').value)).toEqual(['Sick visits', 'Checkup']);
+
+    choose(container.querySelector('[aria-label="Sort by"]') as HTMLSelectElement, 'quantity');
+    expect(rows().map(r => field(r, 'Notes').value)).toEqual(['Checkup', 'Sick visits']);
+
+    // Edits and removals still hit the row clicked, not the row at that spot in entry order
+    typeInto(field(rows()[0], 'Per year'), '4');
     expect(estimates().map(e => [e.notes, e.estimate.quantity])).toEqual([
       ['Sick visits', 2],
-      ['Checkup', 2],
+      ['Checkup', 4],
     ]);
-
     click(rows()[0].querySelector('button[aria-label="Remove"]') as HTMLElement);
     expect(estimates().map(e => e.notes)).toEqual(['Sick visits']);
-    expect(rows()).toHaveLength(1);
-    expect(field(rows()[0], 'Per year').value).toBe('2');
   });
 
   it("takes counts over the strictest plan's visit limit, with a hint", () => {
